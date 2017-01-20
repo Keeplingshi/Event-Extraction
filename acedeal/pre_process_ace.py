@@ -4,17 +4,15 @@ Created on 2017年1月19日
 
 @author: chenbin
 '''
-from setuptools.sandbox import save_path
+
+from acedeal.xml_parse import xml_parse_base
+import os
+import re
+from xml.dom import minidom
 
 '''
 ACE  event实体
 '''
-
-from acedeal.xml_parse import xml_parse_base
-import os
-from xml.dom import minidom
-
-
 class ACE_info:
     # go gain the event mention from ACE dataset
     def __init__(self):
@@ -94,40 +92,44 @@ def save_ace_event_list(ace_list,save_path):
         
     f_out.close()
 
-#         R = []
-#         doc = minidom.parse(file_name)
-#         root = doc.documentElement
-# 
-#         relation_nodes = self.get_xmlnode(root, 'relation')
-#         for node in relation_nodes:
-#             relation_type = self.get_attrvalue(node, 'TYPE')
-#             relation_sub_type = self.get_attrvalue(node, 'SUBTYPE')
-#             mention_nodes = self.get_xmlnode(node, 'relation_mention')
-#             for mention_node in mention_nodes:
-#                 R_element = ACE_info()
-#                 R_element.type = relation_type
-#                 R_element.sub_type = relation_sub_type
-# 
-#                 # gain the attribute info of mention
-#                 mention_extent = self.get_xmlnode(mention_node, 'charseq')
-#                 R_element.mention_pos[0] = int(self.get_attrvalue(mention_extent[0], 'START'))
-#                 R_element.mention_pos[1] = int(self.get_attrvalue(mention_extent[0], 'END'))
-#                 R_element.mention = self.get_nodevalue(mention_extent[0])
-# 
-#                 argument_nodes = self.get_xmlnode(mention_node, 'relation_mention_argument')
-#                 for argument_node in argument_nodes:
-#                     if self.get_attrvalue(argument_node, 'ROLE') == 'Arg-1':
-#                         # gain the attribute info of arg1
-#                         R_element.arg1_pos[0] = int(self.get_attrvalue(self.get_xmlnode(argument_node, 'charseq')[0], 'START'))
-#                         R_element.arg1_pos[1] = int(self.get_attrvalue(self.get_xmlnode(argument_node, 'charseq')[0], 'END'))
-#                         #relation_arg1 = get_nodevalue(get_xmlnode(argument_node, 'charseq')[0]).encode('utf-8', 'ignore')
-#                         #print(R_element.arg1_pos[0],R_element.arg1_pos[1])
-#                     elif self.get_attrvalue(argument_node, 'ROLE') == 'Arg-2':
-#                         # gain the attribute info of age2
-#                         R_element.arg2_pos[0] = int(self.get_attrvalue(self.get_xmlnode(argument_node, 'charseq')[0], 'START'))
-#                         R_element.arg2_pos[1] = int(self.get_attrvalue(self.get_xmlnode(argument_node, 'charseq')[0], 'END'))
-#                         #relation_arg2 = get_nodevalue(get_xmlnode(argument_node, 'charseq')[0]).encode('utf-8', 'ignore')
-#                         #print(R_element.arg2_pos[0],R_element.arg2_pos[1])
-#                 R_element.combine()
-#                 R.append(R_element)
-#         return R
+
+'''
+抽取ACE语料所有文章内容，到txt文件中
+'''
+def extract_corpus(ace_file_path,save_path):
+    
+    f_out = open(save_path, 'w',encoding="utf-8")
+    
+    for filename in os.listdir(ace_file_path):
+        # adj文件夹所在地
+        adj_file_path=os.path.join(ace_file_path,filename,'adj')
+        for sgm_file in os.listdir(adj_file_path):
+            # 获取.sgm 的文件
+            if ".sgm" in sgm_file:
+                text=""
+                sgm_file_path=os.path.join(adj_file_path,sgm_file)
+                doc = minidom.parse(sgm_file_path)
+                root = doc.documentElement
+                # text_node = xml_parse_base.get_xmlnode(None,root, 'TEXT')[0]
+                # text_node = xml_parse_base.get_xmlnode(None,root, 'TEXT')[0]
+                if filename=="bn":
+                    turn_nodes = xml_parse_base.get_xmlnode(None,root, 'TURN')
+                    for turn_node in turn_nodes:
+                        #print(xml_parse_base.get_nodevalue(None,turn_node,0).replace("\n", ""))
+                        text+=xml_parse_base.get_nodevalue(None,turn_node,0).replace("\n", "")
+                        
+                elif filename=="nw":
+                    text_node = xml_parse_base.get_xmlnode(None,root, 'TEXT')[0]
+                    text+=xml_parse_base.get_nodevalue(None,text_node,0).replace("\n", "")
+                    
+                else:
+                    post_node=xml_parse_base.get_xmlnode(None,root, 'POST')[0]
+                    text+=xml_parse_base.get_nodevalue(None,post_node,4).replace("\n", "")
+                    print(text)
+                    
+                f_out.write(text)
+                f_out.write('\n')
+                
+                
+    f_out.close()
+
