@@ -27,6 +27,7 @@ class ACE_info:
 
 '''
 抽取单个apf.xml中的事件实体ACE_info
+apf_file ：单个.apf.xml文件路径，如：apf_file = "../ace05/data/Chinese/nw/adj/XIN20001002.0200.0004.apf.xml"
 '''
 def extract_ace_info(apf_file):
     
@@ -63,6 +64,7 @@ def extract_ace_info(apf_file):
 
 '''
 抽取整个ace语料中的所有事件
+ace_file_path ： ACE语料路径，如：ace_file_path = "../ace05/data/Chinese/"
 '''
 def get_ace_event_list(ace_file_path):
     ace_list=[]
@@ -83,6 +85,8 @@ def get_ace_event_list(ace_file_path):
 
 '''
 保存ace事件到txt
+ace_list：list of ACE_info
+save_path：保存路径，如：save_path = "./ch.txt"
 '''
 def save_ace_event_list(ace_list,save_path):
     f_out = open(save_path, 'w',encoding="utf-8")
@@ -95,6 +99,8 @@ def save_ace_event_list(ace_list,save_path):
 
 '''
 抽取ACE语料所有文章内容，到txt文件中
+ace_file_path： ACE语料路径，如：ace_file_path = "../ace05/data/Chinese/"
+save_path：保存路径，如：save_path = "./ace_corpus.txt"
 '''
 def extract_corpus(ace_file_path,save_path):
     
