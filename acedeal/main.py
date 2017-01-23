@@ -5,10 +5,13 @@ Created on 2017年1月19日
 @author: chenbin
 '''
 
-from acedeal.pre_process_ace import *
-import jpype
 import os.path
+import string
+
+import jpype
+
 from acedeal.nlpir import *
+from acedeal.pre_process_ace import *
 
 
 if __name__ == "__main__":
@@ -58,8 +61,13 @@ if __name__ == "__main__":
 #     print(NLPIR_ParagraphProcess(p,1))
 
 #     save_path = "./corpus_deal/ace_corpus.txt"
-#     out_path="./corpus_deal/result.txt"
-#     NLPIR_FileProcess(save_path,out_path,1)
+#     out_path="./corpus_deal/result0.txt"
+#     NLPIR_FileProcess(save_path,out_path,0)
+    
+#     for ace_info in ace_list:
+#         f_out.write(ace_info.toString())
+#         f_out.write('\n')
+         
 
     #NLPIR_AddUserWord("今天天气  n")
 #     p = "今天天气不错。"

@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-__author__ = 'Peter_Howe<haobibo@gmail.com>'
+__author__ = 'chenbin'
 '''
 Python Warpper for ICTCLAS2014
 Loading functions from Dynamic Link Library  directly.
@@ -256,7 +256,6 @@ str：文本
 flag：是否标注词性  1--标注   0--不标注
 '''
 def NLPIR_ParagraphProcess(str,flag):
-
     str = str.encode('UTF8')
     result = ParagraphProcess(str, c_int(flag)).decode('utf-8')
     return result
