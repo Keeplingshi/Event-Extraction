@@ -95,12 +95,6 @@ def save_ace_event_list(ace_list,save_path):
         f_out.write('\n')
          
     f_out.close()
-#     f_out = open(save_path, 'w',encoding="utf-8")
-#     for ace_info in ace_list:
-#         f_out.write(ace_info.toString())
-#         f_out.write('\n')
-#         
-#     f_out.close()
 
 
 '''

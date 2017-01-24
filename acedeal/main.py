@@ -15,7 +15,7 @@ from acedeal.pre_process_ace import *
 
 
 if __name__ == "__main__":
-    
+    print("-----------------------start----------------------")
 #     save_path = "./trigger.txt"
 #     ace_file_path = "../ace05/data/Chinese/"
 #     ace_file_path = "../ace05/data/Chinese/nw/adj/XIN20001002.0200.0004.apf.xml"
@@ -72,5 +72,8 @@ if __name__ == "__main__":
     #NLPIR_AddUserWord("今天天气  n")
 #     p = "今天天气不错。"
 #     print(NLPIR_ParagraphProcess(p,1))
+
+
+    print("-----------------------end------------------------")
 
     
