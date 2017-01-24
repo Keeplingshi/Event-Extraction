@@ -278,9 +278,9 @@ def NLPIR_FileProcess(source_path,output_path,flag):
 # def NLPIR_AddUserWord(word):
 #     AddUserWord(c_char_p(word.encode('UTF8')))
 
-# if __name__ == "__main__":
-#     p = "今天战火连连。"
-#     print(NLPIR_ParagraphProcess(p,1))
+if __name__ == "__main__":
+    p = "今天被处死。"
+    print(NLPIR_ParagraphProcess(p,1))
 #     p1=c_char_p('./ace_corpus.txt'.encode('UTF8'))
 #     p2=c_char_p("./result.txt".encode('UTF8'))
 #     i=c_int(1)

@@ -16,6 +16,13 @@ from acedeal.pre_process_ace import *
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
+    
+    ace_train_path="../ace_experiment/train/"
+    ace_train_list=get_ace_event_list(ace_train_path)
+    for ace_info in ace_train_list:
+        print(ace_info.toString())
+    
+    
 #     save_path = "./trigger.txt"
 #     ace_file_path = "../ace05/data/Chinese/"
 #     ace_file_path = "../ace05/data/Chinese/nw/adj/XIN20001002.0200.0004.apf.xml"

@@ -43,8 +43,8 @@ if __name__ == "__main__":
 #     model = word2vec.load('./corpus_deal/vectorsSougou.bin',encoding="ISO-8859-1")
 #     print(model['中国'])
 
-#     model =word2vec.Word2Vec.load_word2vec_format("./corpus_deal/ace_train_corpus.bin",binary=True)
-#     # print(model["战火连连"])
+    model =word2vec.Word2Vec.load_word2vec_format("./corpus_deal/ace_train_corpus.bin",binary=True)
+    print(model["被处"])
 #     try:  
 #         y1 = model.similarity("战火", "战争")  
 #     except KeyError:  
