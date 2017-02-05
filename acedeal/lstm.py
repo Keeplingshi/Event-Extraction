@@ -10,7 +10,45 @@ from acedeal.nlpir import *
 from acedeal.pre_process_ace import *
 
 import tensorflow as tf
+import numpy as np
 
+
+ace_type_dict = {
+    'Be-Born': 0,
+    'Die': 1,
+    'Marry': 2,
+    'Divorce': 3,
+    'Injure': 4,
+    'Transfer-Ownership': 5,
+    'Transfer-Money': 6,
+    'Transport': 7,
+    'Start-Org': 8,
+    'End-Org': 9,
+    'Declare-Bankruptcy': 10,
+    'Merge-Org': 11,
+    'Attack': 12,
+    'Demonstrate': 13,
+    'Meet': 14,
+    'Phone-Write': 15,
+    'Start-Position': 16,
+    'End-Position': 17,
+    'Nominate': 18,
+    'Elect': 19,
+    'Arrest-Jail': 20,
+    'Release-Parole': 21,
+    'Charge-Indict': 22,
+    'Trial-Hearing': 23,
+    'Sue': 24,
+    'Convict': 25,
+    'Sentence': 26,
+    'Fine': 27,
+    'Execute': 28,
+    'Extradite': 29,
+    'Acquit': 30,
+    'Pardon': 31,
+    'Appeal': 32,
+    'None-role': 33
+}
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
@@ -58,6 +96,7 @@ if __name__ == "__main__":
     text_list_len = len(text_list)
 
     ace_data = []
+    ace_data_labels = []
 
     for i in range(text_list_len):
         event_text = text_list[i]
@@ -79,9 +118,25 @@ if __name__ == "__main__":
             if word_vector is not None:
                 sentence_word2vec_arr.append(word_vector)
                 if word in trigger_temp_list:
-                    trigger_labels.append()
+                    val = ace_type_dict[
+                        type_temp_list[trigger_temp_list.index(word)]]
+                    a = [0.0 for x in range(0, 34)]
+                    a[val] = 1.0
+                    trigger_labels.append(a)
                 else:
-                    trigger_labels
+                    val = ace_type_dict['None-role']
+                    a = [0.0 for x in range(0, 34)]
+                    a[val] = 1.0
+                    trigger_labels.append(a)
+
+        ace_data.append(sentence_word2vec_arr)
+        ace_data_labels.append(trigger_labels)
+
+    ace_data = np.array(ace_data)
+    ace_data_labels = np.array(ace_data_labels)
+
+    print(ace_data)
+    print(ace_data_labels)
 
 #     # 取出每一个事件实体
 #     for ace_info in ace_train_list:
@@ -116,7 +171,7 @@ if __name__ == "__main__":
 #             else:
 #                 print(word)
 
-        # print(ace_text_list)
-        # print(ace_info.toString())
+    # print(ace_text_list)
+    # print(ace_info.toString())
 
     print("-----------------------end----------------------")
