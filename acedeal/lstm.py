@@ -84,9 +84,11 @@ def RNN(_X, _istate, _weights, _biases):
     _X = tf.split(0, n_steps, _X)  # n_steps * (batch_size, n_hidden)    #4
     # 开始跑RNN那部分
     outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
+    #outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
 
+    results = tf.matmul(outputs[-1], _weights['out']) + _biases['out']
     # 输出层
-    return tf.matmul(outputs[-1], _weights['out']) + _biases['out']
+    return results
 
 
 pred = RNN(x, istate, weights, biases)
@@ -127,20 +129,32 @@ with tf.Session() as sess:
             # Calculate batch loss
             loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys,
                                              istate: np.zeros((batch_size, 2 * n_hidden))})
-            print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
+            print("Iter " + str(step) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
                   ", Training Accuracy= " + "{:.5f}".format(acc))
         step += 1
+
     print("Optimization Finished!")
     # 载入测试集进行测试
     length = len(ace_data_test)
+    test_accuracy = 0.0
     for i in range(length):
         test_len = len(ace_data_test[i])
         test_data = ace_data_test[i].reshape(
             (-1, n_steps, n_input))  # 8
         test_label = ace_data_test_labels[i]
-        print("Testing Accuracy:", sess.run(accuracy, feed_dict={
-            x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
+        # 两种计算精确度的方式
+#         print(accuracy.eval(
+#             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
 
+#         print(sess.run(accuracy, feed_dict={
+# x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
+
+        test_accuracy += sess.run(accuracy, feed_dict={
+            x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))})
+#         print("Testing Accuracy:", sess.run(accuracy, feed_dict={
+# x: test_data, y: test_label, istate: np.zeros((test_len, 2 *
+# n_hidden))}))
+    print(test_accuracy / length)
 
 # # print(ace_data_train[0])
 # # print(ace_data_train_labels)
