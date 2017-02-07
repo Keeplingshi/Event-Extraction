@@ -12,6 +12,15 @@ import tensorflow as tf
 import numpy as np
 import sys
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename='lstm_20170207.log',
+                    filemode='w')
+
+
 # 数据读取，训练集和测试集
 ace_data_train_file = open('./corpus_deal/ace_data/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
@@ -35,7 +44,7 @@ ace_data_test_labels_file.close()
 
 # RNN学习时使用的参数
 learning_rate = 0.001  # 1
-training_iters = 100000
+training_iters = 10000000
 batch_size = 1
 display_step = 10
 
@@ -125,41 +134,87 @@ with tf.Session() as sess:
                                        istate: np.zeros((batch_size, 2 * n_hidden))})
         # 在特定的迭代回合进行数据的输出
         if k % 100 == 0:
-            # Calculate batch accuracy
-            acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys,
-                                                istate: np.zeros((batch_size, 2 * n_hidden))})
-            # Calculate batch loss
-            loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys,
-                                             istate: np.zeros((batch_size, 2 * n_hidden))})
-            prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys,
-                                                                                        istate: np.zeros((batch_size, 2 * n_hidden))})
-            print(prediction)
-            print(y_)
-            print("Iter " + str(k) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
-                  ", Training Accuracy= " + "{:.5f}".format(acc))
+            sk = 0
+            acck = 0
+            predictionk, y_k = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys,
+                                                                                          istate: np.zeros((batch_size, 2 * n_hidden))})
+            for t in range(len(y_k)):
+                if y_k[t] != 33:
+                    logging.info(
+                        'actual:' + str(y_k[t]) + '\t predict:' + str(predictionk[t]))
+                    #print(str(y_[t]) + '\t' + str(prediction[t]))
+                    sk = sk + 1
+                    if y_k[t] == predictionk[t]:
+                        acck = acck + 1
+
+            if sk != 0:
+                logging.info(
+                    "Iter " + str(k) + '-----------acc=' + str(acck / sk))
+            #print("Iter " + str(k))
+            #             # Calculate batch accuracy
+            #             acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys,
+            #                                                 istate: np.zeros((batch_size, 2 * n_hidden))})
+            #             # Calculate batch loss
+            #             loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys,
+            #                                              istate: np.zeros((batch_size, 2 * n_hidden))})
+            #             print(batch_ys)
+            #             for i in range(len(batch_ys)):
+            #                 ys = batch_ys[i]
+            #                 print(ys.index(1.0))
+
+#             prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys,
+#                                                                                         istate: np.zeros((batch_size, 2 * n_hidden))})
+#             print(prediction)
+#             print(y_)
+
+
+#             print("Iter " + str(k) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
+#                   ", Training Accuracy= " + "{:.5f}".format(acc))
         k += 1
 
     print("Optimization Finished!")
     # 载入测试集进行测试
-#     length = len(ace_data_test)
-#     test_accuracy = 0.0
-#     for i in range(length):
-#         test_len = len(ace_data_test[i])
-#         test_data = ace_data_test[i].reshape(
-#             (-1, n_steps, n_input))  # 8
-#         test_label = ace_data_test_labels[i]
-#         # 两种计算精确度的方式
-# #         print(accuracy.eval(
-# #             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
-#
-# #         print(sess.run(accuracy, feed_dict={
-# # x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
+    length = len(ace_data_test)
+    test_accuracy = 0.0
+    s = 0
+    acc = 0
+    for i in range(length):
+        test_len = len(ace_data_test[i])
+        test_data = ace_data_test[i].reshape(
+            (-1, n_steps, n_input))  # 8
+        test_label = ace_data_test_labels[i]
+        prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label,
+                                                                                    istate: np.zeros((test_len, 2 * n_hidden))})
+        for t in range(len(y_)):
+            if y_[t] != 33:
+                logging.info(
+                    'actual:' + str(y_[t]) + '\t predict:' + str(prediction[t]))
+                #print(str(y_[t]) + '\t' + str(prediction[t]))
+                s = s + 1
+                if y_[t] == prediction[t]:
+                    acc = acc + 1
+
+    logging.info('----------------------------------------------------')
+    logging.info(str(acc) + '------------' + str(s))
+    logging.info(acc / s)
+    print('----------------------------------------------------')
+    print(str(acc) + '------------' + str(s))
+    print(acc / s)
+#         print(prediction)
+#         print(y_)
+#         print('-------------------------------------------------------------')
+    # 两种计算精确度的方式
+#         print(accuracy.eval(
+#             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
+
+#         print(sess.run(accuracy, feed_dict={
+# x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
 #
 #         test_accuracy += sess.run(accuracy, feed_dict={
 #             x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))})
 #         print("Testing Accuracy:", sess.run(accuracy, feed_dict={
-# x: test_data, y: test_label, istate: np.zeros((test_len, 2 *
-# n_hidden))}))
+#             x: test_data, y: test_label, istate: np.zeros((test_len, 2 *
+#                                                            n_hidden))}))
     #print(test_accuracy / length)
 
 # # print(ace_data_train[0])
