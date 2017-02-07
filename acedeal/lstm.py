@@ -35,7 +35,7 @@ ace_data_test_labels_file.close()
 
 # RNN学习时使用的参数
 learning_rate = 0.001  # 1
-training_iters = len(ace_data_train)
+training_iters = 100000
 batch_size = 1
 display_step = 10
 
@@ -94,10 +94,10 @@ def RNN(_X, _istate, _weights, _biases):
 pred = RNN(x, istate, weights, biases)
 
 # 定义损失和优化方法，其中算是为softmax交叉熵，优化方法为Adam
-cost = tf.reduce_mean(          # 5
-    tf.nn.softmax_cross_entropy_with_logits(pred, y))  # Softmax loss
-optimizer = tf.train.AdamOptimizer(
-    learning_rate=learning_rate).minimize(cost)  # Adam Optimizer
+# Softmax loss
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+# Adam Optimizer
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # 进行模型的评估，argmax是取出取值最大的那一个的标签作为输出
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
@@ -110,9 +110,11 @@ init = tf.global_variables_initializer()
 # 开始运行
 with tf.Session() as sess:
     sess.run(init)
-    step = 0
+    k = 0
     # 持续迭代
-    while step < training_iters:
+    while k < training_iters:
+
+        step = k % 1600
 
         batch_xs = ace_data_train[step]
         batch_ys = ace_data_train_labels[step]
@@ -122,39 +124,43 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,
                                        istate: np.zeros((batch_size, 2 * n_hidden))})
         # 在特定的迭代回合进行数据的输出
-        if step % display_step == 0:
+        if k % 100 == 0:
             # Calculate batch accuracy
             acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys,
                                                 istate: np.zeros((batch_size, 2 * n_hidden))})
             # Calculate batch loss
             loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys,
                                              istate: np.zeros((batch_size, 2 * n_hidden))})
-            print("Iter " + str(step) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
+            prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys,
+                                                                                        istate: np.zeros((batch_size, 2 * n_hidden))})
+            print(prediction)
+            print(y_)
+            print("Iter " + str(k) + ", Minibatch Loss= " + "{:.6f}".format(loss) +
                   ", Training Accuracy= " + "{:.5f}".format(acc))
-        step += 1
+        k += 1
 
     print("Optimization Finished!")
     # 载入测试集进行测试
-    length = len(ace_data_test)
-    test_accuracy = 0.0
-    for i in range(length):
-        test_len = len(ace_data_test[i])
-        test_data = ace_data_test[i].reshape(
-            (-1, n_steps, n_input))  # 8
-        test_label = ace_data_test_labels[i]
-        # 两种计算精确度的方式
-#         print(accuracy.eval(
-#             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
-
-#         print(sess.run(accuracy, feed_dict={
-# x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
-
-        test_accuracy += sess.run(accuracy, feed_dict={
-            x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))})
+#     length = len(ace_data_test)
+#     test_accuracy = 0.0
+#     for i in range(length):
+#         test_len = len(ace_data_test[i])
+#         test_data = ace_data_test[i].reshape(
+#             (-1, n_steps, n_input))  # 8
+#         test_label = ace_data_test_labels[i]
+#         # 两种计算精确度的方式
+# #         print(accuracy.eval(
+# #             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
+#
+# #         print(sess.run(accuracy, feed_dict={
+# # x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
+#
+#         test_accuracy += sess.run(accuracy, feed_dict={
+#             x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))})
 #         print("Testing Accuracy:", sess.run(accuracy, feed_dict={
 # x: test_data, y: test_label, istate: np.zeros((test_len, 2 *
 # n_hidden))}))
-    print(test_accuracy / length)
+    #print(test_accuracy / length)
 
 # # print(ace_data_train[0])
 # # print(ace_data_train_labels)
