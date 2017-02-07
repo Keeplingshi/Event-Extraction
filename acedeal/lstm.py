@@ -172,7 +172,7 @@ with tf.Session() as sess:
 #                   ", Training Accuracy= " + "{:.5f}".format(acc))
         k += 1
 
-    print("Optimization Finished!")
+    logging.info("Optimization Finished!")
     # 载入测试集进行测试
     length = len(ace_data_test)
     test_accuracy = 0.0
