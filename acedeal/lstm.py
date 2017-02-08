@@ -52,7 +52,7 @@ display_step = 10
 n_input = 200  # 输入层的n
 n_steps = 1  # 28长度
 n_hidden = 128  # 隐含层的特征数
-n_classes = 34  # 输出的数量，因为是分类问题，0~9个数字，这里一共有10个
+n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
 
 # 构建tensorflow的输入X的placeholder
 x = tf.placeholder("float", [None, n_steps, n_input])
