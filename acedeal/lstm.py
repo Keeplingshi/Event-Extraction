@@ -44,7 +44,7 @@ ace_data_test_labels_file.close()
 
 # RNN学习时使用的参数
 learning_rate = 0.001  # 1
-training_iters = 10000000
+training_iters = 16000
 batch_size = 1
 display_step = 10
 
@@ -88,6 +88,9 @@ def RNN(_X, _istate, _weights, _biases):
     # 之后使用LSTM
     lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(
         n_hidden, forget_bias=1.0, state_is_tuple=False)
+
+    #gru_cell = tf.nn.rnn_cell.GRUCell(n_hidden)
+
 #     lstm_cell = rnn_cell.BasicLSTMCell(n_hidden, forget_bias=1.0, state_is_tuple=False)
     # 28长度的sequence，所以是需要分解位28次
     _X = tf.split(0, n_steps, _X)  # n_steps * (batch_size, n_hidden)    #4
@@ -148,7 +151,7 @@ with tf.Session() as sess:
                         acck = acck + 1
 
             if sk != 0:
-                logging.info(
+                print(
                     "Iter " + str(k) + '-----------acc=' + str(acck / sk))
             #print("Iter " + str(k))
             #             # Calculate batch accuracy
@@ -176,175 +179,39 @@ with tf.Session() as sess:
     # 载入测试集进行测试
     length = len(ace_data_test)
     test_accuracy = 0.0
-    s = 0
-    acc = 0
+    p_s = 0  # 识别的个体总数
+    r_s = 0  # 测试集中存在个个体总数
+    pr_acc = 0  # 正确识别的个数
+#     s = 0
+#     acc = 0
     for i in range(length):
         test_len = len(ace_data_test[i])
         test_data = ace_data_test[i].reshape(
             (-1, n_steps, n_input))  # 8
         test_label = ace_data_test_labels[i]
+        # prediction识别出的结果，y_测试集中的正确结果
         prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label,
                                                                                     istate: np.zeros((test_len, 2 * n_hidden))})
         for t in range(len(y_)):
+            if prediction[t] != 33:
+                p_s = p_s + 1
+
             if y_[t] != 33:
-                logging.info(
-                    'actual:' + str(y_[t]) + '\t predict:' + str(prediction[t]))
-                #print(str(y_[t]) + '\t' + str(prediction[t]))
-                s = s + 1
+                r_s = r_s + 1
+#                 logging.info(
+#                     'actual:' + str(y_[t]) + '\t predict:' + str(prediction[t]))
+#                 #print(str(y_[t]) + '\t' + str(prediction[t]))
+#                 s = s + 1
                 if y_[t] == prediction[t]:
-                    acc = acc + 1
+                    pr_acc = pr_acc + 1
 
-    logging.info('----------------------------------------------------')
-    logging.info(str(acc) + '------------' + str(s))
-    logging.info(acc / s)
+
+#     logging.info('----------------------------------------------------')
+#     logging.info(str(acc) + '------------' + str(s))
+#     logging.info(acc / s)
     print('----------------------------------------------------')
-    print(str(acc) + '------------' + str(s))
-    print(acc / s)
-#         print(prediction)
-#         print(y_)
-#         print('-------------------------------------------------------------')
-    # 两种计算精确度的方式
-#         print(accuracy.eval(
-#             {x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))}))
-
-#         print(sess.run(accuracy, feed_dict={
-# x: test_data, y: test_label, istate: np.zeros((test_len, 2*n_hidden))}))
-#
-#         test_accuracy += sess.run(accuracy, feed_dict={
-#             x: test_data, y: test_label, istate: np.zeros((test_len, 2 * n_hidden))})
-#         print("Testing Accuracy:", sess.run(accuracy, feed_dict={
-#             x: test_data, y: test_label, istate: np.zeros((test_len, 2 *
-#                                                            n_hidden))}))
-    #print(test_accuracy / length)
-
-# # print(ace_data_train[0])
-# # print(ace_data_train_labels)
-#
-# # sys.exit(0)
-#
-# # set random seed for comparing the two result calculations
-# tf.set_random_seed(1)
-#
-# # hyperparameters
-# lr = 0.001
-# training_iters = len(ace_data_train)
-# batch_size = 1
-#
-# n_inputs = 200   # MNIST data input (img shape: 28*28)
-# n_steps = 1    # time steps
-# n_hidden_units = 128   # neurons in hidden layer
-# n_classes = 34      # MNIST classes (0-9 digits)
-#
-# # tf Graph input
-# x = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
-# istate = tf.placeholder("float", [None, 2 * n_hidden_units])
-# y = tf.placeholder(tf.float32, [None, n_classes])
-#
-# # Define weights
-# weights = {
-#     # (28, 128)
-#     'in': tf.Variable(tf.random_normal([n_inputs, n_hidden_units])),
-#     # (128, 10)
-#     'out': tf.Variable(tf.random_normal([n_hidden_units, n_classes]))
-# }
-# biases = {
-#     # (128, )
-#     'in': tf.Variable(tf.constant(0.1, shape=[n_hidden_units, ])),
-#     # (10, )
-#     'out': tf.Variable(tf.constant(0.1, shape=[n_classes, ]))
-# }
-#
-#
-# def RNN(X, istate, weights, biases):
-#     # hidden layer for input to cell
-#     ########################################
-#
-#     # transpose the inputs shape from
-#     # X ==> (128 batch * 28 steps, 28 inputs)
-#     X = tf.reshape(X, [-1, n_inputs])
-#
-#     # into hidden
-#     # X_in = (128 batch * 28 steps, 128 hidden)
-#     X_in = tf.matmul(X, weights['in']) + biases['in']
-#     # X_in ==> (128 batch, 28 steps, 128 hidden)
-#     X_in = tf.reshape(X_in, [-1, n_steps, n_hidden_units])
-#
-#     # cell
-#     ##########################################
-#
-#     # basic LSTM Cell.
-#     lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(
-#         n_hidden_units, forget_bias=1.0, state_is_tuple=False)
-#     # lstm cell is divided into two parts (c_state, h_state)
-#     #init_state = lstm_cell.zero_state(batch_size, dtype=tf.float32)
-#
-#     # You have 2 options for following step.
-#     # 1: tf.nn.rnn(cell, inputs);
-#     # 2: tf.nn.dynamic_rnn(cell, inputs).
-#     # If use option 1, you have to modified the shape of X_in, go and check out this:
-#     # https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/recurrent_network.py
-#     # In here, we go for option 2.
-#     # dynamic_rnn receive Tensor (batch, steps, inputs) or (steps, batch, inputs) as X_in.
-#     # Make sure the time_major is changed accordingly.
-#     outputs, final_state = tf.nn.dynamic_rnn(
-#         lstm_cell, X_in, initial_state=istate, time_major=False)
-#
-#     # hidden layer for output as the final results
-#     #############################################
-#     results = tf.matmul(final_state[1], weights['out']) + biases['out']
-#
-#     # # or
-#     # unpack to list [(batch, outputs)..] * steps
-#     # states is the last outputs
-# #     outputs = tf.unpack(tf.transpose(outputs, [1, 0, 2]))
-# #     results = tf.matmul(outputs[-1], weights['out']) + biases['out']
-#
-#     return results
-#
-#
-# pred = RNN(x, istate, weights, biases)
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-# train_op = tf.train.AdamOptimizer(lr).minimize(cost)
-#
-# correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-#
-# with tf.Session() as sess:
-#     # tf.initialize_all_variables() no long valid from
-#     # 2017-03-02 if using tensorflow >= 0.12
-#     #     if int((tf.__version__).split('.')[1]) < 12:
-#     #         init = tf.initialize_all_variables()
-#     #     else:
-#     init = tf.global_variables_initializer()
-#     sess.run(init)
-#     step = 0
-#     while step < training_iters:
-#
-#         batch_xs = ace_data_train[step]
-#         batch_ys = ace_data_train_labels[step]
-#         batch_size = len(batch_xs)
-#         print(batch_size)
-#         batch_xs = batch_xs.reshape([batch_size, n_steps, n_inputs])
-#         #         batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-#         #         batch_xs = batch_xs.reshape([batch_size, n_steps, n_inputs])
-#         sess.run([train_op], feed_dict={
-#             x: batch_xs,
-#             y: batch_ys,
-#             istate: np.zeros((batch_size, 2 * n_hidden_units))
-#         })
-#         if step % 20 == 0:
-#             print(sess.run(accuracy, feed_dict={
-#                 x: batch_xs,
-#                 y: batch_ys,
-#                 istate: np.zeros((batch_size, 2 * n_hidden_units))
-#             }))
-#         step += 1
-#
-#     print("Optimization Finished!")
-#     # 载入测试集进行测试
-# #     test_len = 128
-# #     test_data = mnist.test.images[:test_len].reshape(
-# #         (-1, n_steps, n_inputs))  # 8
-# #     test_label = mnist.test.labels[:test_len]
-# #     print("Testing Accuracy:", sess.run(accuracy, feed_dict={
-# #           x: test_data, y: test_label}))
+    print(str(pr_acc) + '------------' + str(r_s))
+    p = pr_acc / p_s
+    r = pr_acc / r_s
+    f = 2 * p * r / (p + r)
+    print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
