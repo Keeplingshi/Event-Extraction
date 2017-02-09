@@ -3,6 +3,7 @@
 '''
 Created on 2017年2月6日
 双向lstm进行事件抽取
+测试提交
 @author: chenbin
 '''
 
