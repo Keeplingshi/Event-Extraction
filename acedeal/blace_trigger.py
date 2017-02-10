@@ -1,23 +1,12 @@
-# coding:utf-8
-
 '''
-Created on 2017年2月6日
-双向lstm进行事件抽取
-测试提交
+Created on 2017年2月10日
+双向lstm识别触发词方法封装
 @author: chenbin
 '''
 
 import pickle
 import tensorflow as tf
-import numpy as np
 
-# 数据读取，训练集和测试集
-ace_data_train_file = open('./corpus_deal/ace_data/ace_data_train.pkl', 'rb')
-ace_data_train = pickle.load(ace_data_train_file)
-
-ace_data_train_labels_file = open(
-    './corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
-ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
 ace_data_test_file = open('./corpus_deal/ace_data/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
@@ -26,16 +15,8 @@ ace_data_test_labels_file = open(
     './corpus_deal/ace_data/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
-ace_data_train_file.close()
-ace_data_train_labels_file.close()
 ace_data_test_file.close()
 ace_data_test_labels_file.close()
-
-# RNN学习时使用的参数
-learning_rate = 0.001  # 1
-training_iters = 16000
-batch_size = 1
-display_step = 10
 
 # 神经网络的参数
 n_input = 200  # 输入层的n
@@ -43,31 +24,18 @@ n_steps = 1  # 28长度
 n_hidden = 128  # 隐含层的特征数
 n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
 
-
 sess = tf.InteractiveSession()
-# tf Graph input
 x = tf.placeholder("float", [None, n_steps, n_input])
 y = tf.placeholder("float", [None, n_classes])
-
-# Define weights
-# weights = {
-#     # Hidden layer weights => 2*n_hidden because of foward + backward cells
-#     'out': tf.Variable(tf.random_normal([2 * n_hidden, n_classes]))
-# }
-# biases = {
-#     'out': tf.Variable(tf.random_normal([n_classes]))
-# }
 
 W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
 b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
-# Add ops to save and restore all the variables.
 saver = tf.train.Saver()
 saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 
 
 def BiRNN(x, weights, biases):
-
     # Prepare data shape to match `bidirectional_rnn` function requirements
     # Current data input shape: (batch_size, n_steps, n_input)
     # Required shape: 'n_steps' tensors list of shape (batch_size, n_input)
@@ -98,47 +66,14 @@ def BiRNN(x, weights, biases):
 
 pred = BiRNN(x, W1, b1)
 
-# Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
-
-# Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-
+# print(sess.run(W1))
+print('1----------------------------------------')
+print(sess.run(W1))
 # Initializing the variables
-init = tf.global_variables_initializer()
+# init = tf.global_variables_initializer()
+# sess.run(init)
 
-sess.run(init)
-k = 0
-# 持续迭代
-while k < training_iters:
-
-    step = k % 1600
-
-    batch_xs = ace_data_train[step]
-    batch_ys = ace_data_train_labels[step]
-    batch_size = len(batch_xs)
-    batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
-    # 迭代
-    sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-    # 在特定的迭代回合进行数据的输出
-    if k % 100 == 0:
-        sk = 0
-        acck = 0
-        predictionk, y_k = sess.run(
-            [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
-        for t in range(len(y_k)):
-            if y_k[t] != 33:
-                sk = sk + 1
-                if y_k[t] == predictionk[t]:
-                    acck = acck + 1
-
-        if sk != 0:
-            print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
-
-    k += 1
-
+# print(sess.run(W1))
 # 载入测试集进行测试
 length = len(ace_data_test)
 test_accuracy = 0.0
@@ -170,8 +105,5 @@ p = pr_acc / p_s
 r = pr_acc / r_s
 f = 2 * p * r / (p + r)
 print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-
-save_path = saver.save(sess, "./ckpt_file/ace_bl.ckpt")
-print("Model saved in file: ", save_path)
 
 sess.close()
