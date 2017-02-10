@@ -33,7 +33,7 @@ ace_data_test_labels_file.close()
 
 # RNN学习时使用的参数
 learning_rate = 0.001  # 1
-training_iters = 16000
+training_iters = 1600
 batch_size = 1
 display_step = 10
 
@@ -63,7 +63,7 @@ b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
 # Add ops to save and restore all the variables.
 saver = tf.train.Saver()
-saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
+#saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 
 
 def BiRNN(x, weights, biases):
@@ -103,8 +103,8 @@ cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -139,6 +139,10 @@ while k < training_iters:
 
     k += 1
 
+save_path = saver.save(sess, "./ckpt_file/ace_bl.ckpt")
+print("Model saved in file: ", save_path)
+print(sess.run(W1))
+
 # 载入测试集进行测试
 length = len(ace_data_test)
 test_accuracy = 0.0
@@ -171,7 +175,45 @@ r = pr_acc / r_s
 f = 2 * p * r / (p + r)
 print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
 
-save_path = saver.save(sess, "./ckpt_file/ace_bl.ckpt")
-print("Model saved in file: ", save_path)
+# print(tf.global_variables())
+# for tens in tf.global_variables():
+#     print(tens.name)
+#     print(tens.eval())
+#     print('-----------------------------------------')
+
+# saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
+# print(sess.run(W1))
+# # 载入测试集进行测试
+# length = len(ace_data_test)
+# test_accuracy = 0.0
+# p_s = 0  # 识别的个体总数
+# r_s = 0  # 测试集中存在个个体总数
+# pr_acc = 0  # 正确识别的个数
+#
+# for i in range(length):
+#     test_len = len(ace_data_test[i])
+#     test_data = ace_data_test[i].reshape((-1, n_steps, n_input))  # 8
+#     test_label = ace_data_test_labels[i]
+#     # prediction识别出的结果，y_测试集中的正确结果
+#     prediction, y_ = sess.run(
+#         [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+#     for t in range(len(y_)):
+#         if prediction[t] != 33:
+#             p_s = p_s + 1
+#
+#         if y_[t] != 33:
+#             r_s = r_s + 1
+#             if y_[t] == prediction[t]:
+#                 pr_acc = pr_acc + 1
+#
+# print('----------------------------------------------------')
+# print('共识别出：' + str(p_s))
+# print('识别正确：' + str(pr_acc))
+# print('触发词总数：' + str(r_s))
+# p = pr_acc / p_s
+# r = pr_acc / r_s
+# f = 2 * p * r / (p + r)
+# print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+
 
 sess.close()

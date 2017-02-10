@@ -28,12 +28,13 @@ if __name__ == "__main__":
     W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
     b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
-    saver = tf.train.Saver()
-    saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
-
-    print(sess.run(W1))
+#     saver = tf.train.Saver()
+#     saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
+#
+#     print(sess.run(W1))
 
     print(sess.run(tf.is_variable_initialized(W1)))
+    print(tf.report_uninitialized_variables([W1]))
 
     sess.close()
 
