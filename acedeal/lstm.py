@@ -14,11 +14,11 @@ import sys
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    filename='lstm_log.log',
-                    filemode='w')
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+#                     datefmt='%a, %d %b %Y %H:%M:%S',
+#                     filename='lstm_log.log',
+#                     filemode='w')
 
 
 # 数据读取，训练集和测试集
@@ -143,8 +143,8 @@ with tf.Session() as sess:
                                                                                           istate: np.zeros((batch_size, 2 * n_hidden))})
             for t in range(len(y_k)):
                 if y_k[t] != 33:
-                    logging.info(
-                        'actual:' + str(y_k[t]) + '\t predict:' + str(predictionk[t]))
+                    #                     logging.info(
+                    #                         'actual:' + str(y_k[t]) + '\t predict:' + str(predictionk[t]))
                     #print(str(y_[t]) + '\t' + str(prediction[t]))
                     sk = sk + 1
                     if y_k[t] == predictionk[t]:
@@ -175,7 +175,7 @@ with tf.Session() as sess:
 #                   ", Training Accuracy= " + "{:.5f}".format(acc))
         k += 1
 
-    logging.info("Optimization Finished!")
+    #logging.info("Optimization Finished!")
     # 载入测试集进行测试
     length = len(ace_data_test)
     test_accuracy = 0.0
@@ -215,3 +215,7 @@ with tf.Session() as sess:
     r = pr_acc / r_s
     f = 2 * p * r / (p + r)
     print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+
+
+# 240------------579
+# P=0.46332046332046334    R=0.41450777202072536    F=0.4375569735642662

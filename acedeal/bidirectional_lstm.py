@@ -62,15 +62,11 @@ W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
 b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
 # Add ops to save and restore all the variables.
-saver = tf.train.Saver()
+#saver = tf.train.Saver()
 #saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 
 
 def BiRNN(x, weights, biases):
-
-    # Prepare data shape to match `bidirectional_rnn` function requirements
-    # Current data input shape: (batch_size, n_steps, n_input)
-    # Required shape: 'n_steps' tensors list of shape (batch_size, n_input)
 
     # Permuting batch_size and n_steps
     x = tf.transpose(x, [1, 0, 2])
@@ -124,24 +120,25 @@ while k < training_iters:
     sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
     # 在特定的迭代回合进行数据的输出
     if k % 100 == 0:
-        sk = 0
-        acck = 0
-        predictionk, y_k = sess.run(
-            [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
-        for t in range(len(y_k)):
-            if y_k[t] != 33:
-                sk = sk + 1
-                if y_k[t] == predictionk[t]:
-                    acck = acck + 1
-
-        if sk != 0:
-            print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
+        print("Iter " + str(k))
+#         sk = 0
+#         acck = 0
+#         predictionk, y_k = sess.run(
+#             [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
+#         for t in range(len(y_k)):
+#             if y_k[t] != 33:
+#                 sk = sk + 1
+#                 if y_k[t] == predictionk[t]:
+#                     acck = acck + 1
+#
+#         if sk != 0:
+#             print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
 
     k += 1
 
-save_path = saver.save(sess, "./ckpt_file/ace_bl.ckpt")
-print("Model saved in file: ", save_path)
-print(sess.run(W1))
+# save_path = saver.save(sess, "./ckpt_file/ace_bl.ckpt")
+# print("Model saved in file: ", save_path)
+# print(sess.run(W1))
 
 # 载入测试集进行测试
 length = len(ace_data_test)
