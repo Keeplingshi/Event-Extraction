@@ -32,54 +32,42 @@ ace_data_test_labels_file.close()
 learningRate = 0.001
 training_iters = 16000
 batchSize = 1
-displayStep = 10
 
 nInput = 200  # we want the input to take the 28 pixels
 nSteps = 1  # every 28
 nHidden = 128  # number of neurons for the RNN 64 128 256
 nClasses = 34  # this is MNIST so you know
 
-with tf.name_scope('inputs'):
-    x = tf.placeholder('float', [None, nSteps, nInput])
-    y = tf.placeholder('float', [None, nClasses])
+x = tf.placeholder('float', [None, nSteps, nInput])
+y = tf.placeholder('float', [None, nClasses])
 
-with tf.name_scope('weights'):
-    weights = {
-        'out': tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
-    }
+weights = {
+    'out': tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
+}
 
-with tf.name_scope('biases'):
-    biases = {
-        'out': tf.Variable(tf.random_normal([nClasses]))
-    }
+biases = {
+    'out': tf.Variable(tf.random_normal([nClasses]))
+}
 
 
 def gru_RNN(x, weights, biases):
-    with tf.name_scope('layer'):
-        x = tf.transpose(x, [1, 0, 2])
-        x = tf.reshape(x, [-1, nInput])
-        # configuring so you can get it as needed for the 28 pixels
-        x = tf.split(0, nSteps, x)
+    x = tf.transpose(x, [1, 0, 2])
+    x = tf.reshape(x, [-1, nInput])
+    x = tf.split(0, nSteps, x)
+
+    # Define gru cells with tensorflow
+    # Forward direction cell
+    gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
+    # Backward direction cell
+    gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
+
+    # Get gru cell output
+    outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
+                                                dtype=tf.float32)
     
-        # Define gru cells with tensorflow
-        # Forward direction cell
-        gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-        # Backward direction cell
-        gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-    
-        # Get gru cell output
-        try:
-            outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
-                                                    dtype=tf.float32)
-        except Exception:  # Old TensorFlow version only returns outputs not states
-            outputs = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
-                                              dtype=tf.float32)
-    
-        #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
-    
-    with tf.name_scope('outputs'):
-        results=tf.matmul(outputs[-1], weights['out']) + biases['out']
-        return results
+    results=tf.matmul(outputs[-1], weights['out']) + biases['out']
+    #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
+    return results
 
 pred = gru_RNN(x, weights, biases)
 
@@ -87,15 +75,13 @@ pred = gru_RNN(x, weights, biases)
 # create the cost, optimization, evaluation, and accuracy
 # for the cost softmax_cross_entropy_with_logits seems really good
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-with tf.name_scope('train'):
-    optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
-correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
+# correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+# accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
-    writer = tf.summary.FileWriter("logs/", sess.graph)
     sess.run(init)
     k = 0
 
