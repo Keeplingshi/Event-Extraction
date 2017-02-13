@@ -137,7 +137,7 @@ with tf.Session() as sess:
                                        istate: np.zeros((batch_size, 2 * n_hidden))})
         # 在特定的迭代回合进行数据的输出
         if k % 100 == 0:
-            print("Iter " + str(k) )
+            print("Iter " + str(k))
 
         k += 1
 
@@ -166,7 +166,6 @@ with tf.Session() as sess:
                 r_s = r_s + 1
                 if y_[t] == prediction[t]:
                     pr_acc = pr_acc + 1
-
 
     print('----------------------------------------------------')
     print(str(pr_acc) + '------------' + str(r_s))

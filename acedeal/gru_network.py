@@ -28,7 +28,7 @@ ace_data_train_labels_file.close()
 ace_data_test_file.close()
 ace_data_test_labels_file.close()
 
-#参数
+# 参数
 learningRate = 0.001
 training_iters = 16000
 batchSize = 1
@@ -41,13 +41,9 @@ nClasses = 34  # this is MNIST so you know
 x = tf.placeholder('float', [None, nSteps, nInput])
 y = tf.placeholder('float', [None, nClasses])
 
-weights = {
-    'out': tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
-}
+weights = tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
 
-biases = {
-    'out': tf.Variable(tf.random_normal([nClasses]))
-}
+biases = tf.Variable(tf.random_normal([nClasses]))
 
 
 def gru_RNN(x, weights, biases):
@@ -63,9 +59,9 @@ def gru_RNN(x, weights, biases):
 
     # Get gru cell output
     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
-                                                dtype=tf.float32)
-    
-    results=tf.matmul(outputs[-1], weights['out']) + biases['out']
+                                            dtype=tf.float32)
+
+    results = tf.matmul(outputs[-1], weights) + biases
     #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
     return results
 
@@ -125,7 +121,6 @@ with tf.Session() as sess:
                 if y_[t] == prediction[t]:
                     pr_acc = pr_acc + 1
 
-
     print('----------------------------------------------------')
     print(str(pr_acc) + '------------' + str(r_s))
     p = pr_acc / p_s
@@ -140,4 +135,3 @@ with tf.Session() as sess:
 
 # 312------------579
 # P=0.5397923875432526    R=0.538860103626943    F=0.5393258426966293
-
