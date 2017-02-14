@@ -92,7 +92,20 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
         if step % 100 == 0:
-            print("Iter " + str(k))
+            sk = 0
+            acck = 0
+            predictionk, y_k = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
+            for t in range(len(y_k)):
+                if y_k[t] != 33:
+                    #                     logging.info(
+                    #                         'actual:' + str(y_k[t]) + '\t predict:' + str(predictionk[t]))
+                    #print(str(y_[t]) + '\t' + str(prediction[t]))
+                    sk = sk + 1
+                    if y_k[t] == predictionk[t]:
+                        acck = acck + 1
+
+            if sk != 0:
+                print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
         k += 1
     print('Optimization finished')
 

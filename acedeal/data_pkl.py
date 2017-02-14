@@ -20,6 +20,7 @@ from acedeal.pre_process_ace import *
 import tensorflow as tf
 import numpy as np
 import pickle
+import sys
 
 
 ace_type_dict = {
@@ -61,6 +62,7 @@ ace_type_dict = {
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
+    
 
     model = word2vec.Word2Vec.load_word2vec_format(
         "./corpus_deal/ace_train_corpus.bin", binary=True)

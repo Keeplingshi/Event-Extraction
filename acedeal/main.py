@@ -8,35 +8,62 @@ Created on 2017年1月19日
 import os.path
 import string
 import tensorflow as tf
-import jpype
+#import jpype
+import sys
+import pickle
+import pprint
 
-from acedeal.nlpir import *
-from acedeal.pre_process_ace import *
-
-# 神经网络的参数
-n_input = 200  # 输入层的n
-n_steps = 1  # 28长度
-n_hidden = 128  # 隐含层的特征数
-n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
+# from acedeal.nlpir import *
+# from acedeal.pre_process_ace import *
+# 
+# # 神经网络的参数
+# n_input = 200  # 输入层的n
+# n_steps = 1  # 28长度
+# n_hidden = 128  # 隐含层的特征数
+# n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
-    sess = tf.InteractiveSession()
-    x = tf.placeholder("float", [None, n_steps, n_input])
-    y = tf.placeholder("float", [None, n_classes])
-
-    W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
-    b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
+    
+    
+    labels_file = open('./corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
+    data2 = pickle.load(labels_file)
+    k=0
+    t=0
+    for list in data2:
+        flag=False
+        t=t+1
+        for label_list in list:
+            if label_list.index(1.0)!=34:
+                flag=True
+                k=k+1
+                break
+        
+        if flag==False:
+            print(list)
+    
+    print(k)
+    print(t)
+    #pprint.pprint(data2)
+    
+    sys.exit()
+    
+#     sess = tf.InteractiveSession()
+#     x = tf.placeholder("float", [None, n_steps, n_input])
+#     y = tf.placeholder("float", [None, n_classes])
+# 
+#     W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
+#     b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
 #     saver = tf.train.Saver()
 #     saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 #
 #     print(sess.run(W1))
 
-    print(sess.run(tf.is_variable_initialized(W1)))
-    print(tf.report_uninitialized_variables([W1]))
-
-    sess.close()
+#     print(sess.run(tf.is_variable_initialized(W1)))
+#     print(tf.report_uninitialized_variables([W1]))
+# 
+#     sess.close()
 
 #     ace_train_path="../ace_experiment/train/"
 #     ace_train_list=get_ace_event_list(ace_train_path)

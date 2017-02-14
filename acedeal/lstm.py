@@ -96,6 +96,7 @@ def RNN(_X, _istate, _weights, _biases):
     _X = tf.split(0, n_steps, _X)  # n_steps * (batch_size, n_hidden)    #4
     # 开始跑RNN那部分
     outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
+    
     #outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
 
     results = tf.matmul(outputs[-1], _weights['out']) + _biases['out']
