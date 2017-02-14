@@ -12,10 +12,11 @@ import tensorflow as tf
 import sys
 import pickle
 import pprint
+import numpy as np
 
 # from acedeal.nlpir import *
 # from acedeal.pre_process_ace import *
-# 
+#
 # # 神经网络的参数
 # n_input = 200  # 输入层的n
 # n_steps = 1  # 28长度
@@ -24,34 +25,77 @@ import pprint
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
-    
-    
-    labels_file = open('./corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
-    data2 = pickle.load(labels_file)
-    k=0
-    t=0
-    for list in data2:
-        flag=False
-        t=t+1
-        for label_list in list:
-            if label_list.index(1.0)!=34:
-                flag=True
-                k=k+1
-                break
-        
-        if flag==False:
-            print(list)
-    
-    print(k)
-    print(t)
-    #pprint.pprint(data2)
-    
-    sys.exit()
-    
+
+#     list = [[1, 2, 3, 4], [2, 1, 1, 1], [3, 3, 2, 2], [4, 4, 4, 3]]
+#     print(list)
+#     print(list[:1])
+#     print(list[1:])
+#
+#     print(zip(list))
+
+#     a = [[1, 2, 3], ['a', 'b', 'c'], [4, 5, 6], [7, 8, 9], ['d', 'e', 'f']]
+#     print(a)
+#     print(map(list, zip(*a)))
+#     print(a)
+
+#     init = tf.global_variables_initializer()
+#     with tf.Session() as sess:
+#         arr = [[3, 2, 1], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
+#         arr2 = tf.reshape(arr, [-1, 1])
+#         print(sess.run(arr2))
+
+    #arr = [1, 2, 3, 4, 5]
+#     arr = np.arange(6).reshape((6, 1))
+#     print(arr)
+
+
+#         for i in tf.argmax(arr2, 0):
+#             print(sess.run(arr2[i]))
+
+
+#     list_arr = [[r[col] for r in arr] for col in range(len(arr[0]))]
+#     print(list_arr)
+
+#     labels_file = open('./corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
+#     data2 = pickle.load(labels_file)
+#     k=0
+#     t=0
+#     for list in data2:
+#         flag=False
+#         t=t+1
+#         for label_list in list:
+#             if label_list.index(1.0)!=34:
+#                 flag=True
+#                 k=k+1
+#                 break
+#
+#         if flag==False:
+#             print(list)
+#
+#     print(k)
+#     print(t)
+#     #pprint.pprint(data2)
+#
+#     sys.exit()
+
+    seq_num = tf.Variable(0)
+#     seq_num = tf.add(seq_num, 1)
+#
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        sess.run(init)
+        if tf.equal(seq_num, 1) is not None:
+            print('00')
+        print(sess.run(tf.equal(seq_num, 0)))
+#         print(sess.run(seq_num))
+# #         print(sess.run(add))
+# #         print(sess.run(add))
+#         print(sess.run(seq_num))
+
 #     sess = tf.InteractiveSession()
 #     x = tf.placeholder("float", [None, n_steps, n_input])
 #     y = tf.placeholder("float", [None, n_classes])
-# 
+#
 #     W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
 #     b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
@@ -62,7 +106,7 @@ if __name__ == "__main__":
 
 #     print(sess.run(tf.is_variable_initialized(W1)))
 #     print(tf.report_uninitialized_variables([W1]))
-# 
+#
 #     sess.close()
 
 #     ace_train_path="../ace_experiment/train/"

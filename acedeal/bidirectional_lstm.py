@@ -118,6 +118,11 @@ while k < training_iters:
     batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
     # 迭代
     sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+
+    prediction = sess.run(pred, feed_dict={x: batch_xs})
+    print(len(prediction))
+    print(len(prediction[0]))
+
     # 在特定的迭代回合进行数据的输出
     if k % 100 == 0:
         print("Iter " + str(k))
@@ -154,6 +159,7 @@ for i in range(length):
     # prediction识别出的结果，y_测试集中的正确结果
     prediction, y_ = sess.run(
         [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+
     for t in range(len(y_)):
         if prediction[t] != 33:
             p_s = p_s + 1

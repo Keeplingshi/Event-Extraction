@@ -41,6 +41,8 @@ nClasses = 34  # this is MNIST so you know
 x = tf.placeholder('float', [None, nSteps, nInput])
 y = tf.placeholder('float', [None, nClasses])
 
+seq_num = tf.Variable(0)
+
 # weights = tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
 # biases = tf.Variable(tf.random_normal([nClasses]))
 
@@ -48,31 +50,71 @@ y = tf.placeholder('float', [None, nClasses])
 weights = {
     # Hidden layer weights
     'hidden': tf.Variable(tf.random_normal([2 * nHidden, nInput])),
-    'out': tf.Variable(tf.random_normal([nInput, nClasses]))
+    'out': tf.Variable(tf.random_normal([nClasses, 2 * nInput]))
 }
 biases = {
     'hidden': tf.Variable(tf.random_normal([nInput])),
-    'out': tf.Variable(tf.random_normal([nClasses]))
+    'out': tf.Variable(tf.random_normal([nClasses, 1]))
 }
 
-def test_nn(x, weights, biases):
+
+def test_nn(seq_num, x, weights, biases):
     x = tf.transpose(x, [1, 0, 2])
     x = tf.reshape(x, [-1, nInput])
     x = tf.split(0, nSteps, x)
- 
+
     gru_f_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     gru_b_cell = tf.nn.rnn_cell.GRUCell(nHidden)
- 
-    outputs, _, _ = tf.nn.bidirectional_rnn(gru_f_cell, gru_b_cell, x,dtype=tf.float32)
-    
-    yi=tf.tanh(tf.matmul(outputs[-1], weights['hidden']) + biases['hidden'])
-    
-    results = tf.matmul(yi, weights['out']) + biases['out']
- 
-    return results
- 
- 
-pred=test_nn(x, weights, biases)
+
+    outputs, _, _ = tf.nn.bidirectional_rnn(
+        gru_f_cell, gru_b_cell, x, dtype=tf.float32)
+
+    yi1 = tf.tanh(tf.matmul(outputs[-1], weights['hidden']) + biases['hidden'])
+
+    yi_1 = []
+    yi1_fw = yi1[:seq_num]
+    yi1_fw_tensor = tf.argmax(yi1_fw, 0)
+    yi1_fw_transpose = tf.transpose(yi1_fw)
+    for i in range(nInput):
+        yi_1.append(yi1_fw_transpose[i][tf.cast(yi1_fw_tensor[i], tf.int32)])
+
+    yi_2 = []
+    yi2_bw = yi1[seq_num:]
+    yi2_bw_tensor = tf.argmax(yi2_bw, 0)
+    yi2_bw_transpose = tf.transpose(yi2_bw)
+    for i in range(nInput):
+        yi_2.append(yi2_bw_transpose[i][tf.cast(yi2_bw_tensor[i], tf.int32)])
+
+    y2 = tf.reshape([yi_1, yi_2], [-1, 1])
+
+    results = tf.matmul(weights['out'], y2) + biases['out']
+    return tf.reshape(results, [-1, 1])
+
+#     yi1_bw = yi1[seq_num:]
+#
+#     y_temp = tf.transpose(yi)
+#
+#     yi_2 = []
+#
+#     y1_tensor = tf.argmax(yi[:seq_num], 0)
+#     y2_tensor = tf.argmax(yi[seq_num:], 0)
+#
+#     for i in range(nInput):
+#         yi_1.append(y_temp[i][tf.cast(y1_tensor[i], tf.int32)])
+#         yi_2.append(y_temp[i][tf.cast(y2_tensor[i], tf.int32)])
+#         yi_1.append(y_temp[i][y1_tensor[i]])
+#         yi_2.append(y_temp[i][y2_tensor[i]])
+
+#     batch_len=len(yi)
+#     for i in range(batch_len):
+#         yi[i]
+
+    #results = tf.matmul(yi, weights['out']) + biases['out']
+
+    # return tf.transpose(yi1), yi1_fw_tensor, yi2_bw_tensor, yi_1, yi_2, y2
+
+
+pred = test_nn(seq_num, x, weights, biases)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
@@ -80,23 +122,23 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 #     x = tf.transpose(x, [1, 0, 2])
 #     x = tf.reshape(x, [-1, nInput])
 #     x = tf.split(0, nSteps, x)
-#   
+#
 #     # Define gru cells with tensorflow
 #     # Forward direction cell
 #     gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
 #     # Backward direction cell
 #     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-#   
+#
 #     # Get gru cell output
 #     # batch_szie*256
 #     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,dtype=tf.float32)
-#     
+#
 #     results = tf.matmul(outputs[-1], weights) + biases
 #     #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
 #     return results
-#   
+#
 # pred = gru_RNN(x, weights, biases)
-#  
+#
 # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 # optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
@@ -115,23 +157,56 @@ with tf.Session() as sess:
         batch_ys = ace_data_train_labels[step]
         batch_size = len(batch_xs)
         batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
-        #print('batch_size:'+str(batch_size))
-        
-#         oa=sess.run(pred, feed_dict={x: batch_xs})
-#         print(len(oa[0]))
-        
+
+        for i in range(batch_size):
+
+            if i != 0 and i != batch_size - 1:
+                labels = batch_ys[i]
+                labels = np.array(labels).reshape((34, 1)).tolist()
+                sess.run(
+                    optimizer, feed_dict={seq_num: i, x: batch_xs, y: labels})
+
+        # print('batch_size:'+str(batch_size))
+#         print(batch_size)
+#
+#         results = sess.run(pred, feed_dict={seq_num: 1, x: batch_xs})
+#         print(len(results))
+#         print(len(results[0]))
+
+#         print(y_temp)
+#         print(y1_tensor)
+#         print(y2_tensor)
+#         print(yi_1)
+#         print(yi_2)
+#         print(y2)
+#         print(len(y_temp))
+#         print(yi_1)
+#         print(len(yi_1))
+# #         print(len(yi_1[0]))
+#         print(yi_2)
+#         print(len(yi_2))
+#         print(len(yi_2[0]))
+
 #         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-#         #yi=sess.run(pred,feed_dict={x: batch_xs})
-#         print(sess.run(tf.argmax(y, 1),feed_dict={y: batch_ys}))
-#         print(sess.run(tf.argmax(pred, 1),feed_dict={x: batch_xs}))
-#         print('output_size:'+str(len(yi)))
-#         print('output_size1:'+str(len(yi[0])))
-        #print(yi)
+
+#         for i in range(batch_size):
+#             yi_1 = sess.run(pred, feed_dict={seq_num: i, x: batch_xs})
+#             print('output_size:' + str(len(yi_1)))
+#             print(yi_1)
+#             print('--------------------')
+        #print('output_size1:' + str(len(yi[0])))
+
+
+#         print(sess.run(tf.argmax(y, 1), feed_dict={y: batch_ys}))
+#         print(sess.run(tf.argmax(pred, 1), feed_dict={x: batch_xs}))
+#         print('output_size:' + str(len(yi)))
+#         print('output_size1:' + str(len(yi[0])))
+        # print(yi)
 #         print('output_size2:'+str(len(output[0][0])))
-         
-        print(str(k)+'------------------------------------------')
+
+        print(str(k) + '------------------------------------------')
         #sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-        
+
 
 #        if step % 100 == 0:
 #             sk = 0
@@ -145,7 +220,7 @@ with tf.Session() as sess:
 #                     sk = sk + 1
 #                     if y_k[t] == predictionk[t]:
 #                         acck = acck + 1
-# 
+#
 #             if sk != 0:
 #                 print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
         k += 1
@@ -170,12 +245,12 @@ with tf.Session() as sess:
 #         for t in range(len(y_)):
 #             if prediction[t] != 33:
 #                 p_s = p_s + 1
-#  
+#
 #             if y_[t] != 33:
 #                 r_s = r_s + 1
 #                 if y_[t] == prediction[t]:
 #                     pr_acc = pr_acc + 1
-#  
+#
 #     print('----------------------------------------------------')
 #     print(str(pr_acc) + '------------' + str(r_s))
 #     p = pr_acc / p_s
