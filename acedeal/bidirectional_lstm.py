@@ -116,10 +116,15 @@ while k < training_iters:
     batch_ys = ace_data_train_labels[step]
     batch_size = len(batch_xs)
     batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
+    
+    print(batch_ys)
+    print(len(batch_ys))
+    print(len(batch_ys[0]))
     # 迭代
-    sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+    #sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
     prediction = sess.run(pred, feed_dict={x: batch_xs})
+    print(prediction)
     print(len(prediction))
     print(len(prediction[0]))
 

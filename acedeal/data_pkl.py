@@ -14,13 +14,16 @@ lstm
 '''
 
 from gensim.models import word2vec
-from acedeal.nlpir import *
-from acedeal.pre_process_ace import *
+# from acedeal.nlpir import *
+# from acedeal.pre_process_ace import *
+from nlpir import *
+from pre_process_ace import *
 
 import tensorflow as tf
 import numpy as np
 import pickle
 import sys
+import pprint
 
 
 ace_type_dict = {
@@ -60,14 +63,11 @@ ace_type_dict = {
     'None-role': 33
 }
 
-if __name__ == "__main__":
+def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path):
     print("-----------------------start----------------------")
     
+    model = word2vec.Word2Vec.load_word2vec_format(word2vec_file, binary=True)
 
-    model = word2vec.Word2Vec.load_word2vec_format(
-        "./corpus_deal/ace_train_corpus.bin", binary=True)
-
-    ace_train_path = "../ace_experiment/test/"
     ace_train_list = get_ace_event_list(ace_train_path)
     ace_train_list_len = len(ace_train_list)
     text_list = []
@@ -127,10 +127,10 @@ if __name__ == "__main__":
 
             #
             if word_vector is not None:
+                # 将单词的词向量加入句子向量中
                 sentence_word2vec_arr.append(word_vector)
                 if word in trigger_temp_list:
-                    val = ace_type_dict[
-                        type_temp_list[trigger_temp_list.index(word)]]
+                    val = ace_type_dict[type_temp_list[trigger_temp_list.index(word)]]
                     a = [0.0 for x in range(0, 34)]
                     a[val] = 1.0
                     trigger_labels.append(a)
@@ -143,14 +143,50 @@ if __name__ == "__main__":
         ace_data.append(np.array(sentence_word2vec_arr))
         ace_data_labels.append(trigger_labels)
 
-    ace_data_pkl = open('./corpus_deal/ace_data/ace_data_test.pkl', 'wb')
+    ace_data_pkl = open(ace_data_pkl_path, 'wb')
     pickle.dump(ace_data, ace_data_pkl)
     ace_data_pkl.close()
 
-    ace_data_labels_pkl = open(
-        './corpus_deal/ace_data/ace_data_test_labels.pkl', 'wb')
+    ace_data_labels_pkl = open(ace_label_pkl_path, 'wb')
     pickle.dump(ace_data_labels, ace_data_labels_pkl)
     ace_data_labels_pkl.close()
+    
+    print('---------------------------end--------------------------------')
+    
+    return ace_data_pkl_path,ace_label_pkl_path
+    
+
+if __name__ == "__main__":
+    
+    test_list=['北', '韩', '代表团', '成员', '则', '是', '向', '记者', '表示', '，', '会谈', '的', '', '。', '气氛', '严肃', '，', '但', '是', '十分', '具有', '建设性', '']
+    regular =['',' ',',','.','!','?',':',';','"','',' ','，','。','！','？','：','；','“','”']
+#     regular_eng=['',' ',',','.','!','?',':',';','"']
+#     regular_ch=['',' ','，','。','！','？','：','；','“','”']
+    for i in range(len(test_list)):
+        if test_list[i] in regular:
+            print(test_list[i])
+    
+    sys.exit()
+    
+    ace_train_path="../ace_experiment/test/"
+    word2vec_file="./corpus_deal/ace_train_corpus.bin"
+    ace_data_pkl_path='./corpus_deal/ace_data2/ace_data_test.pkl'
+    ace_label_pkl_path='./corpus_deal/ace_data2/ace_data_test_labels.pkl'
+    
+    ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path)
+    
+    
+    data_file = open(ace_data_pkl_path, 'rb')
+
+    data1 = pickle.load(data_file)
+    pprint.pprint(data1)
+    
+    labels_file = open(ace_label_pkl_path, 'rb')
+    data2 = pickle.load(labels_file)
+    pprint.pprint(data2)
+    
+    data_file.close()
+    labels_file.close()
 
 #     # 取出每一个事件实体
 #     for ace_info in ace_train_list:

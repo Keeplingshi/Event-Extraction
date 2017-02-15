@@ -38,11 +38,11 @@ if __name__ == "__main__":
 #     print(map(list, zip(*a)))
 #     print(a)
 
-#     init = tf.global_variables_initializer()
-#     with tf.Session() as sess:
-#         arr = [[3, 2, 1], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
-#         arr2 = tf.reshape(arr, [-1, 1])
-#         print(sess.run(arr2))
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        arr = [[3, 2, 1], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
+        arr2 = tf.reshape(arr, [-1, 1])
+        print(sess.run(arr2))
 
     #arr = [1, 2, 3, 4, 5]
 #     arr = np.arange(6).reshape((6, 1))

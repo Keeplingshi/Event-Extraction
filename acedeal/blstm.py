@@ -88,7 +88,9 @@ def test_nn(seq_num, x, weights, biases):
     y2 = tf.reshape([yi_1, yi_2], [-1, 1])
 
     results = tf.matmul(weights['out'], y2) + biases['out']
-    return tf.reshape(results, [-1, 1])
+    return results
+#     return tf.transpose(results,[-1,1])
+    #return tf.reshape(results, [-1, 1])
 
 #     yi1_bw = yi1[seq_num:]
 #
@@ -162,9 +164,12 @@ with tf.Session() as sess:
 
             if i != 0 and i != batch_size - 1:
                 labels = batch_ys[i]
+                labels=[labels]
+                print(labels)
                 labels = np.array(labels).reshape((34, 1)).tolist()
-                sess.run(
-                    optimizer, feed_dict={seq_num: i, x: batch_xs, y: labels})
+                print(labels)
+                print(sess.run(pred,feed_dict={seq_num: i, x: batch_xs}))
+                sess.run(cost, feed_dict={seq_num: i, x: batch_xs, y: labels})
 
         # print('batch_size:'+str(batch_size))
 #         print(batch_size)

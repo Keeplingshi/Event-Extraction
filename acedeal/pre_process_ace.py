@@ -5,7 +5,8 @@ Created on 2017年1月19日
 @author: chenbin
 '''
 
-from acedeal.xml_parse import xml_parse_base
+# from acedeal.xml_parse import xml_parse_base
+from xml_parse import *
 import os
 import re
 from xml.dom import minidom
