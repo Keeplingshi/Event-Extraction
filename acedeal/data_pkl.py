@@ -127,7 +127,7 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
             # 读取词向量，如果没有该单词，则None
             word=word_nominal.split('/')
             if len(word)!=2:
-                break;
+                continue;
             
             try:
                 word_vector = model[word[0]]
@@ -180,6 +180,7 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
 def get_partofspeech(part_of_speech):
     t=part_of_speech[0]
     position=None
+    # 所有词性类型
     nominal = ['n','v','t','s','f','a','b','z','r','m','q','d','p','c','u','e','y','o','h','k','x','w']
     nominal_vector=[]
     for i in range(len(nominal)):
@@ -213,25 +214,25 @@ if __name__ == "__main__":
 #     
 #     sys.exit()
     
-    ace_train_path="../ace_experiment/train/"
+    ace_train_path="../ace_experiment/test/"
     word2vec_file="./corpus_deal/ace_train_corpus.bin"
-    ace_data_pkl_path='./corpus_deal/ace_data2/ace_data_train.pkl'
-    ace_label_pkl_path='./corpus_deal/ace_data2/ace_data_train_labels.pkl'
+    ace_data_pkl_path='./corpus_deal/ace_data2/ace_data_test.pkl'
+    ace_label_pkl_path='./corpus_deal/ace_data2/ace_data_test_labels.pkl'
     
     ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path)
     
     
-    data_file = open(ace_data_pkl_path, 'rb')
-
-    data1 = pickle.load(data_file)
-    pprint.pprint(data1)
-    
-    labels_file = open(ace_label_pkl_path, 'rb')
-    data2 = pickle.load(labels_file)
-    pprint.pprint(data2)
-    
-    data_file.close()
-    labels_file.close()
+#     data_file = open(ace_data_pkl_path, 'rb')
+# 
+#     data1 = pickle.load(data_file)
+#     pprint.pprint(data1)
+#     
+#     labels_file = open(ace_label_pkl_path, 'rb')
+#     data2 = pickle.load(labels_file)
+#     pprint.pprint(data2)
+#     
+#     data_file.close()
+#     labels_file.close()
 
 #     # 取出每一个事件实体
 #     for ace_info in ace_train_list:
