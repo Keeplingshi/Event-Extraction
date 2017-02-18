@@ -35,7 +35,7 @@ batchSize = 1
 
 nInput = 223
 nSteps = 1 
-nHidden = 128
+nHidden = 100
 nClasses = 34
 
 x = tf.placeholder('float', [None, nSteps, nInput])
@@ -112,6 +112,7 @@ with tf.Session() as sess:
     # 载入测试集进行测试
     length = len(ace_data_test)
     test_accuracy = 0.0
+    t_s=0 #是否为触发词正确
     p_s = 0  # 识别的个体总数
     r_s = 0  # 测试集中存在个个体总数
     pr_acc = 0  # 正确识别的个数
@@ -128,12 +129,15 @@ with tf.Session() as sess:
                 p_s = p_s + 1
 
             if y_[t] != 33:
+                if prediction[t] != 33:
+                    t_s=t_s+1
+                
                 r_s = r_s + 1
                 if y_[t] == prediction[t]:
                     pr_acc = pr_acc + 1
 
     print('----------------------------------------------------')
-    print(str(p_s)+'------' + str(r_s)+ '------'+str(pr_acc))
+    print(str(t_s)+'-----------'+str(p_s)+'------' + str(r_s)+ '------'+str(pr_acc))
     p = pr_acc / p_s
     r = pr_acc / r_s
     f = 2 * p * r / (p + r)
