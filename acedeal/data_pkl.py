@@ -63,9 +63,10 @@ ace_type_dict = {
     'None-role': 33
 }
 
-def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path):
+
+def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path):
     print("-----------------------start----------------------")
-    
+
     model = word2vec.Word2Vec.load_word2vec_format(word2vec_file, binary=True)
 
     # 获取ace事件基本信息，即text，type，ID，trigger等。
@@ -113,22 +114,22 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
     ace_data_labels = []
 
     for i in range(text_list_len):
-        event_text = text_list[i]       #某一句话，包含事件的一句话
-        trigger_temp_list = trigger_list[i]     #事件句中触发词，可能有多个
+        event_text = text_list[i]  # 某一句话，包含事件的一句话
+        trigger_temp_list = trigger_list[i]  # 事件句中触发词，可能有多个
         type_temp_list = type_list[i]       # 事件句中触发词类型，数量与触发词数相等
 
         sentence_word2vec_arr = []  # 句子
         trigger_labels = []
-        
-        #事件句分词结果
+
+        # 事件句分词结果
         ace_text_list = NLPIR_ParagraphProcess(event_text, 1).split(' ')
-        word_distance=0     #单词的位置信息
+        word_distance = 0  # 单词的位置信息
         for word_nominal in ace_text_list:
             # 读取词向量，如果没有该单词，则None
-            word=word_nominal.split('/')
-            if len(word)!=2:
-                continue;
-            
+            word = word_nominal.split('/')
+            if len(word) != 2:
+                continue
+
             try:
                 word_vector = model[word[0]]
             except KeyError:
@@ -138,18 +139,20 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
             if word_vector is not None:
                 # 将单词的词向量加入句子向量中
                 # 单词特征向量，词向量+位置信息+词性
-                #print(word_vector.tolist())
-                characteristic_vector=[]
+                # print(word_vector.tolist())
+                characteristic_vector = []
                 characteristic_vector.extend(word_vector.tolist())
-                characteristic_vector.append(word_distance/len(ace_text_list))
-                nominal_vector=get_partofspeech(word[1])
-                characteristic_vector.extend(nominal_vector) 
-                
-                #print(characteristic_vector) 
-                
+                characteristic_vector.append(
+                    word_distance / len(ace_text_list))
+                nominal_vector = get_partofspeech(word[1])
+                characteristic_vector.extend(nominal_vector)
+
+                # print(characteristic_vector)
+
                 sentence_word2vec_arr.append(characteristic_vector)
                 if word[0] in trigger_temp_list:
-                    val = ace_type_dict[type_temp_list[trigger_temp_list.index(word[0])]]
+                    val = ace_type_dict[
+                        type_temp_list[trigger_temp_list.index(word[0])]]
                     a = [0.0 for x in range(0, 34)]
                     a[val] = 1.0
                     trigger_labels.append(a)
@@ -158,8 +161,8 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
                     a = [0.0 for x in range(0, 34)]
                     a[val] = 1.0
                     trigger_labels.append(a)
-                    
-                word_distance=word_distance+1
+
+                word_distance = word_distance + 1
 
         ace_data.append(np.array(sentence_word2vec_arr))
         ace_data_labels.append(trigger_labels)
@@ -171,66 +174,68 @@ def ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_labe
     ace_data_labels_pkl = open(ace_label_pkl_path, 'wb')
     pickle.dump(ace_data_labels, ace_data_labels_pkl)
     ace_data_labels_pkl.close()
-    
+
     print('---------------------------end--------------------------------')
-    
-    return ace_data_pkl_path,ace_label_pkl_path
-    
+
+    return ace_data_pkl_path, ace_label_pkl_path
+
 
 def get_partofspeech(part_of_speech):
-    t=part_of_speech[0]
-    position=None
+    t = part_of_speech[0]
+    position = None
     # 所有词性类型
-    nominal = ['n','v','t','s','f','a','b','z','r','m','q','d','p','c','u','e','y','o','h','k','x','w']
-    nominal_vector=[]
+    nominal = ['n', 'v', 't', 's', 'f', 'a', 'b', 'z', 'r', 'm',
+               'q', 'd', 'p', 'c', 'u', 'e', 'y', 'o', 'h', 'k', 'x', 'w']
+    nominal_vector = []
     for i in range(len(nominal)):
         if t in nominal[i]:
             nominal_vector.append(1.0)
         else:
             nominal_vector.append(0.0)
-    
+
     return nominal_vector
-        
+
 
 if __name__ == "__main__":
-    
-#     p = "刚刚宣誓就任的 行政院长张俊雄也应邀参加成立典礼并且致词表示，我们的政治文化过去是以对抗、对立没有合 作的文化，以致于付出了很大的代价，但是现在环境不同了，应该以合作代替对抗"
-#     result = NLPIR_ParagraphProcess(p, 1).split(' ')
-#     for i in range(len(result)):
-#         print(result[i])
-#         t=result[i].split('/')
-#         print(get_partofspeech(t[1]))
-#     print(result)
-#     sys.exit()
-#     
-#     
-#     test_list=['北', '韩', '代表团', '成员', '则', '是', '向', '记者', '表示', '，', '会谈', '的', '', '。', '气氛', '严肃', '，', '但', '是', '十分', '具有', '建设性', '']
-#     regular =['',' ',',','.','!','?',':',';','"','',' ','，','。','！','？','：','；','“','”']
-# #     regular_eng=['',' ',',','.','!','?',':',';','"']
-# #     regular_ch=['',' ','，','。','！','？','：','；','“','”']
-#     for i in range(len(test_list)):
-#         if test_list[i] in regular:
-#             print(test_list[i])
-#     
-#     sys.exit()
-    
-    ace_train_path="../ace_experiment/test/"
-    word2vec_file="./corpus_deal/ace_train_corpus.bin"
-    ace_data_pkl_path='./corpus_deal/ace_data2/ace_data_test.pkl'
-    ace_label_pkl_path='./corpus_deal/ace_data2/ace_data_test_labels.pkl'
-    
-    ace_data_pkl_process(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path)
-    
-    
+
+    #     p = "刚刚宣誓就任的 行政院长张俊雄也应邀参加成立典礼并且致词表示，我们的政治文化过去是以对抗、对立没有合 作的文化，以致于付出了很大的代价，但是现在环境不同了，应该以合作代替对抗"
+    #     result = NLPIR_ParagraphProcess(p, 1).split(' ')
+    #     for i in range(len(result)):
+    #         print(result[i])
+    #         t=result[i].split('/')
+    #         print(get_partofspeech(t[1]))
+    #     print(result)
+    #     sys.exit()
+    #
+    #
+    #     test_list=['北', '韩', '代表团', '成员', '则', '是', '向', '记者', '表示', '，', '会谈', '的', '', '。', '气氛', '严肃', '，', '但', '是', '十分', '具有', '建设性', '']
+    #     regular =['',' ',',','.','!','?',':',';','"','',' ','，','。','！','？','：','；','“','”']
+    # #     regular_eng=['',' ',',','.','!','?',':',';','"']
+    # #     regular_ch=['',' ','，','。','！','？','：','；','“','”']
+    #     for i in range(len(test_list)):
+    #         if test_list[i] in regular:
+    #             print(test_list[i])
+    #
+    #     sys.exit()
+
+    ace_train_path = "../ace_experiment/train/"
+    word2vec_file = "./corpus_deal/ace_train_corpus.bin"
+    ace_data_pkl_path = './corpus_deal/ace_data2/ace_data_train.pkl'
+    ace_label_pkl_path = './corpus_deal/ace_data2/ace_data_train_labels.pkl'
+
+    ace_data_pkl_process(
+        ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+
+
 #     data_file = open(ace_data_pkl_path, 'rb')
-# 
+#
 #     data1 = pickle.load(data_file)
 #     pprint.pprint(data1)
-#     
+#
 #     labels_file = open(ace_label_pkl_path, 'rb')
 #     data2 = pickle.load(labels_file)
 #     pprint.pprint(data2)
-#     
+#
 #     data_file.close()
 #     labels_file.close()
 
