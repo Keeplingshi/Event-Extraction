@@ -62,8 +62,8 @@ W1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]), name="W1")
 b1 = tf.Variable(tf.random_normal([n_classes]), name="b1")
 
 # Add ops to save and restore all the variables.
-#saver = tf.train.Saver()
-#saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
+# saver = tf.train.Saver()
+# saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 
 
 def BiRNN(x, weights, biases):
@@ -103,9 +103,11 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 # accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
-init = tf.global_variables_initializer()
+# init = tf.global_variables_initializer()
+# 
 
-sess.run(init)
+sess.run(W1.initialized_value())
+sess.run(b1.initialized_value())
 k = 0
 # 持续迭代
 while k < training_iters:
@@ -117,16 +119,16 @@ while k < training_iters:
     batch_size = len(batch_xs)
     batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
     
-    print(batch_ys)
-    print(len(batch_ys))
-    print(len(batch_ys[0]))
+#     print(batch_ys)
+#     print(len(batch_ys))
+#     print(len(batch_ys[0]))
     # 迭代
     #sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
     prediction = sess.run(pred, feed_dict={x: batch_xs})
-    print(prediction)
-    print(len(prediction))
-    print(len(prediction[0]))
+#     print(prediction)
+#     print(len(prediction))
+#     print(len(prediction[0]))
 
     # 在特定的迭代回合进行数据的输出
     if k % 100 == 0:
@@ -183,11 +185,11 @@ r = pr_acc / r_s
 f = 2 * p * r / (p + r)
 print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
 
-# print(tf.global_variables())
-# for tens in tf.global_variables():
-#     print(tens.name)
-#     print(tens.eval())
-#     print('-----------------------------------------')
+print(tf.global_variables())
+for tens in tf.global_variables():
+    print(tens.name)
+    print(tens.eval())
+    print('-----------------------------------------')
 
 # saver.restore(sess, "./ckpt_file/ace_bl.ckpt")
 # print(sess.run(W1))
