@@ -44,12 +44,12 @@ if __name__ == "__main__":
 #     print(model['中国'])
 
     model =word2vec.Word2Vec.load_word2vec_format("./corpus_deal/ace_train_corpus.bin",binary=True)
-    print(model["被处"])
-#     try:  
-#         y1 = model.similarity("战火", "战争")  
-#     except KeyError:  
-#         y1 = 0  
-#     print("相似度为：", y1  )
-#     print("-----\n")
+    #print(model["被处"])
+    try:  
+        y1 = model.similarity("中国", "中华")  
+    except KeyError:  
+        y1 = 0  
+    print("相似度为：", y1  )
+    print("-----\n")
 
     print("-----------------------end------------------------")

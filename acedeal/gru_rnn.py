@@ -9,6 +9,43 @@ import tensorflow as tf
 import numpy as np
 import sys
 
+ace_type_dict = {
+    'Be-Born': 0,
+    'Die': 1,
+    'Marry': 2,
+    'Divorce': 3,
+    'Injure': 4,
+    'Transfer-Ownership': 5,
+    'Transfer-Money': 6,
+    'Transport': 7,
+    'Start-Org': 8,
+    'End-Org': 9,
+    'Declare-Bankruptcy': 10,
+    'Merge-Org': 11,
+    'Attack': 12,
+    'Demonstrate': 13,
+    'Meet': 14,
+    'Phone-Write': 15,
+    'Start-Position': 16,
+    'End-Position': 17,
+    'Nominate': 18,
+    'Elect': 19,
+    'Arrest-Jail': 20,
+    'Release-Parole': 21,
+    'Charge-Indict': 22,
+    'Trial-Hearing': 23,
+    'Sue': 24,
+    'Convict': 25,
+    'Sentence': 26,
+    'Fine': 27,
+    'Execute': 28,
+    'Extradite': 29,
+    'Acquit': 30,
+    'Pardon': 31,
+    'Appeal': 32,
+    'None-role': 33
+}
+
 # 数据读取，训练集和测试集
 ace_data_train_file = open('./corpus_deal/ace_data2/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
@@ -102,19 +139,19 @@ with tf.Session() as sess:
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
-        if step % 100 == 0:
-            sk = 0
-            acck = 0
-            predictionk, y_k = sess.run(
-                [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
-            for t in range(len(y_k)):
-                if y_k[t] != 33:
-                    sk = sk + 1
-                    if y_k[t] == predictionk[t]:
-                        acck = acck + 1
-
-            if sk != 0:
-                print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
+#         if step % 100 == 0:
+#             sk = 0
+#             acck = 0
+#             predictionk, y_k = sess.run(
+#                 [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
+#             for t in range(len(y_k)):
+#                 if y_k[t] != 33:
+#                     sk = sk + 1
+#                     if y_k[t] == predictionk[t]:
+#                         acck = acck + 1
+# 
+#             if sk != 0:
+#                 print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
         k += 1
     print('Optimization finished')
 
@@ -127,13 +164,17 @@ with tf.Session() as sess:
     pr_acc = 0  # 正确识别的个数
 #     s = 0
 #     acc = 0
+
+    labels_cout=[]
+    for i in range(34):
+        labels_cout.append(0)
+    
     for i in range(length):
         test_len = len(ace_data_test[i])
         test_data = ace_data_test[i].reshape((-1, nSteps, nInput))  # 8
         test_label = ace_data_test_labels[i]
         # prediction识别出的结果，y_测试集中的正确结果
-        prediction, y_ = sess.run(
-            [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+        prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
         for t in range(len(y_)):
             if prediction[t] != 33:
                 p_s = p_s + 1
@@ -144,8 +185,15 @@ with tf.Session() as sess:
 
                 r_s = r_s + 1
                 if y_[t] == prediction[t]:
+                    labels_cout[y_[t]]=labels_cout[y_[t]]+1
                     pr_acc = pr_acc + 1
-
+    
+    
+    print(labels_cout)
+    new_ace_type_dict = {v:k for k,v in ace_type_dict.items()}
+    for i in new_ace_type_dict:
+        print(new_ace_type_dict[i]+'\t'+str(labels_cout[i]))
+        
     print('----------------------------------------------------')
     print(str(t_s) + '-----------' + str(p_s) +
           '------' + str(r_s) + '------' + str(pr_acc))

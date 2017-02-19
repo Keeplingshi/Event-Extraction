@@ -179,7 +179,9 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
 
     return ace_data_pkl_path, ace_label_pkl_path
 
-
+'''
+获取词性，返回列表形式
+'''
 def get_partofspeech(part_of_speech):
     t = part_of_speech[0]
     position = None
@@ -195,8 +197,98 @@ def get_partofspeech(part_of_speech):
 
     return nominal_vector
 
+# '''
+# 将数据分为训练集和测试集
+# '''
+# def get_train_test_data():
+#     # 获取ace所有数据
+#     ace_data_file = open('./corpus_deal/ace_data3/ace_data.pkl', 'rb')
+#     ace_data = pickle.load(ace_data_file)
+#     ace_data_labels_file = open('./corpus_deal/ace_data3/ace_data_labels.pkl', 'rb')
+#     ace_data_labels = pickle.load(ace_data_labels_file)
+#     
+#     #根据标签分为测试集与训练集
+#     #print(ace_data_train_labels)
+#     labels=[]
+#     for i in range(34):
+#         labels.append(0)
+#     
+# #     for i in ace_data_train_labels:
+# #         for m in i:
+# #             labels[m.index(1.0)]=labels[m.index(1.0)]+1
+#     
+#     for i in ace_data_labels:
+#         print(i)
+#         for m in i:
+#             labels[m.index(1.0)]=labels[m.index(1.0)]+1
+#             
+#             
+#     new_ace_type_dict = {v:k for k,v in ace_type_dict.items()}
+#     for i in new_ace_type_dict:
+#         print(new_ace_type_dict[i]+'\t'+str(labels[i]))
+#         
+#         
+#     ace_data_file.close()
+#     ace_data_labels_file.close()
+    
+    
+    
+'''
+返回数据信息
+'''
+def get_ace_data_info():
+    # 数据读取，训练集和测试集
+    ace_data_train_file = open('./corpus_deal/ace_data2/ace_data_train.pkl', 'rb')
+    ace_data_train = pickle.load(ace_data_train_file)
+    
+    ace_data_train_labels_file = open(
+        './corpus_deal/ace_data2/ace_data_train_labels.pkl', 'rb')
+    ace_data_train_labels = pickle.load(ace_data_train_labels_file)
+    
+    ace_data_test_file = open('./corpus_deal/ace_data2/ace_data_test.pkl', 'rb')
+    ace_data_test = pickle.load(ace_data_test_file)
+    
+    ace_data_test_labels_file = open(
+        './corpus_deal/ace_data2/ace_data_test_labels.pkl', 'rb')
+    ace_data_test_labels = pickle.load(ace_data_test_labels_file)
+    
+    
+    #print(ace_data_train_labels)
+    labels=[]
+    for i in range(34):
+        labels.append(0)
+    
+#     for i in ace_data_train_labels:
+#         for m in i:
+#             labels[m.index(1.0)]=labels[m.index(1.0)]+1
+    
+    for i in ace_data_test_labels:
+        for m in i:
+            labels[m.index(1.0)]=labels[m.index(1.0)]+1
+            
+            
+    new_ace_type_dict = {v:k for k,v in ace_type_dict.items()}
+    for i in new_ace_type_dict:
+        print(new_ace_type_dict[i]+'\t'+str(labels[i]))
+        #print(j+'\t'+str(labels[i]))
+    # print(len(ace_data_train))
+    # print(len(ace_data_train[0]))
+    # print(len(ace_data_train[0][0]))
+    #
+    # sys.exit()
+    
+    
+    ace_data_train_file.close()
+    ace_data_train_labels_file.close()
+    ace_data_test_file.close()
+    ace_data_test_labels_file.close()
+    print('---------------------------end--------------------------------')
 
 if __name__ == "__main__":
+    
+    #get_train_test_data()
+
+#     get_ace_data_info()
 
     #     p = "刚刚宣誓就任的 行政院长张俊雄也应邀参加成立典礼并且致词表示，我们的政治文化过去是以对抗、对立没有合 作的文化，以致于付出了很大的代价，但是现在环境不同了，应该以合作代替对抗"
     #     result = NLPIR_ParagraphProcess(p, 1).split(' ')
@@ -218,13 +310,12 @@ if __name__ == "__main__":
     #
     #     sys.exit()
 
-    ace_train_path = "../ace_experiment/train/"
-    word2vec_file = "./corpus_deal/ace_train_corpus.bin"
-    ace_data_pkl_path = './corpus_deal/ace_data2/ace_data_train.pkl'
-    ace_label_pkl_path = './corpus_deal/ace_data2/ace_data_train_labels.pkl'
-
-    ace_data_pkl_process(
-        ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+#     ace_train_path = "../ace05/data/Chinese/"
+#     word2vec_file = "./corpus_deal/ace_train_corpus.bin"
+#     ace_data_pkl_path = './corpus_deal/ace_data3/ace_data.pkl'
+#     ace_label_pkl_path = './corpus_deal/ace_data3/ace_data_labels.pkl'
+#  
+#     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
 
 #     data_file = open(ace_data_pkl_path, 'rb')
@@ -275,7 +366,7 @@ if __name__ == "__main__":
     # print(ace_text_list)
     # print(ace_info.toString())
 
-    print("-----------------------end----------------------")
+#    print("-----------------------end----------------------")
 
 
 '''
