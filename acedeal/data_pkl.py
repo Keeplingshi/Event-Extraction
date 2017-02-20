@@ -310,12 +310,12 @@ if __name__ == "__main__":
     #
     #     sys.exit()
 
-#     ace_train_path = "../ace05/data/Chinese/"
-#     word2vec_file = "./corpus_deal/ace_train_corpus.bin"
-#     ace_data_pkl_path = './corpus_deal/ace_data3/ace_data.pkl'
-#     ace_label_pkl_path = './corpus_deal/ace_data3/ace_data_labels.pkl'
-#  
-#     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    ace_train_path = "../ace_experiment/test/"
+    word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
+    ace_data_pkl_path = './corpus_deal/ace_data4/ace_data_test.pkl'
+    ace_label_pkl_path = './corpus_deal/ace_data4/ace_data_test_labels.pkl'
+  
+    ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
 
 #     data_file = open(ace_data_pkl_path, 'rb')

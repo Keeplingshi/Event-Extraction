@@ -9,60 +9,23 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-ace_type_dict = {
-    'Be-Born': 0,
-    'Die': 1,
-    'Marry': 2,
-    'Divorce': 3,
-    'Injure': 4,
-    'Transfer-Ownership': 5,
-    'Transfer-Money': 6,
-    'Transport': 7,
-    'Start-Org': 8,
-    'End-Org': 9,
-    'Declare-Bankruptcy': 10,
-    'Merge-Org': 11,
-    'Attack': 12,
-    'Demonstrate': 13,
-    'Meet': 14,
-    'Phone-Write': 15,
-    'Start-Position': 16,
-    'End-Position': 17,
-    'Nominate': 18,
-    'Elect': 19,
-    'Arrest-Jail': 20,
-    'Release-Parole': 21,
-    'Charge-Indict': 22,
-    'Trial-Hearing': 23,
-    'Sue': 24,
-    'Convict': 25,
-    'Sentence': 26,
-    'Fine': 27,
-    'Execute': 28,
-    'Extradite': 29,
-    'Acquit': 30,
-    'Pardon': 31,
-    'Appeal': 32,
-    'None-role': 33
-}
-
 # 数据读取，训练集和测试集
-ace_data_train_file = open('./corpus_deal/ace_data2/ace_data_train.pkl', 'rb')
+ace_data_train_file = open('./corpus_deal/ace_data4/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
 ace_data_train_labels_file = open(
-    './corpus_deal/ace_data2/ace_data_train_labels.pkl', 'rb')
+    './corpus_deal/ace_data4/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('./corpus_deal/ace_data2/ace_data_test.pkl', 'rb')
+ace_data_test_file = open('./corpus_deal/ace_data4/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
 ace_data_test_labels_file = open(
-    './corpus_deal/ace_data2/ace_data_test_labels.pkl', 'rb')
+    './corpus_deal/ace_data4/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 # print(len(ace_data_train))
-# print(len(ace_data_train[0]))
+# print(ace_data_train[0])
 # print(len(ace_data_train[0][0]))
 #
 # sys.exit()
@@ -86,43 +49,50 @@ nClasses = 34
 x = tf.placeholder('float', [None, nSteps, nInput])
 y = tf.placeholder('float', [None, nClasses])
 
-weights = tf.Variable(tf.random_normal([2 * nHidden + 23, nClasses]))
+weights = {
+        'hidden': tf.Variable(tf.random_normal([200, nHidden])),
+        'output': tf.Variable(tf.random_normal([2 * nHidden + 23, nClasses]))
+    }
 
-biases = tf.Variable(tf.random_normal([nClasses]))
+
+biases = {
+        'hidden': tf.Variable(tf.random_normal([nHidden])),
+        'output': tf.Variable(tf.random_normal([nClasses]))
+    }
 
 
 def gru_RNN(x, weights, biases):
     x = tf.transpose(x, [1, 0, 2])
     x = tf.reshape(x, [-1, nInput])
     x = tf.split(0, nSteps, x)
+    
     x_front = tf.slice(x, [0, 0, 0], [-1, -1, 200])[0]
+    #x_front = tf.nn.relu(tf.matmul(x_front, weights['hidden']) + biases['hidden'])
+    
     x_front = tf.split(0, nSteps, x_front)
-
+    
+    
+ 
     gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-
+ 
     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x_front,
                                             dtype=tf.float32)
-
+ 
     x_back = tf.slice(x, [0, 0, 200], [-1, -1, 23])[0]
     x_back = tf.split(0, nSteps, x_back)
-
+ 
     # concat_dim：0表示纵向，1表示行，2表示列
     x_all = tf.concat(2, [outputs, x_back])
-
-    results = tf.matmul(x_all[-1], weights) + biases
+ 
+    results = tf.matmul(x_all[-1], weights['output']) + biases['output']
     return results
 
 pred = gru_RNN(x, weights, biases)
 
-# optimization
-# create the cost, optimization, evaluation, and accuracy
-# for the cost softmax_cross_entropy_with_logits seems really good
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
-# correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-# accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
@@ -139,19 +109,19 @@ with tf.Session() as sess:
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
-#         if step % 100 == 0:
-#             sk = 0
-#             acck = 0
-#             predictionk, y_k = sess.run(
-#                 [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
-#             for t in range(len(y_k)):
-#                 if y_k[t] != 33:
-#                     sk = sk + 1
-#                     if y_k[t] == predictionk[t]:
-#                         acck = acck + 1
-# 
-#             if sk != 0:
-#                 print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
+        if step % 100 == 0:
+            sk = 0
+            acck = 0
+            predictionk, y_k = sess.run(
+                [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
+            for t in range(len(y_k)):
+                if y_k[t] != 33:
+                    sk = sk + 1
+                    if y_k[t] == predictionk[t]:
+                        acck = acck + 1
+ 
+            if sk != 0:
+                print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
         k += 1
     print('Optimization finished')
 
@@ -189,10 +159,10 @@ with tf.Session() as sess:
                     pr_acc = pr_acc + 1
     
     
-    print(labels_cout)
-    new_ace_type_dict = {v:k for k,v in ace_type_dict.items()}
-    for i in new_ace_type_dict:
-        print(new_ace_type_dict[i]+'\t'+str(labels_cout[i]))
+#     print(labels_cout)
+#     new_ace_type_dict = {v:k for k,v in ace_type_dict.items()}
+#     for i in new_ace_type_dict:
+#         print(new_ace_type_dict[i]+'\t'+str(labels_cout[i]))
         
     print('----------------------------------------------------')
     print(str(t_s) + '-----------' + str(p_s) +
