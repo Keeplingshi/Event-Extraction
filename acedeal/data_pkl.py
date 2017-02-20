@@ -179,6 +179,118 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
 
     return ace_data_pkl_path, ace_label_pkl_path
 
+
+'''
+ace数据处理，两分类
+'''
+def ace_data_pkl_two_classifer_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path):
+    print("-----------------------start----------------------")
+
+    model = word2vec.Word2Vec.load_word2vec_format(word2vec_file, binary=True)
+
+    # 获取ace事件基本信息，即text，type，ID，trigger等。
+    ace_train_list = get_ace_event_list(ace_train_path)
+    ace_train_list_len = len(ace_train_list)
+    text_list = []
+    trigger_list = []
+    trigger_temp_list = []
+    type_list = []
+    type_temp_list = []
+
+    for i in range(ace_train_list_len):
+        # 获取一个ace事件的实体
+        ace_info = ace_train_list[i]
+        # 处理一个句子，多个事件的情况
+        if i < ace_train_list_len - 1:
+
+            if ace_info.text == ace_train_list[i + 1].text:
+                trigger_temp_list.append(ace_info.trigger)
+                type_temp_list.append(ace_info.sub_type)
+            else:
+                text_list.append(ace_info.text)
+                trigger_temp_list.append(ace_info.trigger)
+                trigger_list.append(trigger_temp_list)
+                trigger_temp_list = []
+                type_temp_list.append(ace_info.sub_type)
+                type_list.append(type_temp_list)
+                type_temp_list = []
+        else:
+            trigger_temp_list.append(ace_info.trigger)
+            trigger_list.append(trigger_temp_list)
+            type_temp_list.append(ace_info.sub_type)
+            type_list.append(type_temp_list)
+            text_list.append(ace_info.text)
+
+    trigger_temp_list = []
+    type_temp_list = []
+    text_list_len = len(text_list)
+
+    ace_data = []
+    ace_data_labels = []
+
+    for i in range(text_list_len):
+        event_text = text_list[i]  # 某一句话，包含事件的一句话
+        trigger_temp_list = trigger_list[i]  # 事件句中触发词，可能有多个
+        type_temp_list = type_list[i]       # 事件句中触发词类型，数量与触发词数相等
+
+        sentence_word2vec_arr = []  # 句子
+        trigger_labels = []
+
+        # 事件句分词结果
+        ace_text_list = NLPIR_ParagraphProcess(event_text, 1).split(' ')
+        word_distance = 0  # 单词的位置信息
+        for word_nominal in ace_text_list:
+            # 读取词向量，如果没有该单词，则None
+            word = word_nominal.split('/')
+            if len(word) != 2:
+                continue
+
+            try:
+                word_vector = model[word[0]]
+            except KeyError:
+                word_vector = None
+
+            #
+            if word_vector is not None:
+                # 将单词的词向量加入句子向量中
+                # 单词特征向量，词向量+位置信息+词性
+                # print(word_vector.tolist())
+                characteristic_vector = []
+                characteristic_vector.extend(word_vector.tolist())
+                characteristic_vector.append(
+                    word_distance / len(ace_text_list))
+                nominal_vector = get_partofspeech(word[1])
+                characteristic_vector.extend(nominal_vector)
+                
+                #句子中添加向量特征
+                sentence_word2vec_arr.append(characteristic_vector)
+                
+                #触发词两分类
+                a = [0.0 for x in range(0, 2)]
+                if word[0] in trigger_temp_list:
+                    a[0]=1.0
+                else:
+                    a[1]=1.0
+                trigger_labels.append(a)
+
+                word_distance = word_distance + 1
+
+        ace_data.append(np.array(sentence_word2vec_arr))
+        ace_data_labels.append(trigger_labels)
+
+    ace_data_pkl = open(ace_data_pkl_path, 'wb')
+    pickle.dump(ace_data, ace_data_pkl)
+    ace_data_pkl.close()
+
+    ace_data_labels_pkl = open(ace_label_pkl_path, 'wb')
+    pickle.dump(ace_data_labels, ace_data_labels_pkl)
+    ace_data_labels_pkl.close()
+
+    print('---------------------------end--------------------------------')
+
+    return ace_data_pkl_path, ace_label_pkl_path
+
+
 '''
 获取词性，返回列表形式
 '''
@@ -310,12 +422,19 @@ if __name__ == "__main__":
     #
     #     sys.exit()
 
+#     ace_train_path = "../ace_experiment/test/"
+#     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
+#     ace_data_pkl_path = './corpus_deal/ace_data4/ace_data_test.pkl'
+#     ace_label_pkl_path = './corpus_deal/ace_data4/ace_data_test_labels.pkl'
+#   
+#     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    
     ace_train_path = "../ace_experiment/test/"
     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
-    ace_data_pkl_path = './corpus_deal/ace_data4/ace_data_test.pkl'
-    ace_label_pkl_path = './corpus_deal/ace_data4/ace_data_test_labels.pkl'
+    ace_data_pkl_path = './corpus_deal/ace_data5/ace_data_test.pkl'
+    ace_label_pkl_path = './corpus_deal/ace_data5/ace_data_test_labels.pkl'
   
-    ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    ace_data_pkl_two_classifer_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
 
 #     data_file = open(ace_data_pkl_path, 'rb')
