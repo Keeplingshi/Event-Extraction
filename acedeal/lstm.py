@@ -22,18 +22,20 @@ import logging
 
 
 # 数据读取，训练集和测试集
-ace_data_train_file = open('./corpus_deal/ace_data/ace_data_train.pkl', 'rb')
+ace_data_train_file = open(
+    './ace_data_process/ace_data/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
 ace_data_train_labels_file = open(
-    './corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
+    './ace_data_process/ace_data/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('./corpus_deal/ace_data/ace_data_test.pkl', 'rb')
+ace_data_test_file = open(
+    './ace_data_process/ace_data/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
 ace_data_test_labels_file = open(
-    './corpus_deal/ace_data/ace_data_test_labels.pkl', 'rb')
+    './ace_data_process/ace_data/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()
@@ -84,7 +86,7 @@ def RNN(_X, _istate, _weights, _biases):
 
     _X = tf.reshape(_X, [-1, n_input])  # (n_steps*batch_size, n_input)
     # 输入层到隐含层，第一次是直接运算
-    _X = tf.nn.relu(tf.matmul(_X, _weights['hidden']) + _biases['hidden'])
+    _X = tf.matmul(_X, _weights['hidden']) + _biases['hidden']
     # 之后使用LSTM
     lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(
         n_hidden, forget_bias=1.0, state_is_tuple=False)
@@ -94,13 +96,13 @@ def RNN(_X, _istate, _weights, _biases):
 #     lstm_cell = rnn_cell.BasicLSTMCell(n_hidden, forget_bias=1.0, state_is_tuple=False)
     # 28长度的sequence，所以是需要分解位28次
 #     _X = tf.split(0, n_steps, _X)  # n_steps * (batch_size, n_hidden)    #4
-    
+
     hidden = tf.split(0, n_steps, _X)
     lsmt_layers = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * 2)
     outputs, _ = tf.nn.rnn(lsmt_layers, hidden, dtype=tf.float32)
     # 开始跑RNN那部分
 #     outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
-    
+
     #outputs, states = tf.nn.rnn(lstm_cell, _X, initial_state=_istate)
 
     results = tf.matmul(outputs[-1], _weights['out']) + _biases['out']
