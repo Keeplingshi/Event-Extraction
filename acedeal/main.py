@@ -25,32 +25,41 @@ import numpy as np
 
 if __name__ == "__main__":
     print("-----------------------start----------------------")
+    
+    init = tf.global_variables_initializer()
 
+    with tf.Session() as sess:
+        sess.run(init)
+        a = tf.constant([[1,2,3], [4,5,6], [7,8,9], [10,11,12]])
+        l = tf.constant([4,4,4],tf.int64)
+        b = tf.reverse_sequence(a,seq_lengths=l,batch_dim = 1,seq_dim = 0)
+        #c = tf.Print(b,[b],summarize=9)
+        print(sess.run(b))
 
-    x=[[1,2,3],[4,5,6]]  
-    y=np.arange(24).reshape([2,3,4])  
-    z=tf.constant([[[1,2,3],[4,5,6]], [[7,8,9],[10,11,12]],  [[13,14,15],[16,17,18]]])
-    sess=tf.Session()  
-    begin_x=[1,0]        #第一个1，决定了从x的第二行[4,5,6]开始，第二个0，决定了从[4,5,6] 中的4开始抽取  
-    size_x=[1,2]           # 第一个1决定了，从第二行以起始位置抽取1行，也就是只抽取[4,5,6] 这一行，在这一行中从4开始抽取2个元素  
-    out=tf.slice(x,begin_x,size_x)  
-    print(x)
-    print(sess.run(out))  #  结果:[[4 5]]  
-    print('-------------------------------------')
-      
-    begin_y=[1,0,0]  
-    size_y=[1,2,3]  
-    out=tf.slice(y,begin_y,size_y)     
-    print(y)
-    print(sess.run(out))  # 结果:[[[12 13 14] [16 17 18]]]  
-    print('-------------------------------------')
-      
-    begin_z=[0,1,1]  
-    size_z=[-1,1,2]   
-    out=tf.slice(z,begin_z,size_z)  
-    print(z)
-    print(sess.run(out))  # size[i]=-1 表示第i维从begin[i]剩余的元素都要被抽取，结果：[[[ 5  6]] [[11 12]] [[17 18]]]  
-    print('-------------------------------------')
+#     x=[[1,2,3],[4,5,6]]  
+#     y=np.arange(24).reshape([2,3,4])  
+#     z=tf.constant([[[1,2,3],[4,5,6]], [[7,8,9],[10,11,12]],  [[13,14,15],[16,17,18]]])
+#     sess=tf.Session()  
+#     begin_x=[1,0]        #第一个1，决定了从x的第二行[4,5,6]开始，第二个0，决定了从[4,5,6] 中的4开始抽取  
+#     size_x=[1,2]           # 第一个1决定了，从第二行以起始位置抽取1行，也就是只抽取[4,5,6] 这一行，在这一行中从4开始抽取2个元素  
+#     out=tf.slice(x,begin_x,size_x)  
+#     print(x)
+#     print(sess.run(out))  #  结果:[[4 5]]  
+#     print('-------------------------------------')
+#       
+#     begin_y=[1,0,0]  
+#     size_y=[1,2,3]  
+#     out=tf.slice(y,begin_y,size_y)     
+#     print(y)
+#     print(sess.run(out))  # 结果:[[[12 13 14] [16 17 18]]]  
+#     print('-------------------------------------')
+#       
+#     begin_z=[0,1,1]  
+#     size_z=[-1,1,2]   
+#     out=tf.slice(z,begin_z,size_z)  
+#     print(z)
+#     print(sess.run(out))  # size[i]=-1 表示第i维从begin[i]剩余的元素都要被抽取，结果：[[[ 5  6]] [[11 12]] [[17 18]]]  
+#     print('-------------------------------------')
 
 #     list = [[1, 2, 3, 4], [2, 1, 1, 1], [3, 3, 2, 2], [4, 4, 4, 3]]
 #     print(list)

@@ -24,9 +24,6 @@ ace_data_test_labels_file = open(
     './ace_data_process/ace_data/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
-print(len(ace_data_train[0]))
-sys.exit()
-
 ace_data_train_file.close()
 ace_data_train_labels_file.close()
 ace_data_test_file.close()
@@ -62,20 +59,20 @@ def gru_RNN(x, weights, biases):
     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
 
     # Get gru cell output
-    outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
-                                            dtype=tf.float32)
+#     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
+#                                             dtype=tf.float32)
+    
+    reversed_inputs = tf.reverse_sequence(x,batch_dim = 0,seq_dim = 1)
 
-    results = tf.matmul(outputs[-1], weights) + biases
+#     results = tf.matmul(outputs[-1], weights) + biases
     #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
-    return results
+    return x,reversed_inputs
 
 pred = gru_RNN(x, weights, biases)
 
-# optimization
-# create the cost, optimization, evaluation, and accuracy
-# for the cost softmax_cross_entropy_with_logits seems really good
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
+
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+# optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
 # correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 # accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
@@ -93,23 +90,13 @@ with tf.Session() as sess:
         batch_size = len(batch_xs)
         batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
 
-        sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+        #sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+        x,rever_x=sess.run(pred, feed_dict={x: batch_xs})
+        print(x)
+        print(rever_x)
+        sys.exit()
 
-        if step % 100 == 0:
-            sk = 0
-            acck = 0
-            predictionk, y_k = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: batch_xs, y: batch_ys})
-            for t in range(len(y_k)):
-                if y_k[t] != 33:
-                    #                     logging.info(
-                    #                         'actual:' + str(y_k[t]) + '\t predict:' + str(predictionk[t]))
-                    #print(str(y_[t]) + '\t' + str(prediction[t]))
-                    sk = sk + 1
-                    if y_k[t] == predictionk[t]:
-                        acck = acck + 1
-
-            if sk != 0:
-                print("Iter " + str(k) + '-----------acc=' + str(acck / sk))
+        
         k += 1
     print('Optimization finished')
 
