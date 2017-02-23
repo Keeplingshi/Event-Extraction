@@ -7,6 +7,7 @@
 
 import tensorflow as tf
 import numpy as np
+import pickle
 
 
 # In[2]:
@@ -15,45 +16,43 @@ sess = tf.InteractiveSession()
 
 
 # In[3]:
+# 数据读取，训练集和测试集
+ace_data_train_file = open('../ace_data_process/ace_data7/ace_data_train.pkl', 'rb')
+ace_data_train = pickle.load(ace_data_train_file)
 
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("./data/", one_hot=True)
+ace_data_train_labels_file = open('../ace_data_process/ace_data7/ace_data_train_labels.pkl', 'rb')
+ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
+ace_data_test_file = open('../ace_data_process/ace_data7/ace_data_test.pkl', 'rb')
+ace_data_test = pickle.load(ace_data_test_file)
+
+ace_data_test_labels_file = open('../ace_data_process/ace_data7/ace_data_test_labels.pkl', 'rb')
+ace_data_test_labels = pickle.load(ace_data_test_labels_file)
+
+ace_data_train_file.close()
+ace_data_train_labels_file.close()
+ace_data_test_file.close()
+ace_data_test_labels_file.close()
 
 # In[4]:
 
-learning_rate = 0.001
-batch_size = 128
+# RNN学习时使用的参数
+learning_rate = 0.001  # 1
+training_iters = 16000
+batch_size = 1
 
-n_input = 28
-n_steps = 28
-n_hidden = 128
-n_classes = 10
+# 神经网络的参数
+n_input = 200  # 输入层的n
+n_steps = 1  # 28长度
+n_hidden = 128  # 隐含层的特征数
+n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
+
 
 x = tf.placeholder(tf.float32, [None, n_steps, n_input])
 y = tf.placeholder(tf.float32, [None, n_classes])
 
 
 # In[5]:
-
-def RNN(x, weight, biases):
-    # x shape: (batch_size, n_steps, n_input)
-    # desired shape: list of n_steps with element shape (batch_size, n_input)
-    x = tf.transpose(x, [1, 0, 2])
-    x = tf.reshape(x, [-1, n_input])
-    x = tf.split(0, n_steps, x)
-    outputs = list()
-    lstm = tf.nn.rnn_cell.BasicLSTMCell(n_hidden, forget_bias=1.0)
-    state = (tf.zeros([n_steps, n_hidden]),)*2
-    sess.run(state)
-    with tf.variable_scope("myrnn2") as scope:
-        for i in range(n_steps-1):
-            if i > 0:
-                scope.reuse_variables()
-            output, state = lstm(x[i], state)
-            outputs.append(output)
-    final = tf.matmul(outputs[-1], weight) + biases
-    return final
 
 
 # In[6]:
@@ -126,22 +125,54 @@ init = tf.global_variables_initializer()
 
 # Launch the graph
 sess.run(init)
-for step in range(20000):
-    batch_x, batch_y = mnist.train.next_batch(batch_size)
-    batch_x = batch_x.reshape((batch_size, n_steps, n_input))
-    sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
 
-    if step % 50 == 0:
-        acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y})
-        loss = sess.run(cost, feed_dict={x: batch_x, y: batch_y})
-        print("Iter " + str(step) + ", Minibatch Loss= " +               "{:.6f}".format(loss) + ", Training Accuracy= " +               "{:.5f}".format(acc))
+k = 0
+# 持续迭代
+while k < training_iters:
+    step = k % 1600
+    batch_xs = ace_data_train[step]
+    batch_ys = ace_data_train_labels[step]
+    batch_size = len(batch_xs)
+    batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
+    sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+    
+    if k % 100 == 0:
+        acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys})
+        loss = sess.run(cost, feed_dict={x: batch_xs, y: batch_ys})
+        print("Iter " + str(k) + ", Minibatch Loss= " +               "{:.6f}".format(loss) + ", Training Accuracy= " +               "{:.5f}".format(acc))
+    
+    k += 1
+    
 print("Optimization Finished!")
 
-
 # In[9]:
+# 载入测试集进行测试
+length = len(ace_data_test)
+test_accuracy = 0.0
+p_s = 0  # 识别的个体总数
+r_s = 0  # 测试集中存在个个体总数
+pr_acc = 0  # 正确识别的个数
+#     s = 0
+#     acc = 0
+for i in range(length):
+    test_len = len(ace_data_test[i])
+    test_data = ace_data_test[i].reshape((-1, n_steps, n_input))  # 8
+    test_label = ace_data_test_labels[i]
+    # prediction识别出的结果，y_测试集中的正确结果
+    prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+    for t in range(len(y_)):
+        if prediction[t] != 33:
+            p_s = p_s + 1
 
-# Calculate accuracy for 128 mnist test images
-test_len = batch_size
-test_data = mnist.test.images[:test_len].reshape((-1, n_steps, n_input))
-test_label = mnist.test.labels[:test_len]
-print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_data, y: test_label}))
+        if y_[t] != 33:
+            r_s = r_s + 1
+            if y_[t] == prediction[t]:
+                pr_acc = pr_acc + 1
+
+
+print('----------------------------------------------------')
+print(str(pr_acc) + '------------' + str(r_s))
+p = pr_acc / p_s
+r = pr_acc / r_s
+f = 2 * p * r / (p + r)
+print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
