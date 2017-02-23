@@ -113,6 +113,8 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
 
     ace_data = []
     ace_data_labels = []
+    
+    none_role_num=0
 
     for i in range(text_list_len):
         event_text = text_list[i]  # 某一句话，包含事件的一句话
@@ -131,6 +133,8 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
 
             #如果存在词向量
             if word_vector is not None:
+                
+                none_role_num=none_role_num+1
 
                 #sentence_word2vec_arr.append(word_vector)
                 if word in trigger_temp_list:
@@ -140,12 +144,22 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
                     ace_data_labels.append(a)
                     ace_data.append(word_vector)
                 else:
-                    # 获取一个随机数，如果小于一定数，则加入
                     val = ace_type_dict['None-role']
                     a = [0.0 for x in range(0, 34)]
                     a[val] = 1.0
                     ace_data_labels.append(a)
                     ace_data.append(word_vector)
+                    
+#                     # 每75个词取一个
+#                     if none_role_num%75==0:
+#                         # 获取一个随机数，如果小于一定数，则加入
+#                         val = ace_type_dict['None-role']
+#                         a = [0.0 for x in range(0, 34)]
+#                         a[val] = 1.0
+#                         ace_data_labels.append(a)
+#                         ace_data.append(word_vector)
+                    
+
                     
 
 
@@ -173,16 +187,16 @@ if __name__ == "__main__":
 #     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
 #     ace_data_pkl_path = './ace_data_process/ace_data6/ace_data_train.pkl'
 #     ace_label_pkl_path = './ace_data_process/ace_data6/ace_data_train_labels.pkl'
-#    
-#     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 #     
-#     #测试集数据处理
-#     ace_train_path = "../ace_experiment/test/"
-#     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
-#     ace_data_pkl_path = './ace_data_process/ace_data6/ace_data_test.pkl'
-#     ace_label_pkl_path = './ace_data_process/ace_data6/ace_data_test_labels.pkl'
-#    
 #     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+     
+    #测试集数据处理
+    ace_train_path = "../ace_experiment/test/"
+    word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
+    ace_data_pkl_path = './ace_data_process/ace_data6/ace_data_test.pkl'
+    ace_label_pkl_path = './ace_data_process/ace_data6/ace_data_test_labels.pkl'
+    
+    ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
     
     # 数据读取，训练集和测试集
     ace_data_train_file = open('./ace_data_process/ace_data6/ace_data_train.pkl', 'rb')

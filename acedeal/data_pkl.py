@@ -64,6 +64,95 @@ ace_type_dict = {
 }
 
 
+def ace_data_pkl_process_only_word2vec(ace_train_path,word2vec_file,ace_data_pkl_path,ace_label_pkl_path):
+    print("-----------------------start----------------------")
+    
+    model = word2vec.Word2Vec.load_word2vec_format(word2vec_file, binary=True)
+
+    ace_train_list = get_ace_event_list(ace_train_path)
+    ace_train_list_len = len(ace_train_list)
+    text_list = []
+    trigger_list = []
+    trigger_temp_list = []
+    type_list = []
+    type_temp_list = []
+
+    for i in range(ace_train_list_len):
+        ace_info = ace_train_list[i]
+        if i < ace_train_list_len - 1:
+
+            if ace_info.text == ace_train_list[i + 1].text:
+                trigger_temp_list.append(ace_info.trigger)
+                type_temp_list.append(ace_info.sub_type)
+            else:
+                text_list.append(ace_info.text)
+                trigger_temp_list.append(ace_info.trigger)
+                trigger_list.append(trigger_temp_list)
+                trigger_temp_list = []
+                type_temp_list.append(ace_info.sub_type)
+                type_list.append(type_temp_list)
+                type_temp_list = []
+        else:
+            trigger_temp_list.append(ace_info.trigger)
+            trigger_list.append(trigger_temp_list)
+            type_temp_list.append(ace_info.sub_type)
+            type_list.append(type_temp_list)
+            text_list.append(ace_info.text)
+
+    trigger_temp_list = []
+    type_temp_list = []
+    text_list_len = len(text_list)
+
+    ace_data = []
+    ace_data_labels = []
+
+    for i in range(text_list_len):
+        event_text = text_list[i]
+        trigger_temp_list = trigger_list[i]
+        type_temp_list = type_list[i]
+
+        sentence_word2vec_arr = []  # 句子
+        trigger_labels = []
+
+        ace_text_list = NLPIR_ParagraphProcess(event_text, 0).split(' ')
+        for word in ace_text_list:
+            # 读取词向量，如果没有该单词，则None
+            try:
+                word_vector = model[word]
+            except KeyError:
+                word_vector = None
+
+            #
+            if word_vector is not None:
+                # 将单词的词向量加入句子向量中
+                sentence_word2vec_arr.append(word_vector)
+                if word in trigger_temp_list:
+                    val = ace_type_dict[type_temp_list[trigger_temp_list.index(word)]]
+                    a = [0.0 for x in range(0, 34)]
+                    a[val] = 1.0
+                    trigger_labels.append(a)
+                else:
+                    val = ace_type_dict['None-role']
+                    a = [0.0 for x in range(0, 34)]
+                    a[val] = 1.0
+                    trigger_labels.append(a)
+
+        ace_data.append(np.array(sentence_word2vec_arr))
+        ace_data_labels.append(trigger_labels)
+
+    ace_data_pkl = open(ace_data_pkl_path, 'wb')
+    pickle.dump(ace_data, ace_data_pkl)
+    ace_data_pkl.close()
+
+    ace_data_labels_pkl = open(ace_label_pkl_path, 'wb')
+    pickle.dump(ace_data_labels, ace_data_labels_pkl)
+    ace_data_labels_pkl.close()
+    
+    print('---------------------------end--------------------------------')
+    
+    return 0
+
+
 def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path):
     print("-----------------------start----------------------")
 
@@ -431,10 +520,12 @@ if __name__ == "__main__":
     
     ace_train_path = "../ace_experiment/test/"
     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
-    ace_data_pkl_path = './corpus_deal/ace_data5/ace_data_test.pkl'
-    ace_label_pkl_path = './corpus_deal/ace_data5/ace_data_test_labels.pkl'
+    ace_data_pkl_path = './ace_data_process/ace_data7/ace_data_test.pkl'
+    ace_label_pkl_path = './ace_data_process/ace_data7/ace_data_test_labels.pkl'
   
-    ace_data_pkl_two_classifer_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    #ace_data_pkl_two_classifer_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    
+    ace_data_pkl_process_only_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
 
 #     data_file = open(ace_data_pkl_path, 'rb')

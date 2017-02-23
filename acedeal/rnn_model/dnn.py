@@ -25,9 +25,9 @@ y2 = tf.nn.softmax(tf.matmul(y1,W2)+b2)
 y3 = tf.nn.softmax(tf.matmul(y2,W3)+b3)
 
 
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y3, y_))
-cost = -tf.reduce_sum(y_*tf.log(y3))
-optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y3, y_))
+# cost = -tf.reduce_sum(y_*tf.log(y3))
+optimizer = tf.train.GradientDescentOptimizer(10).minimize(cost)
 
 # cross_entropy = -tf.reduce_sum(y_*tf.log(y3))
 # weight = [[0.06],[1.98],[0.98],[0.98]]
@@ -50,9 +50,9 @@ if __name__ == "__main__":
     ace_data_test_labels_file = open('../ace_data_process/ace_data6/ace_data_test_labels.pkl', 'rb')
     ace_data_test_labels = pickle.load(ace_data_test_labels_file)
     
-    batch_size=20
+    batch_size=100
     data_len=len(ace_data_train)
-    for j in range(10000):
+    for j in range(1000):
         batch_start=batch_size*j
         batch_end=batch_start+batch_size
         
