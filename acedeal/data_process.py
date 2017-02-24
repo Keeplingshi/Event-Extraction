@@ -182,13 +182,13 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
 
 if __name__ == "__main__":
     
-#     #训练集数据处理
-#     ace_train_path = "../ace_experiment/train/"
-#     word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
-#     ace_data_pkl_path = './ace_data_process/ace_data6/ace_data_train.pkl'
-#     ace_label_pkl_path = './ace_data_process/ace_data6/ace_data_train_labels.pkl'
-#     
-#     ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    #训练集数据处理
+    ace_train_path = "../ace_experiment/train/"
+    word2vec_file = "./corpus_deal/ace_train_corpus2.bin"
+    ace_data_pkl_path = './ace_data_process/ace_data6/ace_data_train.pkl'
+    ace_label_pkl_path = './ace_data_process/ace_data6/ace_data_train_labels.pkl'
+     
+    ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
      
     #测试集数据处理
     ace_train_path = "../ace_experiment/test/"
@@ -218,4 +218,11 @@ if __name__ == "__main__":
     print(ace_data_train_labels)
     print(len(ace_data_train_labels))
     print(len(ace_data_train_labels[0]))
+    
+    
+    print('-----------------------------------------')
+    print(len(ace_data_train))
+    print(len(ace_data_train_labels))
+    print(len(ace_data_test))
+    print(len(ace_data_test_labels))
 

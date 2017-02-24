@@ -1,19 +1,19 @@
-import tensorflow as tf,pickle,time
+import tensorflow as tf,pickle,time,numpy
 
 # Load data
 print("Loading data...")
 print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
 sess = tf.InteractiveSession()
-x_ = tf.placeholder("float",shape = [None,200])
-y_ = tf.placeholder("float",shape = [None,34])
+x_ = tf.placeholder("float",shape = [None,223])
+y_ = tf.placeholder("float",shape = [None,2])
 
 
-W1 = tf.Variable(tf.random_uniform([200,100],minval=-2.0,maxval=2.0),name="W1")
-b1 = tf.Variable(tf.zeros([100]),name="b1")
-W2 = tf.Variable(tf.random_uniform([100,50],minval=-2.0,maxval=2.0),name="W2")
-b2 = tf.Variable(tf.zeros([50]),name="b2")
-W3 = tf.Variable(tf.random_uniform([50,34],minval=-2.0,maxval=2.0),name="W3")
-b3 = tf.Variable(tf.zeros([34]),name="b3")
+W1 = tf.Variable(tf.random_uniform([223,300],minval=-2.0,maxval=2.0),name="W1")
+b1 = tf.Variable(tf.zeros([300]),name="b1")
+W2 = tf.Variable(tf.random_uniform([300,200],minval=-2.0,maxval=2.0),name="W2")
+b2 = tf.Variable(tf.zeros([200]),name="b2")
+W3 = tf.Variable(tf.random_uniform([200,2],minval=-2.0,maxval=2.0),name="W3")
+b3 = tf.Variable(tf.zeros([2]),name="b3")
 
 # Add ops to save and restore all the variables.
 saver = tf.train.Saver()
@@ -25,9 +25,9 @@ y2 = tf.nn.softmax(tf.matmul(y1,W2)+b2)
 y3 = tf.nn.softmax(tf.matmul(y2,W3)+b3)
 
 
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y3, y_))
-# cost = -tf.reduce_sum(y_*tf.log(y3))
-optimizer = tf.train.GradientDescentOptimizer(10).minimize(cost)
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y3, y_))
+cost = -tf.reduce_sum(y_*tf.log(y3))
+optimizer = tf.train.GradientDescentOptimizer(0.1).minimize(cost)
 
 # cross_entropy = -tf.reduce_sum(y_*tf.log(y3))
 # weight = [[0.06],[1.98],[0.98],[0.98]]
@@ -38,30 +38,44 @@ optimizer = tf.train.GradientDescentOptimizer(10).minimize(cost)
 
 if __name__ == "__main__":
     # 数据读取，训练集和测试集
-    ace_data_train_file = open('../ace_data_process/ace_data6/ace_data_train.pkl', 'rb')
+    ace_data_train_file = open('../ace_data_process/ace_data5/ace_data_train.pkl', 'rb')
     ace_data_train = pickle.load(ace_data_train_file)
-     
-    ace_data_train_labels_file = open('../ace_data_process/ace_data6/ace_data_train_labels.pkl', 'rb')
+    
+    ace_data_train_labels_file = open('../ace_data_process/ace_data5/ace_data_train_labels.pkl', 'rb')
     ace_data_train_labels = pickle.load(ace_data_train_labels_file)
      
-    ace_data_test_file = open('../ace_data_process/ace_data6/ace_data_test.pkl', 'rb')
+    ace_data_test_file = open('../ace_data_process/ace_data5/ace_data_test.pkl', 'rb')
     ace_data_test = pickle.load(ace_data_test_file)
      
-    ace_data_test_labels_file = open('../ace_data_process/ace_data6/ace_data_test_labels.pkl', 'rb')
+    ace_data_test_labels_file = open('../ace_data_process/ace_data5/ace_data_test_labels.pkl', 'rb')
     ace_data_test_labels = pickle.load(ace_data_test_labels_file)
-    
-    batch_size=100
+    print(len(ace_data_train))
+    print(len(ace_data_train_labels))
+    print(len(ace_data_test))
+    print(len(ace_data_test_labels))
+    batch_size=10
     data_len=len(ace_data_train)
-    for j in range(1000):
-        batch_start=batch_size*j
-        batch_end=batch_start+batch_size
+    batch_xo = []
+    for i in range(512):
+        batch_xo.extend(ace_data_test[i])
+    batch_yo = []
+    for i in range(512):
+        batch_yo.extend(ace_data_test_labels[i])
+    for j in range(100000):
         
-        optimizer.run(feed_dict={x_: ace_data_train[batch_start:batch_end], y_: ace_data_train_labels[batch_start:batch_end]})
-        if(j%10==0):
+        i=j%1600
+        k=512
+        
+        batch_xs = ace_data_train[i]
+        batch_ys = ace_data_train_labels[i]
+        batch_size = len(batch_xs)
+        batch_xs = batch_xs.reshape([batch_size, 223])
+        optimizer.run(feed_dict={x_: batch_xs, y_: batch_ys})
+        if(j%1000==0):
             correct_prediction = tf.equal(tf.argmax(y3, 1), tf.argmax(y_, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             
-            print("Setp: ",j, "Accuracy: ", sess.run(accuracy, feed_dict={x_: ace_data_test, y_: ace_data_test_labels}))
+            print("Setp: ",j, "Accuracy: ", sess.run(accuracy, feed_dict={x_: batch_xo, y_: batch_yo}))
         
         
     print('Optimization finished')
@@ -73,7 +87,7 @@ if __name__ == "__main__":
     r_s = 0  # 测试集中存在个个体总数
     pr_acc = 0  # 正确识别的个数
 
-    prediction, y_ = sess.run([tf.argmax(y3, 1), tf.argmax(y_, 1)], feed_dict={x_: ace_data_test, y_: ace_data_test_labels})
+    prediction, y_ = sess.run([tf.argmax(y3, 1), tf.argmax(y_, 1)], feed_dict={x_: batch_xo, y_: batch_yo})
     
     print(prediction)
     print(len(prediction))
