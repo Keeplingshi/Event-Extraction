@@ -10,18 +10,18 @@ import numpy as np
 import sys
 
 # 数据读取，训练集和测试集
-ace_data_train_file = open('./ace_data_process/ace_data/ace_data_train.pkl', 'rb')
+ace_data_train_file = open('./ace_data_process/ace_eng_data1/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
 ace_data_train_labels_file = open(
-    './ace_data_process/ace_data/ace_data_train_labels.pkl', 'rb')
+    './ace_data_process/ace_eng_data1/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('./ace_data_process/ace_data/ace_data_test.pkl', 'rb')
+ace_data_test_file = open('./ace_data_process/ace_eng_data1/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
 ace_data_test_labels_file = open(
-    './ace_data_process/ace_data/ace_data_test_labels.pkl', 'rb')
+    './ace_data_process/ace_eng_data1/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()
@@ -59,20 +59,20 @@ def gru_RNN(x, weights, biases):
     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
 
     # Get gru cell output
-#     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
-#                                             dtype=tf.float32)
+    outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x,
+                                            dtype=tf.float32)
     
-    reversed_inputs = tf.reverse_sequence(x,batch_dim = 0,seq_dim = 1)
+    #reversed_inputs = tf.reverse_sequence(x,batch_dim = 0,seq_dim = 1)
 
-#     results = tf.matmul(outputs[-1], weights) + biases
+    results = tf.matmul(outputs[-1], weights) + biases
     #outputs, states = tf.nn.rnn(gruCell, x, dtype=tf.float32)
-    return x,reversed_inputs
+    return results
 
 pred = gru_RNN(x, weights, biases)
 
 
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-# optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
 
 # correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 # accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
@@ -90,11 +90,7 @@ with tf.Session() as sess:
         batch_size = len(batch_xs)
         batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
 
-        #sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-        x,rever_x=sess.run(pred, feed_dict={x: batch_xs})
-        print(x)
-        print(rever_x)
-        sys.exit()
+        sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
         
         k += 1

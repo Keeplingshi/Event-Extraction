@@ -8,6 +8,7 @@
 import tensorflow as tf
 import numpy as np
 import pickle
+import sys
 
 
 # In[2]:
@@ -17,22 +18,23 @@ sess = tf.InteractiveSession()
 
 # In[3]:
 # 数据读取，训练集和测试集
-ace_data_train_file = open('../ace_data_process/ace_data7/ace_data_train.pkl', 'rb')
+ace_data_train_file = open('../ace_data_process/ace_eng_data1/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
-ace_data_train_labels_file = open('../ace_data_process/ace_data7/ace_data_train_labels.pkl', 'rb')
+ace_data_train_labels_file = open('../ace_data_process/ace_eng_data1/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('../ace_data_process/ace_data7/ace_data_test.pkl', 'rb')
+ace_data_test_file = open('../ace_data_process/ace_eng_data1/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
-ace_data_test_labels_file = open('../ace_data_process/ace_data7/ace_data_test_labels.pkl', 'rb')
+ace_data_test_labels_file = open('../ace_data_process/ace_eng_data1/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()
 ace_data_train_labels_file.close()
 ace_data_test_file.close()
 ace_data_test_labels_file.close()
+
 
 # In[4]:
 
@@ -114,11 +116,11 @@ pred = RNN(x, n_steps, n_input, n_hidden, n_classes)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-def compute_accuracy(test_data , test_label ):
-    
-    return tf.argmax(pred, 1)
-# correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
-# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# def compute_accuracy(test_data , test_label ):
+#     
+#     return tf.argmax(pred, 1)
+correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
+accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.global_variables_initializer()

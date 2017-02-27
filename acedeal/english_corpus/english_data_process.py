@@ -56,6 +56,15 @@ def write_train_data():
     filelist=os.listdir('./source_data/')
      
     ofile = open('./traindata.txt', 'w',encoding= 'utf-8')
+    
+    ace_train_path = '../../ace05/data/English/'
+    ace_train_list=get_ace_event_list(ace_train_path)
+    for i in range(6):
+        for ace_info in ace_train_list:
+            m=ace_info.text.translate(str.maketrans('','',string.punctuation))
+            ofile.write(m)
+            ofile.write('\n')
+    
     for fr in filelist:
         for txt in open('./source_data/'+fr, 'r',encoding= 'utf-8'):
             #去除标点符号
@@ -76,7 +85,7 @@ def word2vec_train():
     sentences =word2vec.Text8Corpus("./traindata.txt")  # 加载语料  
     model =word2vec.Word2Vec(sentences, size=200,min_count=5,iter=15)  #训练skip-gram模型，默认window=5 
     # 保存模型，以便重用  
-    model.save("./word2vec_data/news.model")  
+    #model.save("./word2vec_data/news.model")  
     # 以一种c语言可以解析的形式存储词向量  
     model.save_word2vec_format("./word2vec_data/news.bin", binary=True)  
           
@@ -125,6 +134,7 @@ def ace_data_pkl_process_english_word2vec(ace_train_path,word2vec_file,ace_data_
 
     ace_data = []
     ace_data_labels = []
+    
 
     for i in range(text_list_len):
         event_text = text_list[i]
@@ -133,9 +143,11 @@ def ace_data_pkl_process_english_word2vec(ace_train_path,word2vec_file,ace_data_
 
         sentence_word2vec_arr = []  # 句子
         trigger_labels = []
-
+        
+        event_text=event_text.translate(str.maketrans('','',string.punctuation))
         ace_text_list = event_text.split(' ')
         for word in ace_text_list:
+            
             # 读取词向量，如果没有该单词，则None
             try:
                 word_vector = model[word]
@@ -163,30 +175,35 @@ def ace_data_pkl_process_english_word2vec(ace_train_path,word2vec_file,ace_data_
     ace_data_pkl = open(ace_data_pkl_path, 'wb')
     pickle.dump(ace_data, ace_data_pkl)
     ace_data_pkl.close()
-
+ 
     ace_data_labels_pkl = open(ace_label_pkl_path, 'wb')
     pickle.dump(ace_data_labels, ace_data_labels_pkl)
     ace_data_labels_pkl.close()
     
+    
     print('---------------------------end--------------------------------')
     
 
+
 if __name__ == "__main__":
     print("-----------------------start----------------------")
-
-    ace_train_path = "../../ace_en_experiment/test/"
-    word2vec_file = "./word2vec_data/news.bin"
-    ace_data_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_test.pkl'
-    ace_label_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_test_labels.pkl'
-   
-    ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    
+#     write_train_data()
+#     word2vec_train()
     
     ace_train_path = "../../ace_en_experiment/train/"
     word2vec_file = "./word2vec_data/news.bin"
     ace_data_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train.pkl'
     ace_label_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train_labels.pkl'
-   
+    
     ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+     
+#     ace_train_path = "../../ace_en_experiment/train/"
+#     word2vec_file = "./word2vec_data/news.bin"
+#     ace_data_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train.pkl'
+#     ace_label_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train_labels.pkl'
+#     
+#     ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
     print("-----------------------end----------------------")
 

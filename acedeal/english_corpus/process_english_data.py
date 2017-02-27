@@ -48,12 +48,12 @@ def extract_ace_info(apf_file):
             # 获取事件所在语句
             mention_ldc_scope=xml_parse_base.get_xmlnode(None,mention_node, 'ldc_scope')
             mention_ldc_scope_charseq=xml_parse_base.get_xmlnode(None,mention_ldc_scope[0], 'charseq')
-            R_element.text=xml_parse_base.get_nodevalue(None,mention_ldc_scope_charseq[0],0).replace("\n", "")
+            R_element.text=xml_parse_base.get_nodevalue(None,mention_ldc_scope_charseq[0],0).replace("\n", " ")
             
             # 获取事件触发词
             mention_anchor=xml_parse_base.get_xmlnode(None,mention_node, 'anchor')
             mention_anchor_charseq=xml_parse_base.get_xmlnode(None,mention_anchor[0], 'charseq')
-            R_element.trigger=xml_parse_base.get_nodevalue(None,mention_anchor_charseq[0],0).replace("\n", "")
+            R_element.trigger=xml_parse_base.get_nodevalue(None,mention_anchor_charseq[0],0).replace("\n", " ")
             
         R.append(R_element)
         
@@ -78,13 +78,16 @@ def get_ace_event_list(ace_file_path):
 
     return ace_list
 
+
+
 if __name__ == "__main__":
     print("-----------------------start----------------------")
 
     ace_train_path = '../../ace_en_experiment/test/'
     ace_train_list=get_ace_event_list(ace_train_path)
     for ace_info in ace_train_list:
-        print(ace_info.toString())
+        if ace_info.trigger =='winning':
+            print(ace_info.text)
         
     print(len(ace_train_list))
 #     num = 0
