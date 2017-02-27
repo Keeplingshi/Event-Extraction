@@ -114,8 +114,11 @@ pred = RNN(x, n_steps, n_input, n_hidden, n_classes)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+def compute_accuracy(test_data , test_label ):
+    
+    return tf.argmax(pred, 1)
+# correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.global_variables_initializer()
