@@ -30,8 +30,8 @@ if __name__ == "__main__":
 
     with tf.Session() as sess:
         sess.run(init)
-        a = tf.constant([[1,2,3], [4,5,6], [7,8,9], [10,11,12]])
-        l = tf.constant([4,4,4],tf.int64)
+        a = tf.constant([[1,2,3], [4,5,6], [7,8,9], [10,11,12], [13,14,15]])
+        l = tf.constant([5,5,5],tf.int64)
         b = tf.reverse_sequence(a,seq_lengths=l,batch_dim = 1,seq_dim = 0)
         #c = tf.Print(b,[b],summarize=9)
         print(sess.run(b))
