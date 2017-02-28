@@ -110,11 +110,11 @@ def test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes):
     
     reversed_inputs = tf.reverse_sequence(x[0],sequence_lengths,batch_dim = 1,seq_dim = 0)
     reversed_inputs = tf.split(0, n_steps, reversed_inputs)
-    for i in x:
+    for i in reversed_inputs:
         re_output, re_state = lstm_cell(i, re_output, re_state)
         re_outputs.append(re_output)
     
-    lstm_output = tf.concat(2, [outputs[-1], re_outputs[-1]])
+    lstm_output = tf.concat(2, [outputs, re_outputs])
     
     return x,reversed_inputs,outputs[-1],re_outputs[-1],lstm_output
 
