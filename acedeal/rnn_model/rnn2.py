@@ -55,10 +55,7 @@ y = tf.placeholder(tf.float32, [None, n_classes])
 sequence_lengths=tf.placeholder(tf.int64, [n_input])
 
 # In[5]:
-
-
-# In[6]:
-def test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes):
+def BaiscLstmCell(x):
     # Parameters:
     # Input gate: input, previous output, and bias
     ix = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
@@ -96,27 +93,104 @@ def test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes):
     
     # x shape: (batch_size, n_steps, n_input)
     # desired shape: list of n_steps with element shape (batch_size, n_input)
-    x = tf.transpose(x, [1, 0, 2])
-    x = tf.reshape(x, [-1, n_input])
-    x = tf.split(0, n_steps, x)
     for i in x:
         output, state = lstm_cell(i, output, state)
         outputs.append(output)
+    
+    return outputs
+
+# In[6]:
+def test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes):
+#     # Parameters:
+#     # Input gate: input, previous output, and bias
+#     ix_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     im_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     ib_bw = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Forget gate: input, previous output, and bias
+#     fx_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     fm_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     fb_bw = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Memory cell: input, state, and bias
+#     cx_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     cm_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     cb_bw = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Output gate: input, previous output, and bias
+#     ox_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     om_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     ob_bw = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Classifier weights and biases
+#     w_bw = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
+#     b_bw = tf.Variable(tf.zeros([n_classes]))
+#     
+#     def lstm_fw_cell(i, o, state):
+#         input_gate = tf.sigmoid(tf.matmul(i, ix_bw) + tf.matmul(o, im_bw) + ib_bw)
+#         forget_gate = tf.sigmoid(tf.matmul(i, fx_bw) + tf.matmul(o, fm_bw) + fb_bw)
+#         update = tf.tanh(tf.matmul(i, cx_bw) + tf.matmul(o, cm_bw) + cb_bw)
+#         state = forget_gate * state + input_gate * update
+#         output_gate = tf.sigmoid(tf.matmul(i, ox_bw) +  tf.matmul(o, om_bw) + ob_bw)
+#         return output_gate * tf.tanh(state), state
+#     
+#     # Parameters:
+#     # Input gate: input, previous output, and bias
+#     ix = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     im = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     ib = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Forget gate: input, previous output, and bias
+#     fx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     fm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     fb = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Memory cell: input, state, and bias
+#     cx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     cm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     cb = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Output gate: input, previous output, and bias
+#     ox = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
+#     om = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
+#     ob = tf.Variable(tf.zeros([1, n_hidden]))
+#     # Classifier weights and biases
+#     w = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
+#     b = tf.Variable(tf.zeros([n_classes]))
+# 
+#     # Definition of the cell computation
+#     def lstm_cell(i, o, state):
+#         input_gate = tf.sigmoid(tf.matmul(i, ix) + tf.matmul(o, im) + ib)
+#         forget_gate = tf.sigmoid(tf.matmul(i, fx) + tf.matmul(o, fm) + fb)
+#         update = tf.tanh(tf.matmul(i, cx) + tf.matmul(o, cm) + cb)
+#         state = forget_gate * state + input_gate * update
+#         output_gate = tf.sigmoid(tf.matmul(i, ox) +  tf.matmul(o, om) + ob)
+#         return output_gate * tf.tanh(state), state
+    
+    # Unrolled LSTM loop
+#     outputs = list()
+#     state = tf.Variable(tf.zeros([batch_size, n_hidden]))
+#     output = tf.Variable(tf.zeros([batch_size, n_hidden]))
+    
+    # x shape: (batch_size, n_steps, n_input)
+    # desired shape: list of n_steps with element shape (batch_size, n_input)
+    x = tf.transpose(x, [1, 0, 2])
+    x = tf.reshape(x, [-1, n_input])
+    x = tf.split(0, n_steps, x)
+    outputs=BaiscLstmCell(x)
+#     for i in x:
+#         output, state = lstm_cell(i, output, state)
+#         outputs.append(output)
     #logits =tf.matmul(outputs[-1], w) + b
     
-    re_outputs = list()
-    re_state = tf.Variable(tf.zeros([batch_size, n_hidden]))
-    re_output = tf.Variable(tf.zeros([batch_size, n_hidden]))
+#     re_outputs = list()
+#     re_state = tf.Variable(tf.zeros([batch_size, n_hidden]))
+#     re_output = tf.Variable(tf.zeros([batch_size, n_hidden]))
     
     reversed_inputs = tf.reverse_sequence(x[0],sequence_lengths,batch_dim = 1,seq_dim = 0)
     reversed_inputs = tf.split(0, n_steps, reversed_inputs)
-    for i in reversed_inputs:
-        re_output, re_state = lstm_cell(i, re_output, re_state)
-        re_outputs.append(re_output)
+    re_outputs=BaiscLstmCell(x)
+#     for i in reversed_inputs:
+#         re_output, re_state = lstm_fw_cell(i, re_output, re_state)
+#         re_outputs.append(re_output)
     
     lstm_output = tf.concat(2, [outputs, re_outputs])
     
-    return x,reversed_inputs,outputs[-1],re_outputs[-1],lstm_output
+    return outputs,re_outputs,lstm_output
+#     return x,reversed_inputs,outputs[-1],re_outputs[-1],lstm_output
 
 test_output=test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes)
 
@@ -205,15 +279,23 @@ while k < training_iters:
     seq=[]
     for i in range(n_input):
         seq.append(batch_size)
-    input,reverse_input,output1,output2,lstm_output=sess.run(test_output,feed_dict={x: batch_xs,sequence_lengths:seq})
-    print(input)
-    print(reverse_input)
+    output1,output2,lstm_output=sess.run(test_output,feed_dict={x: batch_xs,sequence_lengths:seq})
+#     print(input)
+#     print(reverse_input)
+#     sys.exit()
     print(output1)
     print('-------------------------------')
     print(output2)
-    print('-------------------------------')
-    print(lstm_output)
+    print('-----------------------------------------------------')
+    print('-----------------------------------------------------')
+    print('-----------------------------------------------------')
     sys.exit()
+#     print('-------------------------------')
+#     print(lstm_output)
+    
+    if k==20:
+
+        sys.exit()
     
     sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
     
