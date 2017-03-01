@@ -9,18 +9,16 @@ import tensorflow as tf
 import numpy as np
 
 # 数据读取，训练集和测试集
-ace_data_train_file = open('./corpus_deal/ace_data/ace_data_train.pkl', 'rb')
+ace_data_train_file = open('./ace_data_process/ace_eng_data1/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
-ace_data_train_labels_file = open(
-    './corpus_deal/ace_data/ace_data_train_labels.pkl', 'rb')
+ace_data_train_labels_file = open('./ace_data_process/ace_eng_data1/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('./corpus_deal/ace_data/ace_data_test.pkl', 'rb')
+ace_data_test_file = open('./ace_data_process/ace_eng_data1/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
-ace_data_test_labels_file = open(
-    './corpus_deal/ace_data/ace_data_test_labels.pkl', 'rb')
+ace_data_test_labels_file = open('./ace_data_process/ace_eng_data1/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()

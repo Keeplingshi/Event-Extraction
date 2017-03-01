@@ -46,13 +46,26 @@ batch_size = 1
 # 神经网络的参数
 n_input = 200  # 输入层的n
 n_steps = 1  # 28长度
-n_hidden = 50  # 隐含层的特征数
+n_hidden = 100  # 隐含层的特征数
 n_classes = 34  # 输出的数量，因为是分类问题，这里一共有34个
 
 
 x = tf.placeholder(tf.float32, [None, n_steps, n_input])
 y = tf.placeholder(tf.float32, [None, n_classes])
 sequence_lengths=tf.placeholder(tf.int64, [n_input])
+
+weights = {
+    'output': tf.Variable(tf.random_normal([n_input+2 * n_hidden, n_classes])),
+    'hidden':tf.Variable(tf.random_normal([n_input+2 * n_hidden, 100]))
+}
+
+
+biases = {
+    'output': tf.Variable(tf.random_normal([n_classes])),
+    'hidden':tf.Variable(tf.random_normal([100]))
+}
+# w1 = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]))
+# b1 = tf.Variable(tf.random_normal([n_classes]))
 
 # In[5]:
 def BaiscLstmCell(x):
@@ -74,8 +87,8 @@ def BaiscLstmCell(x):
     om = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
     ob = tf.Variable(tf.zeros([1, n_hidden]))
     # Classifier weights and biases
-    w = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
-    b = tf.Variable(tf.zeros([n_classes]))
+#     w = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
+#     b = tf.Variable(tf.zeros([n_classes]))
 
     # Definition of the cell computation
     def lstm_cell(i, o, state):
@@ -100,163 +113,53 @@ def BaiscLstmCell(x):
     return outputs
 
 # In[6]:
-def test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes):
-#     # Parameters:
-#     # Input gate: input, previous output, and bias
-#     ix_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     im_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     ib_bw = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Forget gate: input, previous output, and bias
-#     fx_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     fm_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     fb_bw = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Memory cell: input, state, and bias
-#     cx_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     cm_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     cb_bw = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Output gate: input, previous output, and bias
-#     ox_bw = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     om_bw = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     ob_bw = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Classifier weights and biases
-#     w_bw = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
-#     b_bw = tf.Variable(tf.zeros([n_classes]))
-#     
-#     def lstm_fw_cell(i, o, state):
-#         input_gate = tf.sigmoid(tf.matmul(i, ix_bw) + tf.matmul(o, im_bw) + ib_bw)
-#         forget_gate = tf.sigmoid(tf.matmul(i, fx_bw) + tf.matmul(o, fm_bw) + fb_bw)
-#         update = tf.tanh(tf.matmul(i, cx_bw) + tf.matmul(o, cm_bw) + cb_bw)
-#         state = forget_gate * state + input_gate * update
-#         output_gate = tf.sigmoid(tf.matmul(i, ox_bw) +  tf.matmul(o, om_bw) + ob_bw)
-#         return output_gate * tf.tanh(state), state
-#     
-#     # Parameters:
-#     # Input gate: input, previous output, and bias
-#     ix = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     im = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     ib = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Forget gate: input, previous output, and bias
-#     fx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     fm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     fb = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Memory cell: input, state, and bias
-#     cx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     cm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     cb = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Output gate: input, previous output, and bias
-#     ox = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-#     om = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-#     ob = tf.Variable(tf.zeros([1, n_hidden]))
-#     # Classifier weights and biases
-#     w = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
-#     b = tf.Variable(tf.zeros([n_classes]))
-# 
-#     # Definition of the cell computation
-#     def lstm_cell(i, o, state):
-#         input_gate = tf.sigmoid(tf.matmul(i, ix) + tf.matmul(o, im) + ib)
-#         forget_gate = tf.sigmoid(tf.matmul(i, fx) + tf.matmul(o, fm) + fb)
-#         update = tf.tanh(tf.matmul(i, cx) + tf.matmul(o, cm) + cb)
-#         state = forget_gate * state + input_gate * update
-#         output_gate = tf.sigmoid(tf.matmul(i, ox) +  tf.matmul(o, om) + ob)
-#         return output_gate * tf.tanh(state), state
-    
-    # Unrolled LSTM loop
-#     outputs = list()
-#     state = tf.Variable(tf.zeros([batch_size, n_hidden]))
-#     output = tf.Variable(tf.zeros([batch_size, n_hidden]))
-    
-    # x shape: (batch_size, n_steps, n_input)
-    # desired shape: list of n_steps with element shape (batch_size, n_input)
+def test(x,sequence_lengths,weights,biases, n_steps, n_input, n_hidden, n_classes):
+
     x = tf.transpose(x, [1, 0, 2])
     x = tf.reshape(x, [-1, n_input])
     x = tf.split(0, n_steps, x)
-    outputs=BaiscLstmCell(x)
-#     for i in x:
-#         output, state = lstm_cell(i, output, state)
-#         outputs.append(output)
-    #logits =tf.matmul(outputs[-1], w) + b
-    
-#     re_outputs = list()
-#     re_state = tf.Variable(tf.zeros([batch_size, n_hidden]))
-#     re_output = tf.Variable(tf.zeros([batch_size, n_hidden]))
+    fw_output=BaiscLstmCell(x)
     
     reversed_inputs = tf.reverse_sequence(x[0],sequence_lengths,batch_dim = 1,seq_dim = 0)
     reversed_inputs = tf.split(0, n_steps, reversed_inputs)
-    re_outputs=BaiscLstmCell(x)
-#     for i in reversed_inputs:
-#         re_output, re_state = lstm_fw_cell(i, re_output, re_state)
-#         re_outputs.append(re_output)
+    bw_output=BaiscLstmCell(x)
     
-    lstm_output = tf.concat(2, [outputs, re_outputs])
+    #outputs = tf.concat(2, [fw_output, bw_output])
+    outputs = tf.concat(2, [fw_output, x])
+    outputs = tf.concat(2, [outputs, bw_output])
     
-    return outputs,re_outputs,lstm_output
+    y1=tf.tanh(tf.matmul(outputs[-1], weights['hidden']) + biases['hidden'])
+    
+    yi_1 = []
+    yi1_fw = y1[:seq_num]
+    yi1_fw_tensor = tf.argmax(yi1_fw, 0)
+    yi1_fw_transpose = tf.transpose(yi1_fw)
+    for i in range(nInput):
+        yi_1.append(yi1_fw_transpose[i][tf.cast(yi1_fw_tensor[i], tf.int32)])
+
+    yi_2 = []
+    yi2_bw = y1[seq_num:]
+    yi2_bw_tensor = tf.argmax(yi2_bw, 0)
+    yi2_bw_transpose = tf.transpose(yi2_bw)
+    for i in range(nInput):
+        yi_2.append(yi2_bw_transpose[i][tf.cast(yi2_bw_tensor[i], tf.int32)])
+
+    y2 = tf.reshape([yi_1, yi_2], [-1, 1])
+    
+    
+    #results =tf.matmul(outputs[-1], weights['output']) + biases['output']
+    return y1
+    #return fw_output,bw_output,x,outputs
 #     return x,reversed_inputs,outputs[-1],re_outputs[-1],lstm_output
 
-test_output=test(x,sequence_lengths, n_steps, n_input, n_hidden, n_classes)
+pred=test(x,sequence_lengths,weights,biases, n_steps, n_input, n_hidden, n_classes)
 
-'''
-lstm详细过程
-'''
-def RNN(x, n_steps, n_input, n_hidden, n_classes):
-    # Parameters:
-    # Input gate: input, previous output, and bias
-    ix = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-    im = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-    ib = tf.Variable(tf.zeros([1, n_hidden]))
-    # Forget gate: input, previous output, and bias
-    fx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-    fm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-    fb = tf.Variable(tf.zeros([1, n_hidden]))
-    # Memory cell: input, state, and bias
-    cx = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-    cm = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-    cb = tf.Variable(tf.zeros([1, n_hidden]))
-    # Output gate: input, previous output, and bias
-    ox = tf.Variable(tf.truncated_normal([n_input, n_hidden], -0.1, 0.1))
-    om = tf.Variable(tf.truncated_normal([n_hidden, n_hidden], -0.1, 0.1))
-    ob = tf.Variable(tf.zeros([1, n_hidden]))
-    # Classifier weights and biases
-    w = tf.Variable(tf.truncated_normal([n_hidden, n_classes]))
-    b = tf.Variable(tf.zeros([n_classes]))
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+# optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+#  
+# correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-    # Definition of the cell computation
-    def lstm_cell(i, o, state):
-        input_gate = tf.sigmoid(tf.matmul(i, ix) + tf.matmul(o, im) + ib)
-        forget_gate = tf.sigmoid(tf.matmul(i, fx) + tf.matmul(o, fm) + fb)
-        update = tf.tanh(tf.matmul(i, cx) + tf.matmul(o, cm) + cb)
-        state = forget_gate * state + input_gate * update
-        output_gate = tf.sigmoid(tf.matmul(i, ox) +  tf.matmul(o, om) + ob)
-        return output_gate * tf.tanh(state), state
-    
-    # Unrolled LSTM loop
-    outputs = list()
-    state = tf.Variable(tf.zeros([batch_size, n_hidden]))
-    output = tf.Variable(tf.zeros([batch_size, n_hidden]))
-    
-    # x shape: (batch_size, n_steps, n_input)
-    # desired shape: list of n_steps with element shape (batch_size, n_input)
-    x = tf.transpose(x, [1, 0, 2])
-    x = tf.reshape(x, [-1, n_input])
-    x = tf.split(0, n_steps, x)
-    for i in x:
-        output, state = lstm_cell(i, output, state)
-        outputs.append(output)
-    logits =tf.matmul(outputs[-1], w) + b
-    return logits
-
-
-# In[7]:
-
-pred = RNN(x, n_steps, n_input, n_hidden, n_classes)
-
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
-
-# def compute_accuracy(test_data , test_label ):
-#     
-#     return tf.argmax(pred, 1)
-correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(y,1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -276,28 +179,40 @@ while k < training_iters:
     batch_size = len(batch_xs)
     batch_xs = batch_xs.reshape([batch_size, n_steps, n_input])
     
+    print(batch_ys)
     seq=[]
     for i in range(n_input):
         seq.append(batch_size)
-    output1,output2,lstm_output=sess.run(test_output,feed_dict={x: batch_xs,sequence_lengths:seq})
-#     print(input)
-#     print(reverse_input)
-#     sys.exit()
-    print(output1)
-    print('-------------------------------')
-    print(output2)
-    print('-----------------------------------------------------')
-    print('-----------------------------------------------------')
-    print('-----------------------------------------------------')
+    
+    y1=sess.run(pred,feed_dict={x: batch_xs,sequence_lengths:seq})
+    
+    for tmp in y1:
+        print(tmp)
+    
+    print('--------------------------------------')
+    print(y1)
+    print(len(y1))
+    print(len(y1[0]))
+    print(len(y1[0][0]))
+    print('--------------------------------------')
+    print(bw_output)
+    print(len(bw_output))
+    print(len(bw_output[0]))
+    print(len(bw_output[0][0]))
+    print('--------------------------------------')
+    print(x)
+    print(len(x))
+    print(len(x[0]))
+    print(len(x[0][0]))
+    print('--------------------------------------')
+    print(outputs)
+    print(len(outputs))
+    print(len(outputs[0]))
+    print(len(outputs[0][0]))
+     
     sys.exit()
-#     print('-------------------------------')
-#     print(lstm_output)
     
-    if k==20:
-
-        sys.exit()
-    
-    sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+    sess.run(optimizer, feed_dict={x: batch_xs,sequence_lengths:seq, y: batch_ys})
     
     if k % 100 == 0:
         acc = sess.run(accuracy, feed_dict={x: batch_xs, y: batch_ys})
@@ -322,8 +237,11 @@ for i in range(length):
     test_len = len(ace_data_test[i])
     test_data = ace_data_test[i].reshape((-1, n_steps, n_input))  # 8
     test_label = ace_data_test_labels[i]
+    seq=[]
+    for i in range(n_input):
+        seq.append(test_len)
     # prediction识别出的结果，y_测试集中的正确结果
-    prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+    prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data,sequence_lengths:seq, y: test_label})
     for t in range(len(y_)):
         if prediction[t] != 33:
             p_s = p_s + 1
