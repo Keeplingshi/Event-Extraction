@@ -25,6 +25,8 @@ import pickle
 import sys
 import pprint
 import random
+import os
+import shutil
 
 
 ace_type_dict = {
@@ -179,8 +181,38 @@ def ace_data_pkl_process(ace_train_path, word2vec_file, ace_data_pkl_path, ace_l
     return ace_data_pkl_path, ace_label_pkl_path
 
 
+'''
+根据filelist将ace语料分割为训练集，测试集，校验集
+'''
+def split_ace_file():
+    print('-----------------------split_ace_file  start---------------------------')
+    
+    ace_src_path='../ace05/data/English/'
+    ace_exp_path='../ace_en_experiment/test/'
+    file=open('../ace05/new_filelist_ACE_test.txt','r')
+    for line in file:
+        #获取文件名
+        line=line.strip('\n')
+        apf_path=os.path.join(ace_src_path,line)+'.apf.xml'
+        sgm_path=os.path.join(ace_src_path,line)+'.sgm'
+        
+        #要复制到的路径
+        aim_path=ace_exp_path+line
+        print(aim_path)
+        
+        if os.path.isfile(apf_path):
+            shutil.copy(apf_path,aim_path+'.apf.xml')
+            
+        if os.path.isfile(sgm_path):
+            shutil.copy(sgm_path,aim_path+'.sgm')
+    
+    print('-----------------------split_ace_file  end---------------------------')
+
 
 if __name__ == "__main__":
+    
+    split_ace_file()
+    sys.exit()
     
     #训练集数据处理
     ace_train_path = "../ace_experiment/train/"

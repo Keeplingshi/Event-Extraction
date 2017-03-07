@@ -193,17 +193,25 @@ if __name__ == "__main__":
     
     ace_train_path = "../../ace_en_experiment/train/"
     word2vec_file = "./word2vec_data/news.bin"
-    ace_data_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train.pkl'
-    ace_label_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train_labels.pkl'
+    ace_data_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_train.pkl'
+    ace_label_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_train_labels.pkl'
     
     ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
      
-#     ace_train_path = "../../ace_en_experiment/train/"
-#     word2vec_file = "./word2vec_data/news.bin"
-#     ace_data_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train.pkl'
-#     ace_label_pkl_path = '../ace_data_process/ace_eng_data1/ace_data_train_labels.pkl'
-#     
-#     ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+    ace_train_path = "../../ace_en_experiment/test/"
+    word2vec_file = "./word2vec_data/news.bin"
+    ace_data_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_test.pkl'
+    ace_label_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_test_labels.pkl'
+     
+    ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
+
+
+    ace_train_path = "../../ace_en_experiment/dev/"
+    word2vec_file = "./word2vec_data/news.bin"
+    ace_data_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_dev.pkl'
+    ace_label_pkl_path = '../ace_data_process/ace_eng_data2/ace_data_dev_labels.pkl'
+     
+    ace_data_pkl_process_english_word2vec(ace_train_path, word2vec_file, ace_data_pkl_path, ace_label_pkl_path)
 
     print("-----------------------end----------------------")
 
