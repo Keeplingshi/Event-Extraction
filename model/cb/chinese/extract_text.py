@@ -49,10 +49,11 @@ def read_answer(filename_prefix):
     tag_content=tag_f.read()
 
     # txt文件是将sgm文件移除尖括号<>所得
-#     text_filename= filename_prefix+".txt"
-#     text_filepath=corpus_path+text_filename
-#     text_f=open(text_filepath, 'rb')
-#     text_content=text_f.read().decode('utf8')
+    text_filename= filename_prefix+".txt"
+    text_filepath=corpus_path+text_filename
+    text_f=open(text_filepath, 'rb')
+    text_content=text_f.read().decode('utf8')
+    text_content=text_content.replace('\n','')
 
     text2_filename= filename_prefix+".sgm"
     text2_filepath=corpus_path+text2_filename
@@ -62,19 +63,17 @@ def read_answer(filename_prefix):
     doc=etree.fromstring(text2_content)
 
     sentence=doc.xpath('//TEXT//text()')
-
-    sentence=''.join(sentence)
-    sentence=sentence.replace('\n','')
-    print(sentence)
-    begin_sen=sentence[:3]
-
-    begin_index=sentence.find(begin_sen)
-    print(begin_index)
+    
+    
+    begin_sen=''.join(sentence)
+    begin_sen=begin_sen.replace('\n','')
+    begin_sen=begin_sen[:3]
+    begin_index=text_content.find(begin_sen)
 
     try:
         assert begin_index!=-1,'begin_index==-1'
         begin_index-=1
-#         new_text=text_content[begin_index:]
+        new_text=text_content[begin_index:]
         doc=etree.fromstring(tag_content)
         trigger=[]
         
@@ -87,19 +86,16 @@ def read_answer(filename_prefix):
             for anchor in cur_ele:
                 start = anchor.xpath("./charseq/@START")[0]
                 end = anchor.xpath("./charseq/@END")[0]
-                print(start,end)
                 start = int(start)-begin_index
                 end = int(end)- begin_index
-                print(start,end)
-                
-                real_str = anchor.xpath("./charseq/text()")[0]
-                my_str = sentence[start:end+1]
-                print(real_str,my_str)
-
-                assert real_str == my_str
+                real_str = anchor.xpath("./charseq/text()")[0].replace('\n','')
+                my_str = new_text[start:end+1].replace('\r','')
+                assert real_str == my_str,real_str+'\t'+my_str+'报错'
                 start_end_type_list.append((int(start),int(end)))
         
-        return content2wordvec(sentence,start_end_type_list)
+        print(new_text)
+        print(start_end_type_list)
+        return content2wordvec(new_text,start_end_type_list)
     except Exception as e:
         print(e)
         print(filename_prefix,'droped')
@@ -117,11 +113,12 @@ def prepare_data():
         if len(tmp)>1:
             train_data.append(tmp)
     train_data=[i for i in train_data if len(i[0])>0]
-    rs_f=open('./chACEdata/sentence1.txt','w')
+    rs_f=open('./chACEdata/sentence1.txt','w', encoding='utf8')
     for item in train_data:
         word=item[0]
-        print>>rs_f,' '.join([i.encode('utf8') for i in word])
-        print>>rs_f,item[1]
+        strtemp=' '.join([i for i in word])
+        rs_f.write(strtemp)
+        rs_f.write(str(item[1]))
     new_train_data=[]
     for item in train_data:
         sentence=item[0]
@@ -132,11 +129,11 @@ def prepare_data():
                 new_train_data.append((sentence[tmp_i:index],label[tmp_i:index]))
                 tmp_i=index+1
 
-    rs_f=open('./chACEdata/sentence2.txt','w')
+    rs_f=open('./chACEdata/sentence2.txt','w', encoding='utf8')
     for item in new_train_data:
         word=item[0]
-        print>>rs_f,' '.join([i.encode('utf8') for i in word])
-        print>>rs_f,item[1]
+        rs_f.write(' '.join([i for i in word]))
+        rs_f.write(str(item[1]))
     rs_f=open('./chACEdata/trigger_iden.data','wb')
     pickle.dump(new_train_data,rs_f)
 
@@ -158,15 +155,14 @@ def writeToTxt():
         newfile=open(homepath+'/ace_ch_experiment/corpus/'+filename+".txt",'w', encoding='utf8')
         newfile.write(content)
         newfile.close()
-        print(content)
     
     return 0
 
 
 if __name__ == '__main__':
     #prepare_data()
-    read_answer('/bn/adj/VOM20001026.1800.0175')
-    
+    read_answer('/wl/adj/LIUYIFENG_20050126.0844')
+
     #writeToTxt()
     
 #     doclist='D:/Code/pydev/nlp_hw/ace_ch_experiment/doclist/';
