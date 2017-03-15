@@ -15,8 +15,8 @@ import json
 
 vocabulary_size=10000
 unknown_token = "UNKNOWN_TOKEN"
-sentence_start_token = "SENTENCE_START"
-sentence_end_token = "SENTENCE_END"
+# sentence_start_token = "SENTENCE_START"
+# sentence_end_token = "SENTENCE_END"
 
 
 
@@ -47,6 +47,7 @@ def pre_data():
     f=open('others/train_data.data','wb')
     pickle.dump(data,f)
 
+
 def lstm():
     maxlen = 180  # cut texts after this number of words (among top max_features most common words)
     batch_size = 32
@@ -69,7 +70,7 @@ def lstm():
     Y_train1 = sequence.pad_sequences(Y_train2, maxlen=maxlen)
    
     Y_train = np.asarray([np_utils.to_categorical(j,2) for j in Y_train1])
-      
+    
     print('X_train shape:', X_train.shape)
     print('Y_train shape:', Y_train.shape)
 
@@ -133,13 +134,20 @@ if __name__ == '__main__':
     # lstm()
     #lstm_test()
     
+    f=open('./tmp/trigger_iden.data','rb')
+    train_data=pickle.load(f)
+    
+    for i in train_data:
+        print(i)
+    print(len(train_data))
+    
 #     list=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 #     print(len(list))
     
-    data_f=open('./chACEdata/train_data.data','rb')
-    X_train,X_test,Y_train,Y_test=pickle.load(data_f)
-    for i in Y_test:
-        print(i)
+#     data_f=open('./chACEdata/train_data.data','rb')
+#     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+#     for i in Y_test:
+#         print(i)
 #     print(X_train)
 #     for i in open('./chACEdata/train_data.data','rb'):
 #         print(i)
