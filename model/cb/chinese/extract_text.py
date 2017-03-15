@@ -22,6 +22,7 @@ def content2wordvec(text_content,start_end_type_list):
     def clean(x):
         x=x.replace('\n','')
         x=x.replace(' ','')
+        x=x.replace('\r','')
         return x
     for i,j in s_e_sorted:
         sentence=clean(text_content[tmp_i:i])
@@ -93,8 +94,6 @@ def read_answer(filename_prefix):
                 assert real_str == my_str,real_str+'\t'+my_str+'报错'
                 start_end_type_list.append((int(start),int(end)))
         
-        print(new_text)
-        print(start_end_type_list)
         return content2wordvec(new_text,start_end_type_list)
     except Exception as e:
         print(e)
@@ -160,8 +159,8 @@ def writeToTxt():
 
 
 if __name__ == '__main__':
-    #prepare_data()
-    read_answer('/wl/adj/LIUYIFENG_20050126.0844')
+    prepare_data()
+    #read_answer('/wl/adj/LIUYIFENG_20050126.0844')
 
     #writeToTxt()
     
