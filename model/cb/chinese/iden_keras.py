@@ -98,11 +98,11 @@ def lstm_test():
 
     maxlen = 180  # cut texts after this number of words (among top max_features most common words)
     batch_size = 32
-    data_f=open('./others/train_data.data','rb')
+    data_f=open('./chACEdata/train_data.data','rb')
 
     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
-    model = model_from_json(open('my_model_architecture2.json').read()) 
-    model.load_weights('my_model_weights2.h5')
+    model = model_from_json(open('./chACEdata/my_model_architecture2.json').read()) 
+    model.load_weights('./chACEdata/my_model_weights2.h5')
 
     X_test1 = sequence.pad_sequences(X_test, maxlen=maxlen)
     Y_test1 = sequence.pad_sequences(Y_test, maxlen=maxlen)
@@ -131,4 +131,19 @@ def lstm_test():
 
 if __name__ == '__main__':
     # lstm()
-    lstm_test()
+    #lstm_test()
+    
+#     list=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+#     print(len(list))
+    
+    data_f=open('./chACEdata/train_data.data','rb')
+    X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+    for i in Y_test:
+        print(i)
+#     print(X_train)
+#     for i in open('./chACEdata/train_data.data','rb'):
+#         print(i)
+    
+    #print(data_f)
+    
+    

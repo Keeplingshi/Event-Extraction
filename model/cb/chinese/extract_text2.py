@@ -9,12 +9,13 @@ import re
 import json
 import jieba
 import pickle
-from nlp_hw3.chinese.others.type_index import EVENT_MAP
+from cb.chinese.type_index import EVENT_MAP
 
 vocabulary_size = 10000
 unknown_token = "UNKNOWN_TOKEN"
 sentence_start_token = "SENTENCE_START"
 sentence_end_token = "SENTENCE_END"
+type_num=34
 
 
 '''为文本分类提取数据'''

@@ -10,7 +10,7 @@ import pickle
 import nltk
 import itertools
 import json
-from nlp_hw3.chinese.others.type_index import EVENT_MAP
+from cb.chinese.type_index import EVENT_MAP
 '''分类大法师'''
 
 
@@ -127,4 +127,12 @@ if __name__ == '__main__':
     # pre_data()
 
     # lstm()
-    lstm_test()
+#     lstm_test()
+    list=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    print(len(list))
+
+#     data_f=open('./chACEdata/train_data_4class.data','rb')
+# 
+#     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+#     for i in Y_train:
+#         print(i)
