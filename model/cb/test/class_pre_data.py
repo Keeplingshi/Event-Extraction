@@ -1,10 +1,12 @@
 # coding:utf-8
 '''
-Created on 2017年3月15日
-数据处理
+Created on 2017年3月16日
+事件分类  数据处理
+二分类，one-hot向量
+a) word转为词序号
+从训练语料统计获得单词列表，并按照词频从大到小排序，序号从0开始，然后将句子中单词全部转为序号
 @author: chenbin
 '''
-
 import os
 from lxml import etree  # @UnresolvedImport
 import jieba
@@ -13,26 +15,44 @@ import re
 import sys
 from xml_parse import xml_parse_base
 from xml.dom import minidom
+import nltk
+import itertools
+import json
+from cb.test.type_index import EVENT_MAP
 
 homepath='D:/Code/pydev/EventExtract/'
+type_num=34
 
+
+'''为文本分类提取数据'''
 def content2wordvec(text_content,start_end_type_list):
     jieba.load_userdict(homepath+'/ace_ch_experiment/trigger.dict')
     s_e_sorted=sorted(start_end_type_list,key=lambda x:x[0])
-    label=[]
-    tmp_i=0
-
     word_list=[t for t in jieba.cut(text_content)]
+    
+    tmp_i=0
+    
+    train_data=[]
+    sen_list=[]
+    label_list=[0 for tt in range(type_num)]
     for t in word_list:
-        tmp_j=tmp_i+len(t)-1
-        if (tmp_i,tmp_j) in s_e_sorted:
-            label.append(1)
+        if t==u'。':
+            if 1 not in label_list:
+                label_list[type_num-1]=1
+            train_data.append((sen_list,label_list))
+            sen_list=[]
+            label_list=[0 for tt in range(type_num)]
         else:
-            label.append(0)
-        tmp_i=tmp_j+1
+            sen_list.append(t)
         
-    assert len(word_list)==len(label)
-    return (word_list,label)
+        tmp_j=tmp_i+len(t)-1
+        for start_end_type in s_e_sorted:
+            if tmp_i==start_end_type[0] and tmp_j==start_end_type[1]:
+                label_list[start_end_type[2]]=1
+            
+        tmp_i=tmp_j+1
+    
+    return train_data
 
 
 def get_text_from_sgm(sgm_file):
@@ -84,25 +104,28 @@ def read_answer(filename_prefix):
         doc=etree.fromstring(tag_content)
         trigger_list=[]
         sen_list=[]
-        
+        event_list=[]
         start_end_type_list = []
          
         for i in doc.xpath("//event"):
             assert len(i.xpath(".//anchor"))>0,'len(i.xpath(".//anchor"))>0报错'
-            cur_ele = i.xpath(".//anchor")
-#             event_type = i.xpath("./@TYPE")[0]+'.'+i.xpath("./@SUBTYPE")[0]
-#             print(event_type)
+            
+            event_type = i.xpath("./@TYPE")[0]+'.'+i.xpath("./@SUBTYPE")[0]
+            event_num = EVENT_MAP[event_type]
             
             ldc_scope_ele=i.xpath(".//ldc_scope")
             for ldc_scope in ldc_scope_ele:
                 sentence_str=ldc_scope.xpath("./charseq/text()")[0].replace('\n','')
                 sen_list.append(sentence_str)
             
+            cur_ele = i.xpath(".//anchor")
             for anchor in cur_ele:
                 trigger_str = anchor.xpath("./charseq/text()")[0].replace('\n','')
                 trigger_list.append(trigger_str)
+                event_list.append(event_num)
         
         assert len(trigger_list)==len(sen_list),'触发词数目与句子数目不相等'
+        assert len(trigger_list)==len(event_list),'触发词数目与事件类型数目不相等'
         
         trilen=len(trigger_list)
         for i in range(trilen):
@@ -118,70 +141,43 @@ def read_answer(filename_prefix):
             tri_start=tri_position+sen_position
             tri_end=tri_start+len(trigger_list[i])-1
             
-            start_end_type_list.append((int(tri_start),int(tri_end)))
+            start_end_type_list.append((int(tri_start),int(tri_end),event_list[i]))
         
-
         return content2wordvec(text_content,start_end_type_list)
     except Exception as e:
         print(e)
         print(filename_prefix,'droped')
         return []
 
+
 def prepare_data():
     train_data=[]
-#     f=lambda x:x[:x.rfind('.')]
-#     f_list=[f(i) for i in os.listdir('./text2')]
     doclist=homepath+'/ace_ch_experiment/doclist/ACE_Chinese_all';
     f_list=[i.replace('\n','') for i in open(doclist,'r')]
-
     for i in f_list:
         tmp=read_answer(i)
-        if len(tmp)>1:
-            train_data.append(tmp)
+        if len(tmp)>0:
+            train_data.extend(tmp)
     train_data=[i for i in train_data if len(i[0])>0]
-    rs_f=open('./chACEdata/sentence1.txt','w', encoding='utf8')
-    for item in train_data:
-        word=item[0]
-        strtemp=' '.join([i for i in word])
-        rs_f.write(strtemp)
-        rs_f.write('\n')
-        rs_f.write(str(item[1]))
-        rs_f.write('\n')
-    new_train_data=[]
-    for item in train_data:
-        sentence=item[0]
-        label=item[1]
-        tmp_i=0
-        for index,i in enumerate(sentence):
-            if i==u'。':
-                new_train_data.append((sentence[tmp_i:index],label[tmp_i:index]))
-                tmp_i=index+1
- 
-    rs_f=open('./chACEdata/sentence2.txt','w', encoding='utf8')
-    for item in new_train_data:
-        word=item[0]
-        rs_f.write(' '.join([i for i in word]))
-        rs_f.write('\n')
-        rs_f.write(str(item[1]))
-        rs_f.write('\n')
-    rs_f=open('./chACEdata/trigger_iden.data','wb')
-    pickle.dump(new_train_data,rs_f)
-
-
+    sentence3_f=open('./chACEdata/sentence3.txt','w', encoding='utf8')
+    for i in train_data:
+        sentence3_f.write(' '.join(i[0]))
+        sentence3_f.write('\n')
+        sentence3_f.write(str(i[1]))
+        sentence3_f.write('\n')
+    rs_f=open('./chACEdata/event_class.data','wb')
+    pickle.dump(train_data,rs_f)
 
 if __name__ == '__main__':
-    print('--------------------------main start-----------------------------')
-    #read_answer('/bn/adj/CTV20001030.1330.0326')
+    
     prepare_data()
-#     m=read_answer('/wl/adj/CTV20001030.1330.0326.0844')
-#     for i in range(len(m[1])):
-#         if m[1][i]==1:
-#             print(m[0][i])
-# 
-#     print(m[0])
-#     print(m[1])
-#     path=homepath+'/ace_ch_experiment/corpus/'+'/wl/adj/LIUYIFENG_20050126.0844.sgm'
-#     text=get_text_from_sgm(path)
-#     print(text)
-
-    print('--------------------------main end-----------------------------')
+    
+#     str='澳门特区行政长官办公室、各司长办公室、行政会以及政府总部、辅助部门将从30号起从原来的 临时办公处迁出，正式在政府总部办公。 澳门特区政府总部位于前澳督府及政务司大楼，由三座建筑物和花园组成，面积约1万平方米，经 过近7个月的修缮，建筑物外观基本保留原有风格，对内部年久失修的天花板和下水道依照消防和 现代技术要求进行重新改造，而具有殖民色彩的照片等物品已送往澳门博物馆收藏。修缮改造后 的政府总部整体给人以明亮、简洁、大方的感觉，其中改动最大的是原立法会主席办公室现在改 为待客厅，并在厅内鲜花装饰立体莲花图案，成为最具澳门特区色彩部分。另外还新开辟了记者 室，安装了传真机等设备，为记者提供方便。据了解特区政府原来临时所使用的宋裕生广场办公 用房将尽快退租交还业主。中央台驻澳门记者报道。'
+#     start_end_type_list=[(4,7,1),(49, 50, 28)]
+#     content2wordvec(str, start_end_type_list)
+#     
+#     print('----------------------------------------------')
+    
+#     start_end_type_list=[(0,3),(49, 50)]
+#     content2wordvec2(str, start_end_type_list)
+    #read_answer("/wl/adj/DAVYZW_20041223.1020")
