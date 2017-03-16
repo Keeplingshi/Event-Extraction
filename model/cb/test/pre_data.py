@@ -13,32 +13,26 @@ import re
 import sys
 from xml_parse import xml_parse_base
 from xml.dom import minidom
-from model.cb.chinese.class_keras import pre_data
 
 homepath='D:/Code/pydev/EventExtract/'
 
 def content2wordvec(text_content,start_end_type_list):
     jieba.load_userdict(homepath+'/ace_ch_experiment/trigger.dict')
     s_e_sorted=sorted(start_end_type_list,key=lambda x:x[0])
-    word_list=[]
     label=[]
     tmp_i=0
-    def clean(x):
-        x=x.replace('\n','')
-        x=x.replace(' ','')
-        x=x.replace('\r','')
-        return x
-    for i,j in s_e_sorted:
-        sentence=clean(text_content[tmp_i:i])
-        tmp=[t for t in jieba.cut(sentence)]
-        word_list.extend(tmp)
-        tmp_i=j+1
-        label.extend([0 for t in range(len(tmp))])
-        word_list.append(clean(text_content[i:j+1]))
-        label.append(1)
+
+    word_list=[t for t in jieba.cut(text_content)]
+    for t in word_list:
+        tmp_j=tmp_i+len(t)-1
+        if (tmp_i,tmp_j) in s_e_sorted:
+            label.append(1)
+        else:
+            label.append(0)
+        tmp_i=tmp_j+1
+        
     assert len(word_list)==len(label)
     return (word_list,label)
-
 
 
 def get_text_from_sgm(sgm_file):
@@ -126,6 +120,7 @@ def read_answer(filename_prefix):
             
             start_end_type_list.append((int(tri_start),int(tri_end)))
         
+
         return content2wordvec(text_content,start_end_type_list)
     except Exception as e:
         print(e)
@@ -138,6 +133,7 @@ def prepare_data():
 #     f_list=[f(i) for i in os.listdir('./text2')]
     doclist=homepath+'/ace_ch_experiment/doclist/ACE_Chinese_all';
     f_list=[i.replace('\n','') for i in open(doclist,'r')]
+
     for i in f_list:
         tmp=read_answer(i)
         if len(tmp)>1:
@@ -175,9 +171,9 @@ def prepare_data():
 
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
-    
+    #read_answer('/bn/adj/CTV20001030.1330.0326')
     prepare_data()
-#     m=read_answer('/wl/adj/LIUYIFENG_20050126.0844')
+#     m=read_answer('/wl/adj/CTV20001030.1330.0326.0844')
 #     for i in range(len(m[1])):
 #         if m[1][i]==1:
 #             print(m[0][i])
