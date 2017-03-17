@@ -6,6 +6,12 @@ Created on 2017年3月16日
 a) word转为词序号
 从训练语料统计获得单词列表，并按照词频从大到小排序，序号从0开始，然后将句子中单词全部转为序号
 
+生成文件
+./chACEdata/word_index.json
+./chACEdata/train_data.data
+./chACEdata/my_model_architecture2.json
+./chACEdata/my_model_weights2.h5
+
 结果                P                     R               F
 0.7551020408163265 0.41294642857142855 0.5339105339105338
 @author: chenbin

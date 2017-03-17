@@ -1,16 +1,9 @@
-# coding:utf-8
 '''
-Created on 2017年3月15日
+Created on 2017年3月17日
 事件识别数据处理
-二分类，one-hot向量
+34类
 a) word转为词序号
 从训练语料统计获得单词列表，并按照词频从大到小排序，序号从0开始，然后将句子中单词全部转为序号
-
-生成文件
-./chACEdata/sentence1.txt
-./chACEdata/sentence2.txt
-./chACEdata/trigger_iden.data
-
 @author: chenbin
 '''
 
@@ -22,6 +15,7 @@ import re
 import sys
 from xml_parse import xml_parse_base
 from xml.dom import minidom
+from cb.test.type_index import EVENT_MAP
 
 homepath='D:/Code/pydev/EventExtract/'
 
@@ -34,13 +28,21 @@ def content2wordvec(text_content,start_end_type_list):
     word_list=[t for t in jieba.cut(text_content)]
     for t in word_list:
         tmp_j=tmp_i+len(t)-1
-        if (tmp_i,tmp_j) in s_e_sorted:
-            label.append(1)
-        else:
-            label.append(0)
-        tmp_i=tmp_j+1
+        flag=0
+        for start_end_type in s_e_sorted:
+            if tmp_i==start_end_type[0] and tmp_j==start_end_type[1]:
+                flag=1
         
-    assert len(word_list)==len(label)
+        if flag==1:
+            label.append(start_end_type[2])
+        else:
+            label.append(33)
+        
+        tmp_i=tmp_j+1
+
+      
+    assert len(word_list)==len(label),'word_list与label长度不相等'
+
     return (word_list,label)
 
 
@@ -93,14 +95,17 @@ def read_answer(filename_prefix):
         doc=etree.fromstring(tag_content)
         trigger_list=[]
         sen_list=[]
+        event_list=[]
+        start_end_type_list = []
         
         start_end_type_list = []
          
         for i in doc.xpath("//event"):
             assert len(i.xpath(".//anchor"))>0,'len(i.xpath(".//anchor"))>0报错'
             cur_ele = i.xpath(".//anchor")
-#             event_type = i.xpath("./@TYPE")[0]+'.'+i.xpath("./@SUBTYPE")[0]
-#             print(event_type)
+
+            event_type = i.xpath("./@TYPE")[0]+'.'+i.xpath("./@SUBTYPE")[0]
+            event_num = EVENT_MAP[event_type]
             
             ldc_scope_ele=i.xpath(".//ldc_scope")
             for ldc_scope in ldc_scope_ele:
@@ -110,8 +115,10 @@ def read_answer(filename_prefix):
             for anchor in cur_ele:
                 trigger_str = anchor.xpath("./charseq/text()")[0].replace('\n','')
                 trigger_list.append(trigger_str)
+                event_list.append(event_num)
         
         assert len(trigger_list)==len(sen_list),'触发词数目与句子数目不相等'
+        assert len(trigger_list)==len(event_list),'触发词数目与事件类型数目不相等'
         
         trilen=len(trigger_list)
         for i in range(trilen):
@@ -127,9 +134,8 @@ def read_answer(filename_prefix):
             tri_start=tri_position+sen_position
             tri_end=tri_start+len(trigger_list[i])-1
             
-            start_end_type_list.append((int(tri_start),int(tri_end)))
+            start_end_type_list.append((int(tri_start),int(tri_end),event_list[i]))
         
-
         return content2wordvec(text_content,start_end_type_list)
     except Exception as e:
         print(e)
@@ -148,7 +154,7 @@ def prepare_data():
         if len(tmp)>1:
             train_data.append(tmp)
     train_data=[i for i in train_data if len(i[0])>0]
-    rs_f=open('./chACEdata/sentence1.txt','w', encoding='utf8')
+    rs_f=open('./chACEdata/class_pre_data2_1.txt','w', encoding='utf8')
     for item in train_data:
         word=item[0]
         strtemp=' '.join([i for i in word])
@@ -166,21 +172,21 @@ def prepare_data():
                 new_train_data.append((sentence[tmp_i:index],label[tmp_i:index]))
                 tmp_i=index+1
  
-    rs_f=open('./chACEdata/sentence2.txt','w', encoding='utf8')
+    rs_f=open('./chACEdata/class_pre_data2_2.txt','w', encoding='utf8')
     for item in new_train_data:
         word=item[0]
         rs_f.write(' '.join([i for i in word]))
         rs_f.write('\n')
         rs_f.write(str(item[1]))
         rs_f.write('\n')
-    rs_f=open('./chACEdata/trigger_iden.data','wb')
+    rs_f=open('./chACEdata/class_pre_data2.data','wb')
     pickle.dump(new_train_data,rs_f)
 
 
 
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
-    #read_answer('/bn/adj/CTV20001030.1330.0326')
+    #read_answer('/bn/adj/CTV20001228.1330.1196')
     prepare_data()
 #     m=read_answer('/wl/adj/CTV20001030.1330.0326.0844')
 #     for i in range(len(m[1])):
@@ -194,3 +200,4 @@ if __name__ == '__main__':
 #     print(text)
 
     print('--------------------------main end-----------------------------')
+

@@ -1,13 +1,8 @@
-# coding:utf-8
 '''
-Created on 2017年3月16日
+Created on 2017年3月17日
 事件分类
-以整个句子作为分类标准，而不是触发词
-a) word转为词序号
-从训练语料统计获得单词列表，并按照词频从大到小排序，序号从0开始，然后将句子中单词全部转为序号
+触发词，34类
 
-结果                P                     R               F
-0.7838899803536346 0.5955223880597015 0.6768447837150127
 @author: chenbin
 '''
 
@@ -22,21 +17,16 @@ import pickle
 import nltk
 import itertools
 import json
-from cb.chinese.type_index import EVENT_MAP
-'''分类大法师'''
+import sys
 
 
 vocabulary_size=10000
 unknown_token = "UNKNOWN_TOKEN"
-sentence_start_token = "SENTENCE_START"
-sentence_end_token = "SENTENCE_END"
-type_num=len(EVENT_MAP)
 
 def pre_data():
-    '''不用切词'''
-    f=open('./chACEdata/event_class.data','rb')
+    '''不用切词，值'''
+    f=open('./chACEdata/class_pre_data2.data','rb')
     train_data=pickle.load(f)
-    word_dict=dict()
     tokenized_sentences=[i[0] for i in train_data]
     word_freq = nltk.FreqDist(itertools.chain(*tokenized_sentences))
     vocab = word_freq.most_common(vocabulary_size-1)
@@ -44,110 +34,112 @@ def pre_data():
     index_to_word = [x[0] for x in vocab]
     index_to_word.append(unknown_token)
     word_to_index = dict([(w,i+2) for i,w in enumerate(index_to_word)])
-    word_index_f=open('./chACEdata/word_index2.json','w')
+    word_index_f=open('./chACEdata/class_event2_word_index.json','w')
     json.dump(word_to_index,word_index_f)
+
     x=[]
     y=[]
     for item in train_data:
         x.append([word_to_index[word] if word in word_to_index else word_to_index[unknown_token] for word in item[0]])
-        assert sum(item[1])>0
         y.append(item[1])
     X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)  
-    print(X_train[5])
-    print(Y_train[5])#输出来看是否对了，检查对了。
+    print(X_train[0])
+    print(Y_train[0])
     data=X_train,X_test,Y_train,Y_test
-    f=open('./chACEdata/train_data_4class.data','wb')
+    f=open('./chACEdata/class_event2_train_data.data','wb')
     pickle.dump(data,f)
+
 
 def lstm():
     maxlen = 180  # cut texts after this number of words (among top max_features most common words)
-    batch_size = 32
-    data_f=open('./chACEdata/train_data_4class.data','rb')
+    data_f=open('./chACEdata/class_event2_train_data.data','rb')
     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
     X_train2=[]
     Y_train2=[]
-  
+    for i,j in zip(X_train,Y_train):
+        tmp=sum(j)
+        if tmp>0:
+            X_train2.append(i)
+            Y_train2.append(j)
+
     print(len(X_train), 'train sequences')
     print(len(X_test), 'test sequences')
     
     print('Pad sequences (samples x time)')
 
-    X_train = sequence.pad_sequences(X_train, maxlen=maxlen)
-    Y_train = sequence.pad_sequences(Y_train, maxlen=type_num)
-    for i in Y_train:
-        print(np.sum(i))
-        assert np.sum(i)>0
-    
+    X_train = sequence.pad_sequences(X_train2, maxlen=maxlen)
+    Y_train1 = sequence.pad_sequences(Y_train2, maxlen=maxlen)
+    print(Y_train1[0])
+   
+    Y_train = np.asarray([np_utils.to_categorical(j,34) for j in Y_train1])
+      
     print('X_train shape:', X_train.shape)
     print('Y_train shape:', Y_train.shape)
+    
+    print(Y_train[0][2])
+    sys.exit()
 
     model = Sequential()
     # model.add(Embedding(DICT_SIZE, EMBED_SIZE, input_length=MAX_SENTENCE_LEN))
     model.add(Embedding(vocabulary_size+3, 256, input_length=maxlen, mask_zero=True))
-    model.add(LSTM(128, input_shape=(maxlen,256)))    
-    # # model.add(TimeDistributed(Dense(NUM_CLASS, activation='softmax')))                           
-    model.add(Dense(type_num,activation='softmax'))             
+    # model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
+    model.add(LSTM(128, return_sequences=True))    
+    # model.add(TimeDistributed(Dense(NUM_CLASS, activation='softmax')))                           
+    model.add(TimeDistributed(Dense(34,activation='softmax')))               
 
     model.compile(loss='categorical_crossentropy',                                   
                   optimizer='rmsprop',                                               
                   metrics=['accuracy'])
 
-    model.fit(X_train, Y_train, batch_size=16,verbose=1, nb_epoch=10)
+    model.fit(X_train, Y_train, batch_size=16,verbose=1, nb_epoch=1)
 
     json_string  = model.to_json() 
 
-    open('./chACEdata/my_class_model_architecture.json','w').write(json_string) 
+    open('./chACEdata/class_event2_my_model_architecture2.json','w').write(json_string) 
 
-    model.save_weights('./chACEdata/my_class_model_weights.h5') 
+    model.save_weights('./chACEdata/class_event2_my_model_weights2.h5') 
 
 
 def lstm_test():
 
     maxlen = 180  # cut texts after this number of words (among top max_features most common words)
     batch_size = 32
-    data_f=open('./chACEdata/train_data_4class.data','rb')
+    data_f=open('./chACEdata/class_event2_train_data.data','rb')
 
     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
-    model = model_from_json(open('./chACEdata/my_class_model_architecture.json').read()) 
-    model.load_weights('./chACEdata/my_class_model_weights.h5')
+    model = model_from_json(open('./chACEdata/class_event2_my_model_architecture2.json').read()) 
+    model.load_weights('./chACEdata/class_event2_my_model_weights2.h5')
+
     X_test1 = sequence.pad_sequences(X_test, maxlen=maxlen)
-    Y_test1 = sequence.pad_sequences(Y_test, maxlen=type_num)
+    Y_test1 = sequence.pad_sequences(Y_test, maxlen=maxlen)
 
     # for i,j in zip(Y_test1,Y_test):
     #     a1=np.array(j)
     #     a2=np.array(i[-1*len(j):])
     #     print a1-a2
-    rs = model.predict(X_test1)
-    rs =np.array([[1 if i>0.5 else 0 for i in j] for j in rs]) 
+    rs = model.predict_classes(X_test1)
     rs_all=0
     rs_pre=0
     rs_right=0
     line=0
-    for i,j in zip(Y_test,rs):
+    for i,j in zip(Y_test1,rs):
         line+=1
         for i1,j1 in zip(i,j):
-            if i1==1:rs_all+=1
-            if j1==1:rs_pre+=1
-            if i1==j1 and i1==1:
+            print(i1,j1)
+            if i1!=33:rs_all+=1
+            if j1!=33:rs_pre+=1
+            if i1==j1 and i1!=33:
                 rs_right+=1
     print(rs_all,rs_pre,rs_right)
-    P=rs_right/rs_pre
-    R=rs_right/rs_all
+    P=rs_right/rs_all
+    R=rs_right/rs_pre
     F=2*P*R/(P+R)
     print(P,R,F)
-#     np.savetxt('./chACEdatars22.txt',np.array(Y_test))
-#     np.savetxt('./chACEdatapre22.txt',rs)
+#     np.savetxt('./chACEdata/rs2.txt',Y_test1)
+#     # predict_rs=np.array([[0 if j[0]>j[1] else 1 for j in i] for i in rs])
+#     np.savetxt('./chACEdata/pre_txt.txt',rs)
 
 if __name__ == '__main__':
     #pre_data()
-
-    #lstm()
-    lstm_test()
-
-
-#     data_f=open('./chACEdata/train_data_4class.data','rb')
-# 
-#     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
-#     for i in Y_train:
-#         print(i)
-
+    lstm()
+    #lstm_test()
