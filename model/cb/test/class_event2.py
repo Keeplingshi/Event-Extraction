@@ -54,6 +54,13 @@ def lstm():
     maxlen = 180  # cut texts after this number of words (among top max_features most common words)
     data_f=open('./chACEdata/class_event2_train_data.data','rb')
     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+    print(X_train[0])
+    print(X_train[1])
+     
+    print(Y_train[0])
+    print(Y_train[1])
+    print('-------------------------------------')
+     
     X_train2=[]
     Y_train2=[]
     for i,j in zip(X_train,Y_train):
@@ -61,27 +68,44 @@ def lstm():
         if tmp>0:
             X_train2.append(i)
             Y_train2.append(j)
-
+ 
     print(len(X_train), 'train sequences')
     print(len(X_test), 'test sequences')
     
-    print('Pad sequences (samples x time)')
-
-    X_train = sequence.pad_sequences(X_train2, maxlen=maxlen)
-    Y_train1 = sequence.pad_sequences(Y_train2, maxlen=maxlen)
-    print(Y_train1[0])
-   
-    Y_train = np.asarray([np_utils.to_categorical(j,34) for j in Y_train1])
-      
-    print('X_train shape:', X_train.shape)
-    print('Y_train shape:', Y_train.shape)
+    print(X_train2[1])
+    print(Y_train2[1])
     
-    print(Y_train[0][2])
+    print('Pad sequences (samples x time)')
+ 
+#     X_train = sequence.pad_sequences(X_train2, maxlen=maxlen)
+#     Y_train1 = sequence.pad_sequences(Y_train2, maxlen=maxlen)
+    
+#     Y_train = np.asarray([np_utils.to_categorical(j,34) for j in Y_train1])
+#        
+#     print('X_train shape:', X_train.shape)
+#     print('Y_train shape:', Y_train.shape)
+#      
+#     print(X_train[0])
+#     print(Y_train[0][2])
     sys.exit()
+
+# model = Sequential()
+# model.add(Embedding(max_features, output_dim=256))
+# model.add(LSTM(128))
+# model.add(Dropout(0.5))
+# model.add(Dense(1, activation='sigmoid'))
+# 
+# model.compile(loss='binary_crossentropy',
+#               optimizer='rmsprop',
+#               metrics=['accuracy'])
+# 
+# model.fit(x_train, y_train, batch_size=16, epochs=10)
+# score = model.evaluate(x_test, y_test, batch_size=16)
+
 
     model = Sequential()
     # model.add(Embedding(DICT_SIZE, EMBED_SIZE, input_length=MAX_SENTENCE_LEN))
-    model.add(Embedding(vocabulary_size+3, 256, input_length=maxlen, mask_zero=True))
+    model.add(Embedding(10, output_dim=256))
     # model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
     model.add(LSTM(128, return_sequences=True))    
     # model.add(TimeDistributed(Dense(NUM_CLASS, activation='softmax')))                           
