@@ -185,7 +185,7 @@ def pre_word2vec_data():
     f=open('./chACEdata/trigger_iden.data','rb')
     train_data=pickle.load(f)
 #
-    word2vec_file=homepath+'/acedeal/corpus_deal/ace_train_corpus.bin'
+    word2vec_file=homepath+'/acedeal/corpus_deal/ace_train_corpus2.bin'
     model = word2vec.Word2Vec.load_word2vec_format(word2vec_file, binary=True)
 
     x=[]
@@ -207,15 +207,17 @@ def pre_word2vec_data():
     X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)  
 
     data=X_train,X_test,Y_train,Y_test
-    f=open('chACEdata/train_data.data','wb')
+    f=open('./chACEdata/train_data.data','wb')
     pickle.dump(data,f)
 
 
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
     
-    data_f=open('./chACEdata/train_data.data','rb')
-    X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+    prepare_data()
+    pre_word2vec_data()
+#     data_f=open('./chACEdata/train_data.data','rb')
+#     X_train,X_test,Y_train,Y_test=pickle.load(data_f)
 
     #read_answer('/bn/adj/CTV20001030.1330.0326')
 #     pre_word2vec_data()

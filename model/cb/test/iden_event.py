@@ -27,6 +27,7 @@ import pickle
 import nltk
 import itertools
 import json
+import sys
 
 
 vocabulary_size=10000
@@ -145,6 +146,6 @@ def lstm_test():
 
 if __name__ == '__main__':
 #     pre_data()
-#     lstm()
-    lstm_test()
+    lstm()
+#    lstm_test()
 
