@@ -134,16 +134,16 @@ if __name__ == '__main__':
 #     lstm()
 #     lstm_test()
     
-    for i in range(10):
-        for j in range(10):
+    for i in range(9):
+        for j in range(9):
             dropout_W=i/10
             dropout_U=j/10
             lstm()
             lstm_test()
     
     lstm_activation='sigmod'
-    for i in range(10):
-        for j in range(10):
+    for i in range(9):
+        for j in range(9):
             dropout_W=i/10
             dropout_U=j/10
             lstm()
