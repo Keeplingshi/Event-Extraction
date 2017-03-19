@@ -18,7 +18,7 @@ from keras.preprocessing import sequence
 from keras.utils import np_utils
 from keras.models import Sequential,model_from_json
 from keras.layers import Dense, Dropout, Activation, Embedding,TimeDistributed,Flatten,Masking
-from keras.layers import LSTM, SimpleRNN, GRU
+from keras.layers import LSTM, SimpleRNN, GRU,Bidirectional
 import pickle
 import nltk
 import itertools
@@ -29,7 +29,7 @@ import time
 batch_size=50
 lstm_activation='tanh'
 lstm_inner_activation='hard_sigmoid'
-timeDistributed_dense_activation='softmax'
+timeDistributed_dense_activation='sigmoid'
 nb_epoch=10
 maxlen = 180
 dropout_W=0.
@@ -62,12 +62,10 @@ def lstm():
     print('Y_train shape:', Y_train.shape)
 
     model = Sequential()
-    # model.add(Embedding(DICT_SIZE, EMBED_SIZE, input_length=MAX_SENTENCE_LEN))
     model.add(Masking(mask_value=0, input_shape=(180, 200)))
-    #model.add(Embedding(10000, output_dim=256, input_length=maxlen, mask_zero=True))
-    # model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
     model.add(LSTM(output_dim=128, activation=lstm_activation, inner_activation=lstm_inner_activation,dropout_W=dropout_W,dropout_U=dropout_U, return_sequences=True))    #,input_dim=200, input_length=180
-    # model.add(TimeDistributed(Dense(NUM_CLASS, activation='softmax')))                           
+    #model.add(LSTM(output_dim=128, activation=lstm_activation, inner_activation=lstm_inner_activation,dropout_W=dropout_W,dropout_U=dropout_U, return_sequences=True,go_backwards=True))    #,input_dim=200, input_length=180
+    
     model.add(TimeDistributed(Dense(2,activation=timeDistributed_dense_activation))) 
 
     model.compile(loss='categorical_crossentropy',                                   
@@ -133,6 +131,20 @@ def lstm_test():
 
 if __name__ == '__main__':
 #     pre_data()
-    lstm()
-    lstm_test()
-
+#     lstm()
+#     lstm_test()
+    
+    for i in range(10):
+        for j in range(10):
+            dropout_W=i/10
+            dropout_U=j/10
+            lstm()
+            lstm_test()
+    
+    lstm_activation='sigmod'
+    for i in range(10):
+        for j in range(10):
+            dropout_W=i/10
+            dropout_U=j/10
+            lstm()
+            lstm_test()
