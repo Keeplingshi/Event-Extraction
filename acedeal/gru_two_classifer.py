@@ -4,6 +4,7 @@ Created on 2017年2月17日
 @author: chenbin
 '''
 import pickle
+# import tensorflow as tf
 import tensorflow as tf
 # from tensorflow.python.ops import rnn, rnn_cell
 import numpy as np
