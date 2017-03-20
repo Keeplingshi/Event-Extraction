@@ -15,8 +15,8 @@ import json
 import sys
 import time
 
-data_f=open('./enACEdata/train_data2.data','rb')
-X_train,Y_train,X_dev,Y_dev,X_test,Y_test=pickle.load(data_f)
+data_f = open('./enACEdata/train_data2.data', 'rb')
+X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
 hello = tf.constant('Hello, TensorFlow!')
