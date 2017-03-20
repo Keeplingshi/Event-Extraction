@@ -29,7 +29,7 @@ import time
 batch_size=50
 lstm_activation='tanh'
 lstm_inner_activation='hard_sigmoid'
-timeDistributed_dense_activation='sigmoid'
+timeDistributed_dense_activation='softmax'
 nb_epoch=10
 maxlen = 180
 dropout_W=0.
@@ -131,20 +131,20 @@ def lstm_test():
 
 if __name__ == '__main__':
 #     pre_data()
-#     lstm()
-#     lstm_test()
+    lstm()
+    lstm_test()
     
-    for i in range(9):
-        for j in range(9):
-            dropout_W=i/10
-            dropout_U=j/10
-            lstm()
-            lstm_test()
-    
-    lstm_activation='sigmod'
-    for i in range(9):
-        for j in range(9):
-            dropout_W=i/10
-            dropout_U=j/10
-            lstm()
-            lstm_test()
+#     for i in range(9):
+#         for j in range(9):
+#             dropout_W=i/10
+#             dropout_U=j/10
+#             lstm()
+#             lstm_test()
+#     
+#     lstm_activation='sigmod'
+#     for i in range(9):
+#         for j in range(9):
+#             dropout_W=i/10
+#             dropout_U=j/10
+#             lstm()
+#             lstm_test()
