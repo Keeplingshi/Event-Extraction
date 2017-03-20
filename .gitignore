@@ -8,3 +8,5 @@ corpus_deal
 *.log
 /ace_en_experiment/
 /ace_ch_experiment/
+/.idea/
+/.settings/
