@@ -1,2 +1,0 @@
-model_checkpoint_path: "ace_bl.ckpt"
-all_model_checkpoint_paths: "ace_bl.ckpt"
