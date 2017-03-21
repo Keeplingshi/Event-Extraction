@@ -2,7 +2,7 @@
 """
 Created on 2017年3月20日
 事件识别  二分类
-rnn
+rnn 测试提交
 @author: chenbin
 """
 
