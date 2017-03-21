@@ -55,7 +55,11 @@ def gru_RNN(x, weights, biases,seq_len):
     # Get gru cell output
     #outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x, dtype=tf.float32)
     outputs, output_states = tf.nn.bidirectional_dynamic_rnn(gru_fw_cell, gru_bw_cell, x,sequence_length=seq_len, dtype=tf.float32)
-    results = tf.tanh(tf.matmul(outputs[-1], weights) + biases)
+
+    outputs = tf.concat(2, outputs)
+    # As we want do classification, we only need the last output from LSTM.
+    last_output = outputs[:, 0, :]
+    results = tf.tanh(tf.matmul(last_output, weights) + biases)
 
     return results
 
@@ -82,7 +86,7 @@ with tf.Session() as sess:
         batch_size = len(batch_xs)
         batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
 
-        train_seq_len = np.ones(batch_size) * nInput
+        train_seq_len = np.ones(batch_size) * nSteps
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
 
@@ -100,12 +104,12 @@ with tf.Session() as sess:
 #     acc = 0
     for i in range(length):
         test_len = len(X_test[i])
-        test_data = X_test[i].reshape(
-            (-1, nSteps, nInput))  # 8
+        test_data = X_test[i].reshape((-1, nSteps, nInput))  # 8
+        train_seq_len = np.ones(test_len) * nSteps
         test_label = Y_test[i]
         # prediction识别出的结果，y_测试集中的正确结果
         prediction, y_ = sess.run(
-            [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+            [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label,seq_len:train_seq_len})
         for t in range(len(y_)):
             if prediction[t] != 1:
                 p_s = p_s + 1
@@ -123,6 +127,5 @@ with tf.Session() as sess:
     print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
 
 """
-164------319------289
-P=0.5141065830721003	R=0.5674740484429066	F=0.5394736842105263
+
 """

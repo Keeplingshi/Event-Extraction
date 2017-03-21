@@ -1,31 +1,31 @@
-'''
+"""
 Created on 2017年3月20日
 将34分类处理成两分类
 @author: chenbin
-'''
+"""
 
 import numpy as np
 import pickle
 import sys
 
-homepath='D:/Code/pydev/EventExtract/'
+homepath='D:/Code/pycharm/Event-Extraction/'
 
-ace_data_train_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_train.pkl', 'rb')
+ace_data_train_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_train.pkl', 'rb')
 X_train = pickle.load(ace_data_train_file)
 
-ace_data_train_labels_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_train_labels.pkl', 'rb')
+ace_data_train_labels_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_train_labels.pkl', 'rb')
 Y_train = pickle.load(ace_data_train_labels_file)
 
-ace_data_dev_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_dev.pkl', 'rb')
+ace_data_dev_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_dev.pkl', 'rb')
 X_dev = pickle.load(ace_data_dev_file)
 
-ace_data_dev_labels_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_dev_labels.pkl', 'rb')
+ace_data_dev_labels_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_dev_labels.pkl', 'rb')
 Y_dev = pickle.load(ace_data_dev_labels_file)
 
-ace_data_test_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_test.pkl', 'rb')
+ace_data_test_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_test.pkl', 'rb')
 X_test = pickle.load(ace_data_test_file)
 
-ace_data_test_labels_file = open(homepath+'ace_en_experiment/ace_data_process/ace_eng_data2/ace_data_test_labels.pkl', 'rb')
+ace_data_test_labels_file = open(homepath+'ace_data_process/ace_eng_data2/ace_data_test_labels.pkl', 'rb')
 Y_test = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()
@@ -35,9 +35,9 @@ ace_data_dev_labels_file.close()
 ace_data_test_file.close()
 ace_data_test_labels_file.close()
 
-# data=X_train,Y_train,X_dev,Y_dev,X_test,Y_test
-# f=open('./enACEdata/train_data34.data','wb')
-# pickle.dump(data,f)
+data=X_train,Y_train,X_dev,Y_dev,X_test,Y_test
+f=open('./enACEdata/train_data34.data','wb')
+pickle.dump(data,f)
 
 m_train=[]
 for i in Y_train:
