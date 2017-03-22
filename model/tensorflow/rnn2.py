@@ -27,7 +27,7 @@ batch_size = 1
 
 nInput = 200
 nSteps = 1
-nHidden = 100
+nHidden = 128
 nClasses = 2
 
 x = tf.placeholder('float', [None, nSteps, nInput])
@@ -51,6 +51,9 @@ def gru_RNN(x, weights, biases,seq_len):
     gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     # Backward direction cell
     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
+
+    gru_fw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_fw_cell, output_keep_prob=1.0)
+    gru_bw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_bw_cell, output_keep_prob=1.0)
 
     # Get gru cell output
     #outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x, dtype=tf.float32)
@@ -90,7 +93,6 @@ with tf.Session() as sess:
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
 
-
         k += 1
     print('Optimization finished')
 
@@ -127,5 +129,15 @@ with tf.Session() as sess:
     print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
 
 """
+158------273------289
+P=0.5787545787545788	R=0.5467128027681661	F=0.5622775800711745
 
+179------326------289
+P=0.549079754601227	R=0.6193771626297578	F=0.5821138211382114
+
+187------356------289
+P=0.5252808988764045	R=0.6470588235294118	F=0.57984496124031
+
+208------395------289
+P=0.5265822784810127	R=0.7197231833910035	F=0.6081871345029239
 """
