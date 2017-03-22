@@ -55,6 +55,9 @@ def gru_RNN(x, weights, biases,seq_len):
     gru_fw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_fw_cell, output_keep_prob=1.0)
     gru_bw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_bw_cell, output_keep_prob=1.0)
 
+    gru_fw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_fw_cell] * 2)
+    gru_bw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_bw_cell] * 2)
+
     # Get gru cell output
     #outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x, dtype=tf.float32)
     outputs, output_states = tf.nn.bidirectional_dynamic_rnn(gru_fw_cell, gru_bw_cell, x,sequence_length=seq_len, dtype=tf.float32)
@@ -140,4 +143,7 @@ P=0.5252808988764045	R=0.6470588235294118	F=0.57984496124031
 
 208------395------289
 P=0.5265822784810127	R=0.7197231833910035	F=0.6081871345029239
+
+194------390------289
+P=0.49743589743589745	R=0.671280276816609	F=0.5714285714285714
 """
