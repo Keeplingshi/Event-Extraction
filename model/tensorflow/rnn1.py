@@ -15,20 +15,27 @@ import json
 import sys
 import time
 
-data_f = open('./enACEdata/train_data2.data', 'rb')
+data_f = open('./enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
+print(len(X_train))
+print(len(X_train[0]))
+print(len(X_train[0][0]))
+
+print(len(Y_train))
+print(len(Y_train[0]))
+print(len(Y_train[0][0]))
 
 # 参数
 learningRate = 0.001
 training_iters = 29830
 batch_size = 1
 
-nInput = 200
+nInput = 300
 nSteps = 1
 nHidden = 100
-nClasses = 2
+nClasses = 34
 
 x = tf.placeholder('float', [None, nSteps, nInput])
 y = tf.placeholder('float', [None, nClasses])
@@ -78,7 +85,11 @@ with tf.Session() as sess:
         batch_xs = X_train[step]
         batch_ys = Y_train[step]
         batch_size = len(batch_xs)
+
         batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
+        print(batch_xs[0])
+        print(batch_ys[0])
+
 
         # output = sess.run(test, feed_dict={x: batch_xs})
         # print(output)
@@ -112,10 +123,10 @@ with tf.Session() as sess:
         prediction, y_ = sess.run(
             [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
         for t in range(len(y_)):
-            if prediction[t] != 1:
+            if prediction[t] != 33:
                 p_s = p_s + 1
 
-            if y_[t] != 1:
+            if y_[t] != 33:
                 r_s = r_s + 1
                 if y_[t] == prediction[t]:
                     pr_acc = pr_acc + 1

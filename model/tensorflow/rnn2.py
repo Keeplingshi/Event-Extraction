@@ -30,7 +30,7 @@ nSteps = 1
 nHidden = 128
 nClasses = 2
 
-x = tf.placeholder('float', [None, nSteps, nInput])
+x = tf.placeholder('float', [nSteps, None, nInput])
 y = tf.placeholder('float', [None, nClasses])
 
 seq_len = tf.placeholder(tf.int32, [None])
@@ -52,11 +52,11 @@ def gru_RNN(x, weights, biases,seq_len):
     # Backward direction cell
     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
 
-    gru_fw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_fw_cell, output_keep_prob=1.0)
-    gru_bw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_bw_cell, output_keep_prob=1.0)
+    gru_fw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_fw_cell, output_keep_prob=0.5)
+    gru_bw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_bw_cell, output_keep_prob=0.5)
 
-    gru_fw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_fw_cell] * 2)
-    gru_bw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_bw_cell] * 2)
+    # gru_fw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_fw_cell] * 2)
+    # gru_bw_cell = tf.nn.rnn_cell.MultiRNNCell([gru_bw_cell] * 2)
 
     # Get gru cell output
     #outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x, dtype=tf.float32)
@@ -90,7 +90,7 @@ with tf.Session() as sess:
         batch_xs = X_train[step]
         batch_ys = Y_train[step]
         batch_size = len(batch_xs)
-        batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
+        batch_xs = batch_xs.reshape([nSteps, batch_size, nInput])
 
         train_seq_len = np.ones(batch_size) * nSteps
 
@@ -109,7 +109,7 @@ with tf.Session() as sess:
 #     acc = 0
     for i in range(length):
         test_len = len(X_test[i])
-        test_data = X_test[i].reshape((-1, nSteps, nInput))  # 8
+        test_data = X_test[i].reshape((nSteps,-1, nInput))  # 8
         train_seq_len = np.ones(test_len) * nSteps
         test_label = Y_test[i]
         # prediction识别出的结果，y_测试集中的正确结果
@@ -146,4 +146,7 @@ P=0.5265822784810127	R=0.7197231833910035	F=0.6081871345029239
 
 194------390------289
 P=0.49743589743589745	R=0.671280276816609	F=0.5714285714285714
+
+198------367------289
+P=0.5395095367847411	R=0.6851211072664359	F=0.6036585365853657
 """
