@@ -3,14 +3,11 @@
 # @date：2017-02-26
 # 
 
-from gensim.models import word2vec
 import pickle
-import sys
-import os
-import string
-import time
+
 import numpy as np
-from model.tensorflow.data_process import process_english_data
+
+from model.tensorflow.trash import process_english_data
 
 homepath='D:/Code/pycharm/Event-Extraction/'
 

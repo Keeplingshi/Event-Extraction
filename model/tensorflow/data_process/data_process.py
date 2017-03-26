@@ -20,8 +20,26 @@ endpunc="""!"#$%&'()*+,./:;<=>?@[\]^`{|}~"""
 # testpath=homepath+'/ace_en_experiment/test/'
 # devpath=homepath+'/ace_en_experiment/dev/'
 
+def get_word2vec():
+    word2vec_file=homepath+'/ace05/word2vec/wordvector'
+    wordlist_file=homepath+'/ace05/word2vec/wordlist'
+
+    wordvec={}
+    word2vec_f=open(word2vec_file,'r')
+    wordlist_f=open(wordlist_file,'r')
+    word_len=19488
+    for line in range(word_len):
+        word=wordlist_f.readline().strip()
+        vec=word2vec_f.readline().strip()
+        temp=vec.split(',')
+        temp = map(float, temp)
+        vec_list = []
+        for i in temp:
+            vec_list.append(i)
+        wordvec[word]=vec_list
+    return wordvec
+
 def get_text_from_sgm(sgm_file):
-    foldorname = ""
     if '/bn/' in sgm_file:
         foldorname = "bn"
     elif '/nw/' in sgm_file:
@@ -54,7 +72,6 @@ def get_text_from_sgm(sgm_file):
 """
 def str_replace_by_position(str,replacestr,start,end):
     tmp1=str[:start]
-    #tmp2=str[start:end]
     tmp3=str[end:]
     tmp=tmp1+replacestr+tmp3
     return tmp
@@ -174,6 +191,9 @@ def content2list(sgm_content, start_end_type_list):
     return word_list,type_list
 
 
+"""
+
+"""
 def list2vec(word_list,type_list,vec_dict):
     assert len(type_list)==len(word_list),'list2vec单词数目与实践类型数目不匹配'
     length=len(word_list)
@@ -193,20 +213,99 @@ def list2vec(word_list,type_list,vec_dict):
         if w_end==-1:
             #说明没有标点符号，则直接查找词向量
             if word in vec_dict.keys():
-                sen_list.append(vec_dict[word])
+                sen_list.append(vec_dict.get(word))
                 a = [0.0 for x in range(0, 34)]
                 a[type_list[i]-1] = 1.0
                 label_list.append(a)
         else:
             #如果有标点符号，判断标点符号是否为结束符，如果是，则断句处理。否则，特殊处理
-            wordtmp=word[:w_end]
-            if wordtmp in vec_dict.keys():
-                sen_list.append(vec_dict[word])
+            if word in vec_dict.keys():
+                sen_list.append(vec_dict.get(word))
                 a = [0.0 for x in range(0, 34)]
                 a[type_list[i]-1] = 1.0
                 label_list.append(a)
             else:
-                pass
+                wordtmp=word[w_end:]
+                flag=False
+                for tmp in wordtmp:
+                    if tmp.isalpha():
+                        flag=True
+                        break
+                if ~flag:
+                    wordtmp=word[:w_end]
+                    if wordtmp in vec_dict.keys():
+                        sen_list.append(vec_dict.get(word))
+                        a = [0.0 for x in range(0, 34)]
+                        a[type_list[i]-1] = 1.0
+                        label_list.append(a)
+                else:
+                    #处理doesn't,wasn't,isn't等
+                    if 'n\'t' in word:
+                        if word[-3:]=='n\'t':
+                            if word[:-3] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-3]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                sen_list.append(vec_dict.get('n\'t'))
+                                label_list.append(a)
+                    if '\'s' in word:
+                        if word[-2:]=='\'s':
+                            if word[:-2] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-2]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                sen_list.append(vec_dict.get('\'s'))
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                label_list.append(a)
+                    if '\'re' in word:
+                        if word[-3:]=='\'re':
+                            if word[:-3] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-3]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                sen_list.append(vec_dict.get('\'re'))
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                label_list.append(a)
+                    if '\'ve' in word:
+                        if word[-3:]=='\'ve':
+                            if word[:-3] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-3]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                sen_list.append(vec_dict.get('\'ve'))
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                label_list.append(a)
+                    if '\'ll' in word:
+                        if word[-3:]=='\'ll':
+                            if word[:-3] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-3]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                sen_list.append(vec_dict.get('\'ll'))
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                label_list.append(a)
+                    if '\'d' in word:
+                        if word[-2:]=='\'d':
+                            if word[:-2] in vec_dict.keys():
+                                sen_list.append(vec_dict.get(word[:-2]))
+                                a = [0.0 for x in range(0, 34)]
+                                a[type_list[i]-1] = 1.0
+                                label_list.append(a)
+                                sen_list.append(vec_dict.get('\'d'))
+                                a = [0.0 for x in range(0, 34)]
+                                a[33] = 1.0
+                                label_list.append(a)
 
             #断句操作
             if '.' in word or '!' in word or '?' in word:
@@ -230,31 +329,8 @@ def get_phrase_posi(ss):
         s=s+' '+strlist[i]
     return s,strlist[k-1]
 
-if __name__ == '__main__':
-    ss='12345ddafdad?dfaa"'
-    if '.' in ss or '!' in ss or '?' in ss:
-        print(ss)
-    sys.exit()
 
-
-    # d = {'name':1,'age':2,'sex':3}
-    # if 'namea' in d.keys():
-    #     print('111')
-    # else:
-    #     print('222')
-    # # print(d['name'])
-    # sys.exit()
-
-    filename1=acepath+'/nw/timex2norm/AFP_ENG_20030323.0020'
-    filename2=acepath+'/nw/timex2norm/AFP_ENG_20030509.0345'
-    filename3 = acepath + '/bc/timex2norm/CNN_IP_20030330.1600.05-2'
-    filename4 = acepath + 'bn/timex2norm/CNN_ENG_20030424_113549.11'
-    filename5 = acepath + 'un/timex2norm/alt.corel_20041228.0503'
-    filename6 = acepath + '/wl/timex2norm/AGGRESSIVEVOICEDAILY_20041226.1712'
-    filename7 = acepath + '/cts/timex2norm/fsh_29191'
-    filename8=acepath+'nw/timex2norm/APW_ENG_20030304.0555'
-
-
+def pre_data():
     wordlist_file = homepath + '/ace05/word2vec/wordlist'
     wordlist = [i.replace('\n', '') for i in open(wordlist_file, 'r')]
     phrase_posi_file=homepath+'/ace05/word2vec/phrase_posi.txt'
@@ -263,33 +339,120 @@ if __name__ == '__main__':
         a,b=get_phrase_posi(i.replace('\n', ''))
         phrase_posi_dict[a]=b
 
-    # sgm_content,start_end_type_list=read_documnet(filename8,wordlist,phrase_posi_dict)
-    # #print(sgm_content)
-    # for (start,end) in start_end_type_list:
-    #     print((start,end),sgm_content[start:end])
-    # print('---------------------------------------------')
-    # if content2vec(sgm_content,start_end_type_list,wordlist)==1:
-    #     print('111111111111111111111111')
-    # sys.exit()
+    vec_dict=get_word2vec()
 
-    doclist=homepath+'/ace05/new_filelist_ACE_full.txt'
-    f_list=[i.replace('\n','') for i in open(doclist,'r')]
-    # doclist2=homepath+'/ace05/new_filelist_ACE_training.txt';
-    # f_list2=[i.replace('\n','') for i in open(doclist2,'r')]
-    k=0
-    x=0
-    for i in f_list:
+    doclist_train=homepath+'/ace05/new_filelist_ACE_training.txt'
+    doclist_train_f=[i.replace('\n','') for i in open(doclist_train,'r')]
+    doclist_test=homepath+'/ace05/new_filelist_ACE_test.txt';
+    doclist_test_f=[i.replace('\n','') for i in open(doclist_test,'r')]
+    doclist_dev=homepath+'/ace05/new_filelist_ACE_dev.txt';
+    doclist_dev_f=[i.replace('\n','') for i in open(doclist_dev,'r')]
+
+    X_train=[]
+    Y_train=[]
+    X_test=[]
+    Y_test=[]
+    X_dev=[]
+    Y_dev=[]
+
+
+    for i in doclist_train_f:
         path=acepath+i
         sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
         word_list,type_list=content2list(sgm_content, start_end_type_list)
-        # if content2vec(sgm_content,start_end_type_list)!=0:
-        #     x+=num
-        #     # if i in f_list2:
-        #     #     print(i)
+        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
+        X_train.extend(document_list)
+        Y_train.extend(document_label_list)
 
-        k+=1
-    print(k)
-    print(x)
+    for i in doclist_test_f:
+        path=acepath+i
+        sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
+        word_list,type_list=content2list(sgm_content, start_end_type_list)
+        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
+        X_test.extend(document_list)
+        Y_test.extend(document_label_list)
+
+    for i in doclist_dev_f:
+        path=acepath+i
+        sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
+        word_list,type_list=content2list(sgm_content, start_end_type_list)
+        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
+        X_dev.extend(document_list)
+        Y_dev.extend(document_label_list)
+
+    data=X_train,Y_train,X_test,Y_test,X_dev,Y_dev
+    f=open(homepath+'/model/tensorflow/enACEdata/data2/train_data34.data','wb')
+    pickle.dump(data,f)
+
+    m_train = []
+    for i in Y_train:
+        n = []
+        for j in i:
+            if j[33] == 1.0:
+                n.append([0.0, 1.0])
+            else:
+                n.append([1.0, 0.0])
+        m_train.append(n)
+
+    m_test = []
+    for i in Y_test:
+        n = []
+        for j in i:
+            if j[33] == 1.0:
+                n.append([0.0, 1.0])
+            else:
+                n.append([1.0, 0.0])
+        m_test.append(n)
+
+    m_dev = []
+    for i in Y_dev:
+        n = []
+        for j in i:
+            if j[33] == 1.0:
+                n.append([0.0, 1.0])
+            else:
+                n.append([1.0, 0.0])
+        m_dev.append(n)
+
+    data = X_train, m_train, X_dev, m_dev, X_test, m_test
+    f = open(homepath + '/model/tensorflow/enACEdata/data2/train_data2.data', 'wb')
+    pickle.dump(data, f)
+
+
+if __name__ == '__main__':
+    pre_data()
+    # filename1=acepath+'/nw/timex2norm/AFP_ENG_20030323.0020'
+    # filename2=acepath+'/nw/timex2norm/AFP_ENG_20030509.0345'
+    # filename3 = acepath + '/bc/timex2norm/CNN_IP_20030330.1600.05-2'
+    # filename4 = acepath + 'bn/timex2norm/CNN_ENG_20030424_113549.11'
+    # filename5 = acepath + 'un/timex2norm/alt.corel_20041228.0503'
+    # filename6 = acepath + '/wl/timex2norm/AGGRESSIVEVOICEDAILY_20041226.1712'
+    # filename7 = acepath + '/cts/timex2norm/fsh_29191'
+    # filename8=acepath+'nw/timex2norm/APW_ENG_20030304.0555'
+
+
+    # wordlist_file = homepath + '/ace05/word2vec/wordlist'
+    # wordlist = [i.replace('\n', '') for i in open(wordlist_file, 'r')]
+    # phrase_posi_file=homepath+'/ace05/word2vec/phrase_posi.txt'
+    # phrase_posi_dict={}
+    # for i in open(phrase_posi_file, 'r'):
+    #     a,b=get_phrase_posi(i.replace('\n', ''))
+    #     phrase_posi_dict[a]=b
+    #
+    # doclist=homepath+'/ace05/new_filelist_ACE_full.txt'
+    # f_list=[i.replace('\n','') for i in open(doclist,'r')]
+    # # doclist2=homepath+'/ace05/new_filelist_ACE_training.txt';
+    # # f_list2=[i.replace('\n','') for i in open(doclist2,'r')]
+    #
+    # vec_dict=get_word2vec()
+    # k=0
+    # for i in f_list:
+    #     path=acepath+i
+    #     sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
+    #     word_list,type_list=content2list(sgm_content, start_end_type_list)
+    #     list2vec(word_list,type_list,vec_dict)
+    #     k+=1
+    # print(k)
     #read_documnet(filename1)
 
     # read_documnet(filename2)

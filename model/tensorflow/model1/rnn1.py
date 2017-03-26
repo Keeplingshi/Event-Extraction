@@ -15,12 +15,13 @@ import json
 import sys
 import time
 
-data_f = open('./enACEdata/data2/train_data2.data', 'rb')
+data_f = open('../enACEdata/data2/train_data2.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
+print(len(X_train))
 
 # 参数
-event_num=2983
+event_num=15262
 learningRate = 0.001
 training_iters = event_num*10
 batch_size = 1
