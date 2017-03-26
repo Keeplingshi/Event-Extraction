@@ -8,10 +8,14 @@ from xml.dom import minidom
 from model.tensorflow.data_process import xml_parse
 from model.tensorflow.data_process import type_index
 import sys
+import string
+
 
 
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
+punctuation = """!"#$%&'()*+,./:;<=>?@[\]^`{|}~"""
+endpunc="""!"#$%&'()*+,./:;<=>?@[\]^`{|}~"""
 # trainpath=homepath+'/ace_en_experiment/train/'
 # testpath=homepath+'/ace_en_experiment/test/'
 # devpath=homepath+'/ace_en_experiment/dev/'
@@ -75,7 +79,7 @@ def read_documnet(file_name,wordlist,phrase_posi_dict):
 
     try:
         doc = etree.fromstring(apf_content)
-        start_end_type_list = []
+        start_end_type_list = {}
 
         for i in doc.xpath("//event"):
             assert len(i.xpath(".//anchor")) > 0, 'len(i.xpath(".//anchor"))>0报错'
@@ -115,7 +119,8 @@ def read_documnet(file_name,wordlist,phrase_posi_dict):
                             continue
 
                 #print(trigger_str,start,end,event_num)
-                start_end_type_list.append((start,end,event_num))
+                start_end_type_list[(start,end)]=event_num
+                #start_end_type_list.append(((start,end),event_num))
         #print(start_end_type_list)
         return sgm_content,start_end_type_list
 
@@ -125,16 +130,99 @@ def read_documnet(file_name,wordlist,phrase_posi_dict):
 
     return None
 
-def content2vec(sgm_content,start_end_type_list,wordlist):
-    for (start,end,event_num) in start_end_type_list:
-        word=sgm_content[start:end].replace('\n',' ').lower()
-        if word in wordlist:
-            pass
+
+"""
+内容转化为词向量
+"""
+def content2list(sgm_content, start_end_type_list):
+    word_list=[]
+    type_list=[]
+    sgm_content=sgm_content.replace('\n',' ')
+    wi=0
+    word=''
+    start=0
+    for w in sgm_content:
+        if w!=' ':
+            word=word+w
+
+        if w==' ':
+            end=wi
+            word_list.append(word)
+            #解决触发词最后一个字符为标点符号的情况
+            w_end=-1
+            for character in word:
+                if character in punctuation:
+                    w_end=word.index(character)
+                    break
+            if w_end==-1:
+                if (start,end) in start_end_type_list.keys():
+                    type_list.append(start_end_type_list[(start,end)])
+                else:
+                    type_list.append(34)
+            else:
+                end=end-len(word)+w_end
+                if (start,end) in start_end_type_list.keys():
+                    type_list.append(start_end_type_list[(start,end)])
+                else:
+                    type_list.append(34)
+
+            word=''
+            start=wi+1
+
+        wi+=1
+    assert len(type_list)==len(word_list),'content2list单词数目与实践类型数目不匹配'
+    return word_list,type_list
+
+
+def list2vec(word_list,type_list,vec_dict):
+    assert len(type_list)==len(word_list),'list2vec单词数目与实践类型数目不匹配'
+    length=len(word_list)
+    document_list=[]    #存储整个文档的向量
+    document_label_list=[]
+    sen_list=[]     #存储句子向量
+    label_list=[]
+
+    for i in range(length):
+        word=word_list[i].lower()       #取单词小写
+        w_end=-1
+        for character in word:
+            if character in punctuation:
+                w_end=word.index(character)
+                break
+
+        if w_end==-1:
+            #说明没有标点符号，则直接查找词向量
+            if word in vec_dict.keys():
+                sen_list.append(vec_dict[word])
+                a = [0.0 for x in range(0, 34)]
+                a[type_list[i]-1] = 1.0
+                label_list.append(a)
         else:
-            pass
+            #如果有标点符号，判断标点符号是否为结束符，如果是，则断句处理。否则，特殊处理
+            wordtmp=word[:w_end]
+            if wordtmp in vec_dict.keys():
+                sen_list.append(vec_dict[word])
+                a = [0.0 for x in range(0, 34)]
+                a[type_list[i]-1] = 1.0
+                label_list.append(a)
+            else:
+                pass
+
+            #断句操作
+            if '.' in word or '!' in word or '?' in word:
+                assert len(sen_list)==len(label_list),'句子，标注不相等'
+                if len(sen_list)>=5:
+                    document_list.append(sen_list)
+                    document_label_list.append(label_list)
+
+    return document_list,document_label_list
 
 
-def str_process(ss):
+
+"""
+获取短语取哪个词作为触发词
+"""
+def get_phrase_posi(ss):
     strlist=ss.split(' ')
     k=len(strlist)
     s=strlist[0]
@@ -143,10 +231,11 @@ def str_process(ss):
     return s,strlist[k-1]
 
 if __name__ == '__main__':
-    # ss='1 2 3 4'
-    # a,b=str_process(ss)
-    # print(a)
-    # print(b)
+    ss='12345ddafdad?dfaa"'
+    if '.' in ss or '!' in ss or '?' in ss:
+        print(ss)
+    sys.exit()
+
 
     # d = {'name':1,'age':2,'sex':3}
     # if 'namea' in d.keys():
@@ -163,7 +252,7 @@ if __name__ == '__main__':
     filename5 = acepath + 'un/timex2norm/alt.corel_20041228.0503'
     filename6 = acepath + '/wl/timex2norm/AGGRESSIVEVOICEDAILY_20041226.1712'
     filename7 = acepath + '/cts/timex2norm/fsh_29191'
-    filename8=acepath+'un/timex2norm/alt.obituaries_20041121.1339'
+    filename8=acepath+'nw/timex2norm/APW_ENG_20030304.0555'
 
 
     wordlist_file = homepath + '/ace05/word2vec/wordlist'
@@ -171,23 +260,36 @@ if __name__ == '__main__':
     phrase_posi_file=homepath+'/ace05/word2vec/phrase_posi.txt'
     phrase_posi_dict={}
     for i in open(phrase_posi_file, 'r'):
-        a,b=str_process(i.replace('\n', ''))
+        a,b=get_phrase_posi(i.replace('\n', ''))
         phrase_posi_dict[a]=b
 
     # sgm_content,start_end_type_list=read_documnet(filename8,wordlist,phrase_posi_dict)
+    # #print(sgm_content)
+    # for (start,end) in start_end_type_list:
+    #     print((start,end),sgm_content[start:end])
+    # print('---------------------------------------------')
     # if content2vec(sgm_content,start_end_type_list,wordlist)==1:
     #     print('111111111111111111111111')
     # sys.exit()
 
-    doclist=homepath+'/ace05/new_filelist_ACE_full.txt';
+    doclist=homepath+'/ace05/new_filelist_ACE_full.txt'
     f_list=[i.replace('\n','') for i in open(doclist,'r')]
+    # doclist2=homepath+'/ace05/new_filelist_ACE_training.txt';
+    # f_list2=[i.replace('\n','') for i in open(doclist2,'r')]
     k=0
+    x=0
     for i in f_list:
         path=acepath+i
         sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
-        content2vec(sgm_content,start_end_type_list,wordlist)
+        word_list,type_list=content2list(sgm_content, start_end_type_list)
+        # if content2vec(sgm_content,start_end_type_list)!=0:
+        #     x+=num
+        #     # if i in f_list2:
+        #     #     print(i)
+
         k+=1
     print(k)
+    print(x)
     #read_documnet(filename1)
 
     # read_documnet(filename2)
