@@ -18,12 +18,16 @@ import time
 data_f = open('../enACEdata/data2/train_data2.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
-print(len(X_train))
+# print(len(X_train))
+# print(len(X_train[0]))
+# print(X_train[0])
+# print(len(Y_train[0]))
+# print(Y_train[0])
 
 # 参数
-event_num=15262
+event_num=12524
 learningRate = 0.001
-training_iters = event_num*10
+training_iters = event_num*100
 batch_size = 1
 
 nInput = 300
@@ -80,19 +84,41 @@ with tf.Session() as sess:
         batch_ys = Y_train[step]
         batch_size = len(batch_xs)
 
-        batch_xs = batch_xs.reshape([batch_size, nSteps, nInput])
-
-
-        # output = sess.run(test, feed_dict={x: batch_xs})
-        # print(output)
-        # print(len(output))
-        # print(len(output[0]))
-        # print(len(output[0][0]))
-        # sys.exit()
-
-        # train_seq_len = np.ones(batch_size) * batch_size
+        batch_xs = np.array(batch_xs).reshape([batch_size, nSteps, nInput])
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+
+        if k%event_num==0:
+            # 载入测试集进行测试
+            length = len(X_test)
+            test_accuracy = 0.0
+            p_s = 0  # 识别的个体总数
+            r_s = 0  # 测试集中存在个个体总数
+            pr_acc = 0  # 正确识别的个数
+            for i in range(length):
+                test_len = len(X_test[i])
+                test_data = np.array(X_test[i]).reshape(
+                    (-1, nSteps, nInput))  # 8
+                test_label = Y_test[i]
+                # prediction识别出的结果，y_测试集中的正确结果
+                prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
+                for t in range(len(y_)):
+                    if prediction[t] != 1:
+                        p_s +=1
+
+                    if y_[t] != 1:
+                        r_s +=1
+                        if y_[t] == prediction[t]:
+                            pr_acc +=1
+
+            print('----------------------------------------------------')
+            print(str(pr_acc) + '------'+str(p_s)+'------' + str(r_s))
+            p = pr_acc / p_s
+            r = pr_acc / r_s
+            f = 2 * p * r / (p + r)
+            print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+            print('\n')
+
 
 
         k += 1
@@ -108,7 +134,7 @@ with tf.Session() as sess:
 #     acc = 0
     for i in range(length):
         test_len = len(X_test[i])
-        test_data = X_test[i].reshape(
+        test_data = np.array(X_test[i]).reshape(
             (-1, nSteps, nInput))  # 8
         test_label = Y_test[i]
         # prediction识别出的结果，y_测试集中的正确结果
@@ -116,12 +142,12 @@ with tf.Session() as sess:
             [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
         for t in range(len(y_)):
             if prediction[t] != 1:
-                p_s = p_s + 1
+                p_s+=1
 
             if y_[t] != 1:
-                r_s = r_s + 1
+                r_s +=1
                 if y_[t] == prediction[t]:
-                    pr_acc = pr_acc + 1
+                    pr_acc +=1
 
     print('----------------------------------------------------')
     print(str(pr_acc) + '------'+str(p_s)+'------' + str(r_s))
@@ -129,6 +155,7 @@ with tf.Session() as sess:
     r = pr_acc / r_s
     f = 2 * p * r / (p + r)
     print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+    print('\n')
 
 """
 178------326------289

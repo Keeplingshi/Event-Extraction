@@ -213,17 +213,19 @@ def list2vec(word_list,type_list,vec_dict):
         if w_end==-1:
             #说明没有标点符号，则直接查找词向量
             if word in vec_dict.keys():
-                sen_list.append(vec_dict.get(word))
-                a = [0.0 for x in range(0, 34)]
-                a[type_list[i]-1] = 1.0
-                label_list.append(a)
+                if vec_dict.get(word) is not None:
+                    sen_list.append(vec_dict.get(word))
+                    a = [0.0 for x in range(0, 34)]
+                    a[type_list[i]-1] = 1.0
+                    label_list.append(a)
         else:
             #如果有标点符号，判断标点符号是否为结束符，如果是，则断句处理。否则，特殊处理
             if word in vec_dict.keys():
-                sen_list.append(vec_dict.get(word))
-                a = [0.0 for x in range(0, 34)]
-                a[type_list[i]-1] = 1.0
-                label_list.append(a)
+                if vec_dict.get(word) is not None:
+                    sen_list.append(vec_dict.get(word))
+                    a = [0.0 for x in range(0, 34)]
+                    a[type_list[i]-1] = 1.0
+                    label_list.append(a)
             else:
                 wordtmp=word[w_end:]
                 flag=False
@@ -234,7 +236,7 @@ def list2vec(word_list,type_list,vec_dict):
                 if ~flag:
                     wordtmp=word[:w_end]
                     if wordtmp in vec_dict.keys():
-                        sen_list.append(vec_dict.get(word))
+                        sen_list.append(vec_dict.get(wordtmp))
                         a = [0.0 for x in range(0, 34)]
                         a[type_list[i]-1] = 1.0
                         label_list.append(a)
@@ -309,10 +311,13 @@ def list2vec(word_list,type_list,vec_dict):
 
             #断句操作
             if '.' in word or '!' in word or '?' in word:
+                #print(len(sen_list))
                 assert len(sen_list)==len(label_list),'句子，标注不相等'
                 if len(sen_list)>=5:
                     document_list.append(sen_list)
                     document_label_list.append(label_list)
+                sen_list=[]
+                label_list=[]
 
     return document_list,document_label_list
 
@@ -429,8 +434,8 @@ if __name__ == '__main__':
     # filename6 = acepath + '/wl/timex2norm/AGGRESSIVEVOICEDAILY_20041226.1712'
     # filename7 = acepath + '/cts/timex2norm/fsh_29191'
     # filename8=acepath+'nw/timex2norm/APW_ENG_20030304.0555'
-
-
+    #
+    #
     # wordlist_file = homepath + '/ace05/word2vec/wordlist'
     # wordlist = [i.replace('\n', '') for i in open(wordlist_file, 'r')]
     # phrase_posi_file=homepath+'/ace05/word2vec/phrase_posi.txt'
@@ -438,6 +443,13 @@ if __name__ == '__main__':
     # for i in open(phrase_posi_file, 'r'):
     #     a,b=get_phrase_posi(i.replace('\n', ''))
     #     phrase_posi_dict[a]=b
+    #
+    # vec_dict=get_word2vec()
+    #
+    # sgm_content,start_end_type_list=read_documnet(filename8,wordlist,phrase_posi_dict)
+    # word_list,type_list=content2list(sgm_content, start_end_type_list)
+    # list2vec(word_list,type_list,vec_dict)
+
     #
     # doclist=homepath+'/ace05/new_filelist_ACE_full.txt'
     # f_list=[i.replace('\n','') for i in open(doclist,'r')]
