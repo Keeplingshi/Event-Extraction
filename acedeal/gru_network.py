@@ -1,6 +1,7 @@
 '''
 Created on 2017年2月10日
 对含词向量的事件特征，进行双向gru操作
+保存变量信息
 @author: chenbin
 '''
 import pickle
@@ -10,18 +11,18 @@ import numpy as np
 import sys
 
 # 数据读取，训练集和测试集
-ace_data_train_file = open('./ace_data_process/ace_eng_data1/ace_data_train.pkl', 'rb')
+ace_data_train_file = open('./ace_eng_data2/ace_data_train.pkl', 'rb')
 ace_data_train = pickle.load(ace_data_train_file)
 
 ace_data_train_labels_file = open(
-    './ace_data_process/ace_eng_data1/ace_data_train_labels.pkl', 'rb')
+    './ace_eng_data2/ace_data_train_labels.pkl', 'rb')
 ace_data_train_labels = pickle.load(ace_data_train_labels_file)
 
-ace_data_test_file = open('./ace_data_process/ace_eng_data1/ace_data_test.pkl', 'rb')
+ace_data_test_file = open('./ace_eng_data2/ace_data_test.pkl', 'rb')
 ace_data_test = pickle.load(ace_data_test_file)
 
 ace_data_test_labels_file = open(
-    './ace_data_process/ace_eng_data1/ace_data_test_labels.pkl', 'rb')
+    './ace_eng_data2/ace_data_test_labels.pkl', 'rb')
 ace_data_test_labels = pickle.load(ace_data_test_labels_file)
 
 ace_data_train_file.close()
@@ -31,7 +32,7 @@ ace_data_test_labels_file.close()
 
 # 参数
 learningRate = 0.001
-training_iters = 16000
+training_iters = 1600
 batchSize = 1
 
 nInput = 200  # we want the input to take the 28 pixels
@@ -92,34 +93,38 @@ with tf.Session() as sess:
 
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
 
-        
         k += 1
+
+    saver = tf.train.Saver(tf.global_variables())
+    saver.save(sess,"./ace_eng_data2/test-checkpoint.data")
     print('Optimization finished')
 
+with tf.Session() as predsess:
+    predsess.run(init)
+    saver = tf.train.Saver(tf.global_variables())
+    saver.restore(predsess, "./ace_eng_data2/test-checkpoint.data")
     # 载入测试集进行测试
     length = len(ace_data_test)
     test_accuracy = 0.0
     p_s = 0  # 识别的个体总数
     r_s = 0  # 测试集中存在个个体总数
     pr_acc = 0  # 正确识别的个数
-#     s = 0
-#     acc = 0
     for i in range(length):
         test_len = len(ace_data_test[i])
         test_data = ace_data_test[i].reshape(
             (-1, nSteps, nInput))  # 8
         test_label = ace_data_test_labels[i]
         # prediction识别出的结果，y_测试集中的正确结果
-        prediction, y_ = sess.run(
+        prediction, y_ = predsess.run(
             [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
         for t in range(len(y_)):
             if prediction[t] != 33:
-                p_s = p_s + 1
+                p_s +=1
 
             if y_[t] != 33:
-                r_s = r_s + 1
+                r_s +=1
                 if y_[t] == prediction[t]:
-                    pr_acc = pr_acc + 1
+                    pr_acc +=1
 
     print('----------------------------------------------------')
     print(str(pr_acc) + '------------' + str(r_s))
