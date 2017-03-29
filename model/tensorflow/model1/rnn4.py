@@ -19,12 +19,12 @@ data_f = open('../enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-saver_path="../enACEdata/saver/checkpoint1.data"
+saver_path="../enACEdata/saver/checkpoint2.data"
 
 # 参数
 event_num=12524
 learningRate = 0.03
-training_iters = event_num*20
+training_iters = event_num*10
 batch_size = 1
 
 nInput = 300
@@ -53,11 +53,11 @@ def gru_RNN(x, weights, biases,seq_len):
     # gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     # # Backward direction cell
     # gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-    lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=0.0)
-    lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=0.0)
+    lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=2.0)
+    lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=2.0)
 
-    # gru_fw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_fw_cell,input_keep_prob=0.5, output_keep_prob=0.5)
-    # gru_bw_cell=tf.nn.rnn_cell.DropoutWrapper(gru_bw_cell,input_keep_prob=0.5, output_keep_prob=0.5)
+    # lstm_fw_cell=tf.nn.rnn_cell.DropoutWrapper(lstm_fw_cell, output_keep_prob=0.5)
+    # lstm_bw_cell=tf.nn.rnn_cell.DropoutWrapper(lstm_bw_cell, output_keep_prob=0.5)
 
     lstm_fw_cell = tf.nn.rnn_cell.MultiRNNCell([lstm_fw_cell] * 2)
     lstm_bw_cell = tf.nn.rnn_cell.MultiRNNCell([lstm_bw_cell] * 2)
@@ -120,10 +120,10 @@ init = tf.global_variables_initializer()
 with tf.Session() as sess:
     sess.run(init)
 
-    saver = tf.train.Saver(tf.global_variables())
-    saver.restore(sess, "../enACEdata/saver/checkpoint1.data")
-    compute_accuracy()
-    sys.exit()
+    # saver = tf.train.Saver(tf.global_variables())
+    # saver.restore(sess, saver_path)
+    # compute_accuracy()
+    # sys.exit()
 
     k = 0
     max_f=0
