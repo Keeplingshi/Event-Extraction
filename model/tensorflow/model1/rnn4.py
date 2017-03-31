@@ -19,7 +19,7 @@ data_f = open('../enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-saver_path="../enACEdata/saver/checkpoint2.data"
+saver_path="../enACEdata/saver/checkpoint3.data"
 
 # 参数
 event_num=12524
@@ -53,8 +53,8 @@ def gru_RNN(x, weights, biases,seq_len):
     # gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     # # Backward direction cell
     # gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-    lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=2.0)
-    lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=2.0)
+    lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=1.0)
+    lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=1.0)
 
     # lstm_fw_cell=tf.nn.rnn_cell.DropoutWrapper(lstm_fw_cell, output_keep_prob=0.5)
     # lstm_bw_cell=tf.nn.rnn_cell.DropoutWrapper(lstm_bw_cell, output_keep_prob=0.5)

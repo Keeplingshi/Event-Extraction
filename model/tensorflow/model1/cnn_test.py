@@ -96,10 +96,19 @@ def conv2d_max_pool(x_data):
     con2d_result = tf.nn.conv2d(x, W, [1, 1, 1, 1], 'VALID')
     con2d_result=tf.reshape(con2d_result,[width-2,height-2])
 
-    # max_pool_result = tf.nn.max_pool(con2d_result, [1,1,9,1], [1,1,1,1], 'VALID')
-    # max_pool_result=tf.reshape(max_pool_result,[width-2])
 
-    return con2d_result,width,height
+
+    # max_pool_result=[]
+    # max_pool_poi=tf.argmax(con2d_result,0)
+    # # max_pool_result=[i[] for i in con2d_result]
+    # u=tf.shape(con2d_result)[0]
+    # for i in range(u):
+    #     max_pool_result.append(con2d_result[i][max_pool_poi[i]])
+
+    max_pool_result = tf.nn.max_pool(con2d_result, [1,1,height-2,1], [1,1,1,1], 'VALID')
+    max_pool_result=tf.reshape(max_pool_result,[width-2])
+
+    return con2d_result,width,height,max_pool_result
 
 test=conv2d_max_pool(x_data)
 
@@ -145,11 +154,12 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
-        result,a,b=sess.run(test, feed_dict={x_data: x_tmp})
+        result,a,b,max_pool_result=sess.run(test, feed_dict={x_data: x_tmp})
         print(result)
         print(a)
         print(b)
         print(result.shape)
+        print(max_pool_result)
 
 
 

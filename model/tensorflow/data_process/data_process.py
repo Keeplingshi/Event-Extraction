@@ -9,6 +9,7 @@ from model.tensorflow.data_process import xml_parse
 from model.tensorflow.data_process import type_index
 import sys
 import string
+import numpy as np
 
 
 
@@ -424,8 +425,47 @@ def pre_data():
     pickle.dump(data, f)
 
 
+def padding_and_generate_mask(x, y,max_len):
+    X_train=[]
+    Y_train=[]
+    x_zero_list=[0.0 for i in range(300)]
+    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list[33]=1.0
+    for i, (x, y) in enumerate(zip(x, y)):
+        for j in range(max_len-len(x)):
+            x.append(x_zero_list)
+            y.append(y_zero_list)
+        X_train.append(x)
+        Y_train.append(y)
+    return X_train,Y_train
+
 if __name__ == '__main__':
-    pre_data()
+
+    data_f = open('../enACEdata/data2/train_data34.data', 'rb')
+    X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
+    data_f.close()
+    # max_len=-1
+    # for i in X_train:
+    #     if max_len<len(i):
+    #         max_len=len(i)
+    #
+    # for i in X_dev:
+    #     if max_len<len(i):
+    #         max_len=len(i)
+    #
+    # for i in X_test:
+    #     if max_len<len(i):
+    #         max_len=len(i)
+    # print(max_len)
+
+
+    X_train,Y_train=padding_and_generate_mask(X_dev,Y_dev,210)
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    # print(len(test[0]))
+    # print(len(test[1]))
+
+    #pre_data()
     # filename1=acepath+'/nw/timex2norm/AFP_ENG_20030323.0020'
     # filename2=acepath+'/nw/timex2norm/AFP_ENG_20030509.0345'
     # filename3 = acepath + '/bc/timex2norm/CNN_IP_20030330.1600.05-2'
