@@ -439,6 +439,25 @@ def padding_and_generate_mask(x, y,max_len):
         Y_train.append(y)
     return X_train,Y_train
 
+
+def padding_mask(x, y,max_len):
+    X_train=[]
+    Y_train=[]
+    x_zero_list=[0.0 for i in range(300)]
+    y_zero_list=[0.0 for i in range(34)]
+    for i, (x, y) in enumerate(zip(x, y)):
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+        else:
+            x=x[:max_len]
+            y=y[:max_len]
+        X_train.append(x)
+        Y_train.append(y)
+    return X_train,Y_train
+
+
 if __name__ == '__main__':
 
     data_f = open('../enACEdata/data2/train_data34.data', 'rb')
@@ -459,7 +478,7 @@ if __name__ == '__main__':
     # print(max_len)
 
 
-    X_train,Y_train=padding_and_generate_mask(X_dev,Y_dev,210)
+    X_train,Y_train=padding_mask(X_dev,Y_dev,60)
     print(np.array(X_train).shape)
     print(np.array(Y_train).shape)
     # print(len(test[0]))

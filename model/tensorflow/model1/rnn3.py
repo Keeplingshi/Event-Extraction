@@ -19,26 +19,44 @@ data_f = open('../enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-def padding_and_generate_mask(x, y,max_len):
+# def padding_and_generate_mask(x, y,max_len):
+#     X_train=[]
+#     Y_train=[]
+#     x_zero_list=[0.0 for i in range(300)]
+#     y_zero_list=[0.0 for i in range(34)]
+#     y_zero_list[33]=1.0
+#     for i, (x, y) in enumerate(zip(x, y)):
+#         for j in range(max_len-len(x)):
+#             x.append(x_zero_list)
+#             y.append(y_zero_list)
+#         X_train.append(x)
+#         Y_train.append(y)
+#     return X_train,Y_train
+
+def padding_mask(x, y,max_len):
     X_train=[]
     Y_train=[]
     x_zero_list=[0.0 for i in range(300)]
     y_zero_list=[0.0 for i in range(34)]
     y_zero_list[33]=1.0
     for i, (x, y) in enumerate(zip(x, y)):
-        for j in range(max_len-len(x)):
-            x.append(x_zero_list)
-            y.append(y_zero_list)
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+        else:
+            x=x[:max_len]
+            y=y[:max_len]
         X_train.append(x)
         Y_train.append(y)
     return X_train,Y_train
 
+max_len=60
+X_train,Y_train=padding_mask(X_train,Y_train,max_len)
+X_dev,Y_dev=padding_mask(X_dev,Y_dev,max_len)
+X_test,Y_test=padding_mask(X_test,Y_test,max_len)
 
-X_train,Y_train=padding_and_generate_mask(X_train,Y_train,210)
-X_dev,Y_dev=padding_and_generate_mask(X_dev,Y_dev,210)
-X_test,Y_test=padding_and_generate_mask(X_test,Y_test,210)
-
-saver_path="../enACEdata/saver/checkpointrnn3.data"
+saver_path="../enACEdata/saver/checkpointrnn4.data"
 
 # 参数
 event_num=12524
