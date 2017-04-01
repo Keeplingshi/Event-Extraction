@@ -19,66 +19,79 @@ data_f = open('../enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-# def padding_and_generate_mask(x, y,max_len):
-#     X_train=[]
-#     Y_train=[]
-#     x_zero_list=[0.0 for i in range(300)]
-#     y_zero_list=[0.0 for i in range(34)]
-#     y_zero_list[33]=1.0
-#     for i, (x, y) in enumerate(zip(x, y)):
-#         for j in range(max_len-len(x)):
-#             x.append(x_zero_list)
-#             y.append(y_zero_list)
-#         X_train.append(x)
-#         Y_train.append(y)
-#     return X_train,Y_train
-
-def padding_mask(x, y,max_len):
-    X_train=[]
-    Y_train=[]
-    x_zero_list=[0.0 for i in range(300)]
-    y_zero_list=[0.0 for i in range(34)]
-    y_zero_list[33]=1.0
-    for i, (x, y) in enumerate(zip(x, y)):
-        if max_len>len(x):
-            for j in range(max_len-len(x)):
-                x.append(x_zero_list)
-                y.append(y_zero_list)
-        else:
-            x=x[:max_len]
-            y=y[:max_len]
-        X_train.append(x)
-        Y_train.append(y)
-    return X_train,Y_train
-
-max_len=60
-X_train,Y_train=padding_mask(X_train,Y_train,max_len)
-X_dev,Y_dev=padding_mask(X_dev,Y_dev,max_len)
-X_test,Y_test=padding_mask(X_test,Y_test,max_len)
-
-
-saver_path="../enACEdata/saver/checkpointrnn4.data"
+saver_path="../enACEdata/saver/checkpointrnn54.data"
 
 # 参数
 event_num=12524
 learningRate = 0.03
-training_iters = event_num*20
-batch_size = 4
+training_iters = event_num*30
+batch_size = 1
 
 nInput = 300
-nSteps = 60
+nSteps = 1
 nHidden = 100
 nClasses = 34
 
 x = tf.placeholder('float', [None, nSteps, nInput])
-y = tf.placeholder('float', [None, nSteps,nClasses])
+y = tf.placeholder('float', [None, nClasses])
 
 seq_len = tf.placeholder(tf.int32, [None])
 
-weights = tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
-
+weights = tf.Variable(tf.random_normal([2 * nHidden+nInput-2+nInput-1, nClasses]))
 biases = tf.Variable(tf.random_normal([nClasses]))
 
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+
+# 卷积与最大池化
+def con_max_pool_3x3(x):
+    #cnn 卷积和池化
+    width=tf.shape(x)[0]
+    height=tf.shape(x)[2]
+    x=tf.reshape(x,[1,width, height,1])
+
+    W_conv1 = weight_variable([3,3,1,1])
+    b_conv1 = bias_variable([1])
+    #Convolution  Stride & Padding
+    con2d_result = tf.nn.conv2d(x, W_conv1, [1, 1, 1, 1], 'VALID')
+    con2d_result=tf.reshape(con2d_result,[1,width-2,height-2,1])
+
+    h_conv1=tf.nn.relu(con2d_result+b_conv1)
+    max_pool_result = tf.nn.max_pool(h_conv1, [1,500,1,1], [1,1,1,1], 'SAME')
+
+    max_pool_result=tf.reshape(max_pool_result,[width-2,height-2])
+    max_pool_one=[max_pool_result[0]]
+
+    contact_pool_result=tf.concat(0,[max_pool_result,max_pool_one,max_pool_one])
+
+    return contact_pool_result
+
+def con_max_pool_2x2(x):
+    #cnn 卷积和池化
+    width=tf.shape(x)[0]
+    height=tf.shape(x)[2]
+    x=tf.reshape(x,[1,width, height,1])
+
+    W_conv1 = weight_variable([2,2,1,1])
+    b_conv1 = bias_variable([1])
+    #Convolution  Stride & Padding
+    con2d_result = tf.nn.conv2d(x, W_conv1, [1, 1, 1, 1], 'VALID')
+    con2d_result=tf.reshape(con2d_result,[1,width-1,height-1,1])
+
+    h_conv1=tf.nn.relu(con2d_result+b_conv1)
+    max_pool_result = tf.nn.max_pool(h_conv1, [1,500,1,1], [1,1,1,1], 'SAME')
+
+    max_pool_result=tf.reshape(max_pool_result,[width-1,height-1])
+    max_pool_one=[max_pool_result[0]]
+
+    contact_pool_result=tf.concat(0,[max_pool_result,max_pool_one])
+    return contact_pool_result
 
 def gru_RNN(x, weights, biases,seq_len):
     x = tf.transpose(x, [1, 0, 2])
@@ -86,11 +99,6 @@ def gru_RNN(x, weights, biases,seq_len):
     x = tf.reshape(x, [-1, nSteps, nInput])
     #x = tf.split(0, nSteps, x)
 
-    # Define gru cells with tensorflow
-    # Forward direction cell
-    # gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-    # # Backward direction cell
-    # gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
     lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=1.0)
     lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(nHidden,forget_bias=1.0)
 
@@ -105,14 +113,16 @@ def gru_RNN(x, weights, biases,seq_len):
     outputs, output_states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, x,sequence_length=seq_len, dtype=tf.float32)
 
     outputs = tf.concat(2, outputs)
-    # As we want do classification, we only need the last output from LSTM.
-    last_output = outputs[:, 0, :]
-    results =tf.matmul(last_output, weights) + biases
+    lstm_output = outputs[:, 0, :]
 
-    return results
+    contact_pool_3x3_result=con_max_pool_3x3(x)
+    contact_pool_2x2_result=con_max_pool_2x2(x)
+    lstm_cnn_output=tf.concat(1,[lstm_output,contact_pool_3x3_result,contact_pool_2x2_result])
+
+    results = tf.matmul(lstm_cnn_output, weights) + biases
+    return results      #,lstm_output,x,con2d_result,max_pool_result,contact_pool_result,lstm_cnn_output
 
 pred = gru_RNN(x, weights, biases,seq_len)
-
 
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=learningRate).minimize(cost)
@@ -157,25 +167,43 @@ def compute_accuracy():
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
     sess.run(init)
+
     # saver = tf.train.Saver(tf.global_variables())
     # saver.restore(sess, saver_path)
+    # compute_accuracy()
+    # sys.exit()
+
     k = 0
     max_f=0
     while k < training_iters:
         step = k % event_num
-        #12524
-        for i in range(12524//batch_size):
-            b = i*batch_size
-            e = b+batch_size
-            batch_xs = X_train[b:e]
-            batch_ys = Y_train[b:e]
-            # print(np.array(batch_ys).shape)
-            # batch_size = len(batch_xs)
-            # batch_xs = np.array(batch_xs).reshape([batch_size, nSteps, nInput])
 
-            train_seq_len = np.ones(batch_size) * nSteps
-            print(train_seq_len)
-            sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
+        batch_xs = X_train[step]
+        batch_ys = Y_train[step]
+        batch_size = len(batch_xs)
+        batch_xs = np.array(batch_xs).reshape([batch_size, nSteps, nInput])
+
+        train_seq_len = np.ones(batch_size) * nSteps
+
+        # print(np.array(batch_xs).shape)
+        #
+        # a,b=sess.run(pred, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
+        # print(np.array(a).shape)
+        # print(np.array(b).shape)
+        # print(b)
+        # print(np.array(xx).shape)
+        # print(np.array(con2d_result).shape)
+        # print(np.array(max_pool_result).shape)
+        # print(np.array(contact_pool_result).shape)
+        # print(np.array(lstm_cnn_output).shape)
+        # print(last_output)
+        # print(max_pool_result)
+        # print(contact_pool_result)
+        # print(lstm_cnn_output)
+        #
+        # sys.exit()
+
+        sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
 
         if k!=0 and step==0:
 
@@ -188,27 +216,3 @@ with tf.Session() as sess:
 
         k += 1
     print('Optimization finished')
-
-"""
-----------------------------------------------------
-294------434------497
-P=0.6774193548387096	R=0.5915492957746479	F=0.631578947368421
-
-264------356------497
-P=0.7415730337078652	R=0.5311871227364185	F=0.6189917936694023
-
-277------378------497
-P=0.7328042328042328	R=0.5573440643863179	F=0.6331428571428571
-
-----------------------------------------------------
-284------384------497
-P=0.7395833333333334	R=0.5714285714285714	F=0.6447219069239501
-
-----------------------------------------------------
-292------398------497
-P=0.7336683417085427	R=0.5875251509054326	F=0.6525139664804469
-
-----------------------------------------------------
-296------403------497
-P=0.7344913151364765	R=0.5955734406438632	F=0.6577777777777778
-"""

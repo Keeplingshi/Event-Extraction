@@ -69,15 +69,19 @@ def max_pool_test(x_data):
         print(y.reshape(b,c))
 
 
-# (width, height) = x_data.shape
-
-# width=3
-# height=4
-# rr=1
-# x_image = tf.placeholder(tf.float32, shape=[width, height])
+conv_size=2
 x_data = tf.placeholder(tf.float32, shape=[None, None])
-# width=tf.placeholder(tf.int64, [0])
-# tt=tf.placeholder(tf.int64, [0])
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+W_conv1 = weight_variable([conv_size,conv_size,1,1])
+b_conv1 = bias_variable([1])
 
 def conv2d_max_pool(x_data):
     #cnn 卷积和池化
@@ -85,83 +89,45 @@ def conv2d_max_pool(x_data):
     height=tf.shape(x_data)[1]
     x=tf.reshape(x_data,[1,width, height,1])
 
-
     #Filter: W
-    W_cpu = np.array([[1,1,1],[1,1,1],[1,1,1]],dtype=np.float32)
-    W = tf.Variable(W_cpu)
-    W = tf.reshape(W, [3,3,1,1])
+    # W_cpu = np.array([[1,1,1],[1,1,1],[1,1,1]],dtype=np.float32)
+    # W = tf.Variable(W_cpu)
+    # W = tf.reshape(W, [3,3,1,1])
 
     #Convolution  Stride & Padding
-    con2d_result = tf.nn.conv2d(x, W, [1, 1, 1, 1], 'VALID')
-    con2d_result=tf.reshape(con2d_result,[1,width-2,height-2,1])
+    con2d_result = tf.nn.conv2d(x, W_conv1, [1, 1, 1, 1], 'VALID')
+    con2d_result=tf.reshape(con2d_result,[1,width-conv_size+1,height-conv_size+1,1])
 
-    max_pool_result = tf.nn.max_pool(con2d_result, [1,500,1,1], [1,1,1,1], 'SAME')
-    max_pool_result=tf.reshape(max_pool_result,[width-2,height-2])[0]
+    h_conv1=tf.nn.relu(con2d_result+b_conv1)
 
-    return x,con2d_result,max_pool_result
+    max_pool_result = tf.nn.max_pool(h_conv1, [1,500,1,1], [1,1,1,1], 'SAME')
+    max_pool_result=tf.reshape(max_pool_result,[width-conv_size+1,height-conv_size+1])[0]
+
+    return x,con2d_result,max_pool_result,h_conv1
     #
-    # #Convolution  Stride & Padding
-    # con2d_result = tf.nn.conv2d(x, W, [1, 1, 1, 1], 'VALID')
-    # con2d_result=tf.reshape(con2d_result,[1,width-2,height-2,1])
-    #
-    # max_pool_result = tf.nn.max_pool(con2d_result, [1,1,500,1], [1,1,1,1], 'SAME')
-    # max_pool_result=tf.reshape(max_pool_result,[width-2,height-2])
-    #
-    # max_pool_result=tf.transpose(max_pool_result, [1, 0])
-    # con2d_result=tf.reshape(con2d_result,[width-2,height-2])
-    #
-    # return x_data,x,con2d_result,max_pool_result
 
 test=conv2d_max_pool(x_data)
 
-    # with tf.Session() as sess:
-    #     init = tf.global_variables_initializer()
-    #     sess.run(init)
-    #
-    #     x = (sess.run(x, feed_dict={x_image: x_data}))
-    #     W = (sess.run(W, feed_dict={x_image: x_data}))
-    #     con2d_result = (sess.run(con2d_result, feed_dict={x_image: x_data}))
-    #     max_pool_result= (sess.run(max_pool_result, feed_dict={x_image: x_data}))
-    #
-    #     print("The shape of x:\t", x.shape, ",\t and the x.reshape(5,5) is :")
-    #     print(x.reshape(width,height))
-    #
-    #     print("The shape of x:\t", W.shape, ",\t and the W.reshape(3,3) is :")
-    #     print(W.reshape(3,3))
-    #
-    #     print("The shape of y:\t", con2d_result.shape, ",\t and the y.reshape is :")
-    #     print(con2d_result.reshape(width-2,height-2))
-    #
-    #     print("The shape of y:\t", max_pool_result.shape, ",\t and the y.reshape is :")
-    #     # (a, b, c, d) = max_pool_result.shape
-    #     print(max_pool_result)
-    #
-    # return 0
-
-
 if __name__ == '__main__':
-
-    # x=[i for i in range(3300)]
-    # x=np.array(x).reshape(300,11)
-    # print(x.shape)
-    # print(x)
-    # print('----------------------------------------')
 
     x_tmp=[i for i in range(55)]
     x_tmp = np.array([x_tmp],dtype=np.float32).reshape(11, 5)
-    print(x_tmp)
-    # (a,b)=x_tmp.shape
-    # print(a,b)
+    # print(x_tmp)
 
     with tf.Session() as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
 
-        x_data,con2d_result,max_pool_result=sess.run(test, feed_dict={x_data: x_tmp})
+        w=sess.run(W_conv1)
+        # print(np.array(w).shape)
+
+        x_data,con2d_result,max_pool_result,h_conv1=sess.run(test, feed_dict={x_data: x_tmp})
         print(np.array(x_data).shape)
         print(np.array(con2d_result).shape)
         print(np.array(max_pool_result).shape)
-        print(np.array(con2d_result).reshape(9,3))
+        # print(np.array(con2d_result).reshape(9,3))
+
+        print(np.array(h_conv1).shape)
         print(np.array(max_pool_result))
         # x_data,x, con2d_result, max_pool_result=sess.run(test, feed_dict={x_data: x_tmp})
         # print(np.array(x_data).shape)
