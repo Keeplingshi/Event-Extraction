@@ -478,9 +478,10 @@ if __name__ == '__main__':
     # print(max_len)
 
 
-    X_train,Y_train=padding_mask(X_dev,Y_dev,60)
+    #X_train,Y_train=padding_mask(X_dev,Y_dev,60)
     print(np.array(X_train).shape)
-    print(np.array(Y_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(X_dev).shape)
     # print(len(test[0]))
     # print(len(test[1]))
 

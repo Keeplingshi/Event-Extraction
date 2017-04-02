@@ -19,12 +19,12 @@ data_f = open('../enACEdata/data2/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-saver_path="../enACEdata/saver/checkpointrnn54.data"
+saver_path="../enACEdata/saver/checkpointrnn55.data"
 
 # 参数
 event_num=12524
-learningRate = 0.03
-training_iters = event_num*30
+learningRate = 0.01
+training_iters = event_num*10
 batch_size = 1
 
 nInput = 300
@@ -37,7 +37,7 @@ y = tf.placeholder('float', [None, nClasses])
 
 seq_len = tf.placeholder(tf.int32, [None])
 
-weights = tf.Variable(tf.random_normal([2 * nHidden+nInput-2+nInput-1, nClasses]))
+weights = tf.Variable(tf.random_normal([2 * nHidden+nInput-2+nInput-4, nClasses]))
 biases = tf.Variable(tf.random_normal([nClasses]))
 
 def weight_variable(shape):
@@ -93,6 +93,28 @@ def con_max_pool_2x2(x):
     contact_pool_result=tf.concat(0,[max_pool_result,max_pool_one])
     return contact_pool_result
 
+
+def con_max_pool_5x5(x):
+    #cnn 卷积和池化
+    width=tf.shape(x)[0]
+    height=tf.shape(x)[2]
+    x=tf.reshape(x,[1,width, height,1])
+
+    W_conv1 = weight_variable([5,5,1,1])
+    b_conv1 = bias_variable([1])
+    #Convolution  Stride & Padding
+    con2d_result = tf.nn.conv2d(x, W_conv1, [1, 1, 1, 1], 'VALID')
+    con2d_result=tf.reshape(con2d_result,[1,width-4,height-4,1])
+
+    h_conv1=tf.nn.relu(con2d_result+b_conv1)
+    max_pool_result = tf.nn.max_pool(h_conv1, [1,500,1,1], [1,1,1,1], 'SAME')
+
+    max_pool_result=tf.reshape(max_pool_result,[width-4,height-4])
+    max_pool_one=[max_pool_result[0]]
+
+    contact_pool_result=tf.concat(0,[max_pool_result,max_pool_one,max_pool_one,max_pool_one,max_pool_one])
+    return contact_pool_result
+
 def gru_RNN(x, weights, biases,seq_len):
     x = tf.transpose(x, [1, 0, 2])
     x = tf.reshape(x, [-1, nInput])
@@ -116,8 +138,9 @@ def gru_RNN(x, weights, biases,seq_len):
     lstm_output = outputs[:, 0, :]
 
     contact_pool_3x3_result=con_max_pool_3x3(x)
-    contact_pool_2x2_result=con_max_pool_2x2(x)
-    lstm_cnn_output=tf.concat(1,[lstm_output,contact_pool_3x3_result,contact_pool_2x2_result])
+    # contact_pool_2x2_result=con_max_pool_2x2(x)
+    contact_pool_5x5_result=con_max_pool_5x5(x)
+    lstm_cnn_output=tf.concat(1,[lstm_output,contact_pool_3x3_result,contact_pool_5x5_result])
 
     results = tf.matmul(lstm_cnn_output, weights) + biases
     return results      #,lstm_output,x,con2d_result,max_pool_result,contact_pool_result,lstm_cnn_output
