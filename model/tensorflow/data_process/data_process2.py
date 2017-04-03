@@ -198,10 +198,13 @@ def content2list(sgm_content, start_end_type_list):
 def list2vec(word_list,type_list,vec_dict):
     assert len(type_list)==len(word_list),'list2vec单词数目与实践类型数目不匹配'
     length=len(word_list)
+    document_word_list=[]
     document_list=[]    #存储整个文档的向量
     document_label_list=[]
     sen_list=[]     #存储句子向量
-    label_list=[]
+    label_list=[]   #存储词类型，是否为触发词。34类
+    sen_word_list=[]
+    label_word_list=[]
 
     for i in range(length):
         word=word_list[i].lower()       #取单词小写
@@ -216,6 +219,7 @@ def list2vec(word_list,type_list,vec_dict):
             if word in vec_dict.keys():
                 if vec_dict.get(word) is not None:
                     sen_list.append(vec_dict.get(word))
+                    sen_word_list.append(word)
                     a = [0.0 for x in range(0, 34)]
                     a[type_list[i]-1] = 1.0
                     label_list.append(a)
@@ -224,6 +228,7 @@ def list2vec(word_list,type_list,vec_dict):
             if word in vec_dict.keys():
                 if vec_dict.get(word) is not None:
                     sen_list.append(vec_dict.get(word))
+                    sen_word_list.append(word)
                     a = [0.0 for x in range(0, 34)]
                     a[type_list[i]-1] = 1.0
                     label_list.append(a)
@@ -238,6 +243,7 @@ def list2vec(word_list,type_list,vec_dict):
                     wordtmp=word[:w_end]
                     if wordtmp in vec_dict.keys():
                         sen_list.append(vec_dict.get(wordtmp))
+                        sen_word_list.append(wordtmp)
                         a = [0.0 for x in range(0, 34)]
                         a[type_list[i]-1] = 1.0
                         label_list.append(a)
@@ -247,6 +253,7 @@ def list2vec(word_list,type_list,vec_dict):
                         if word[-3:]=='n\'t':
                             if word[:-3] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-3]))
+                                sen_word_list.append(word[:-3])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -254,10 +261,12 @@ def list2vec(word_list,type_list,vec_dict):
                                 a[33] = 1.0
                                 sen_list.append(vec_dict.get('n\'t'))
                                 label_list.append(a)
+                                sen_word_list.append('n\'t')
                     if '\'s' in word:
                         if word[-2:]=='\'s':
                             if word[:-2] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-2]))
+                                sen_word_list.append(word[:-2])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -265,10 +274,12 @@ def list2vec(word_list,type_list,vec_dict):
                                 a = [0.0 for x in range(0, 34)]
                                 a[33] = 1.0
                                 label_list.append(a)
+                                sen_word_list.append('\'s')
                     if '\'re' in word:
                         if word[-3:]=='\'re':
                             if word[:-3] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-3]))
+                                sen_word_list.append(word[:-3])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -276,10 +287,12 @@ def list2vec(word_list,type_list,vec_dict):
                                 a = [0.0 for x in range(0, 34)]
                                 a[33] = 1.0
                                 label_list.append(a)
+                                sen_word_list.append('\'re')
                     if '\'ve' in word:
                         if word[-3:]=='\'ve':
                             if word[:-3] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-3]))
+                                sen_word_list.append(word[:-3])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -287,10 +300,12 @@ def list2vec(word_list,type_list,vec_dict):
                                 a = [0.0 for x in range(0, 34)]
                                 a[33] = 1.0
                                 label_list.append(a)
+                                sen_word_list.append('\'ve')
                     if '\'ll' in word:
                         if word[-3:]=='\'ll':
                             if word[:-3] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-3]))
+                                sen_word_list.append(word[:-3])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -298,10 +313,12 @@ def list2vec(word_list,type_list,vec_dict):
                                 a = [0.0 for x in range(0, 34)]
                                 a[33] = 1.0
                                 label_list.append(a)
+                                sen_word_list.append('\'ll')
                     if '\'d' in word:
                         if word[-2:]=='\'d':
                             if word[:-2] in vec_dict.keys():
                                 sen_list.append(vec_dict.get(word[:-2]))
+                                sen_word_list.append(word[:-2])
                                 a = [0.0 for x in range(0, 34)]
                                 a[type_list[i]-1] = 1.0
                                 label_list.append(a)
@@ -309,18 +326,23 @@ def list2vec(word_list,type_list,vec_dict):
                                 a = [0.0 for x in range(0, 34)]
                                 a[33] = 1.0
                                 label_list.append(a)
+                                sen_word_list.append('\'d')
 
             #断句操作
+            #endpunc="""!"#$%&'()*+,./:;<=>?@[\]^`{|}~"""
             if '.' in word or '!' in word or '?' in word:
-                #print(len(sen_list))
+                #print(sen_word_list)
                 assert len(sen_list)==len(label_list),'句子，标注不相等'
-                if len(sen_list)>=5:
+                if len(sen_list)>=2:
+                    assert len(sen_list)==len(sen_word_list),'向量，句子长度不相等'
+                    document_word_list.append(sen_word_list)
                     document_list.append(sen_list)
                     document_label_list.append(label_list)
                 sen_list=[]
                 label_list=[]
+                sen_word_list=[]
 
-    return document_list,document_label_list
+    return document_list,document_label_list,document_word_list
 
 
 
@@ -347,82 +369,40 @@ def pre_data():
 
     vec_dict=get_word2vec()
 
-    doclist_train=homepath+'/ace05/new_filelist_ACE_training.txt'
+    doclist_train=homepath+'/ace05/split2.0/ACE_train'
     doclist_train_f=[i.replace('\n','') for i in open(doclist_train,'r')]
-    doclist_test=homepath+'/ace05/new_filelist_ACE_test.txt';
+    doclist_test=homepath+'/ace05/split2.0/ACE_test'
     doclist_test_f=[i.replace('\n','') for i in open(doclist_test,'r')]
-    doclist_dev=homepath+'/ace05/new_filelist_ACE_dev.txt';
-    doclist_dev_f=[i.replace('\n','') for i in open(doclist_dev,'r')]
 
     X_train=[]
     Y_train=[]
+    W_train=[]
     X_test=[]
     Y_test=[]
-    X_dev=[]
-    Y_dev=[]
-
+    W_test=[]
 
     for i in doclist_train_f:
         path=acepath+i
         sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
         word_list,type_list=content2list(sgm_content, start_end_type_list)
-        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
+        document_list,document_label_list,document_word_list=list2vec(word_list,type_list,vec_dict)
         X_train.extend(document_list)
         Y_train.extend(document_label_list)
+        W_train.extend(document_word_list)
 
     for i in doclist_test_f:
         path=acepath+i
         sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
         word_list,type_list=content2list(sgm_content, start_end_type_list)
-        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
+        document_list,document_label_list,document_word_list=list2vec(word_list,type_list,vec_dict)
         X_test.extend(document_list)
         Y_test.extend(document_label_list)
+        W_test.extend(document_word_list)
 
-    for i in doclist_dev_f:
-        path=acepath+i
-        sgm_content,start_end_type_list=read_documnet(path,wordlist,phrase_posi_dict)
-        word_list,type_list=content2list(sgm_content, start_end_type_list)
-        document_list,document_label_list=list2vec(word_list,type_list,vec_dict)
-        X_dev.extend(document_list)
-        Y_dev.extend(document_label_list)
 
-    data=X_train,Y_train,X_test,Y_test,X_dev,Y_dev
-    f=open(homepath+'/model/tensorflow/enACEdata/data2/train_data34.data','wb')
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test
+    f=open(homepath+'/model/tensorflow/enACEdata/data5/train_data34.data','wb')
     pickle.dump(data,f)
-
-    m_train = []
-    for i in Y_train:
-        n = []
-        for j in i:
-            if j[33] == 1.0:
-                n.append([0.0, 1.0])
-            else:
-                n.append([1.0, 0.0])
-        m_train.append(n)
-
-    m_test = []
-    for i in Y_test:
-        n = []
-        for j in i:
-            if j[33] == 1.0:
-                n.append([0.0, 1.0])
-            else:
-                n.append([1.0, 0.0])
-        m_test.append(n)
-
-    m_dev = []
-    for i in Y_dev:
-        n = []
-        for j in i:
-            if j[33] == 1.0:
-                n.append([0.0, 1.0])
-            else:
-                n.append([1.0, 0.0])
-        m_dev.append(n)
-
-    data = X_train, m_train, X_dev, m_dev, X_test, m_test
-    f = open(homepath + '/model/tensorflow/enACEdata/data2/train_data2.data', 'wb')
-    pickle.dump(data, f)
 
 
 def padding_and_generate_mask(x, y,max_len):
@@ -459,13 +439,66 @@ def padding_mask(x, y,max_len):
     return X_train,Y_train
 
 
+def get_trigger_from_apf(file_name):
+    # 获取apf文件位置
+    apf_filename = file_name+'.apf.xml'
+    apf_f=open(apf_filename, 'rb')
+    apf_content=apf_f.read()
+    try:
+        doc = etree.fromstring(apf_content)
+        for i in doc.xpath("//event"):
+            assert len(i.xpath(".//anchor")) > 0, 'len(i.xpath(".//anchor"))>0报错'
+            cur_ele = i.xpath(".//anchor")
+            event_type = i.xpath("./@TYPE")[0] + '.' + i.xpath("./@SUBTYPE")[0]
+            for anchor in cur_ele:
+                trigger_str=anchor.xpath("./charseq/text()")[0]
+                #触发词为短语的情况
+                if '\n' in trigger_str:
+                    trigger_str=trigger_str.replace('\n',' ')
+                print(trigger_str+"\t\t"+event_type)
+    except Exception as e:
+        print(e)
+        print(file_name, 'droped')
+
+
+def get_all_trigger():
+    doclist_all=homepath+'/ace05/split1.0/new_filelist_ACE_full.txt'
+    doclist_all_f=[i.replace('\n','') for i in open(doclist_all,'r')]
+    for i in doclist_all_f:
+        path=acepath+i
+        get_trigger_from_apf(path)
+
 if __name__ == '__main__':
 
     pre_data()
 
-    # data_f = open('../enACEdata/data2/train_data34.data', 'rb')
-    # X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
+    data_f = open('../enACEdata/data5/train_data34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test=pickle.load(data_f)
+    data_f.close()
+
+    print(np.array(X_train).shape)
+    print(np.array(X_test).shape)
+
+    # get_all_trigger()
+    # pre_data()
+    #
+    # data_f = open('../enACEdata/data3/train_data34.data', 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     # data_f.close()
+    #
+    # print(np.array(X_train).shape)
+    # print(np.array(X_test).shape)
+    # print(np.array(X_dev).shape)
+
+    # wordlist_file=homepath+'/ace05/word2vec/wordlist'
+    #
+    # wordlist_f=open(wordlist_file,'r')
+    # word_len=19488
+    # for line in range(word_len):
+    #     word=wordlist_f.readline().strip()
+    #     if word[-1] in punctuation:
+    #         print(word)
+
     # max_len=-1
     # for i in X_train:
     #     if max_len<len(i):

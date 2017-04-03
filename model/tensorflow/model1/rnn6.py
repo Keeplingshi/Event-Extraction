@@ -15,15 +15,15 @@ import json
 import sys
 import time
 
-data_f = open('../enACEdata/data2/train_data34.data', 'rb')
+data_f = open('../enACEdata/data3/train_data34.data', 'rb')
 X_train, Y_train, X_dev, Y_dev, X_test, Y_test = pickle.load(data_f)
 data_f.close()
 
-saver_path="../enACEdata/saver/checkpointrnn55.data"
+saver_path="../enACEdata/saver/checkpointrnn56.data"
 
 # 参数
-event_num=12524
-learningRate = 0.01
+event_num=len(X_train)
+learningRate = 0.03
 training_iters = event_num*10
 batch_size = 1
 
@@ -37,7 +37,7 @@ y = tf.placeholder('float', [None, nClasses])
 
 seq_len = tf.placeholder(tf.int32, [None])
 
-weights = tf.Variable(tf.random_normal([2 * nHidden+nInput-2+nInput-4, nClasses]))
+weights = tf.Variable(tf.random_normal([2 * nHidden+nInput-4, nClasses]))
 biases = tf.Variable(tf.random_normal([nClasses]))
 
 def weight_variable(shape):
@@ -137,13 +137,16 @@ def gru_RNN(x, weights, biases,seq_len):
     outputs = tf.concat(2, outputs)
     lstm_output = outputs[:, 0, :]
 
-    contact_pool_3x3_result=con_max_pool_3x3(x)
+    # contact_pool_3x3_result=con_max_pool_3x3(x)
     # contact_pool_2x2_result=con_max_pool_2x2(x)
     contact_pool_5x5_result=con_max_pool_5x5(x)
-    lstm_cnn_output=tf.concat(1,[lstm_output,contact_pool_3x3_result,contact_pool_5x5_result])
+
+    # lstm_output=tf.split(1,2,lstm_output)
+    # x=tf.reshape(x, [-1, nInput])
+    lstm_cnn_output=tf.concat(1,[lstm_output,contact_pool_5x5_result])
 
     results = tf.matmul(lstm_cnn_output, weights) + biases
-    return results      #,lstm_output,x,con2d_result,max_pool_result,contact_pool_result,lstm_cnn_output
+    return results     #,lstm_output,x,con2d_result,max_pool_result,contact_pool_result,lstm_cnn_output
 
 pred = gru_RNN(x, weights, biases,seq_len)
 
@@ -156,6 +159,10 @@ def compute_accuracy():
     # saver.restore(sess, "../enACEdata/saver/checkpoint.data")
     # 载入测试集进行测试
     length = len(X_test)
+    iden_p=0   # 识别的个体总数
+    iden_r=0    # 测试集中存在个个体总数
+    iden_acc=0  # 正确识别的个数
+
     p_s = 0  # 识别的个体总数
     r_s = 0  # 测试集中存在个个体总数
     pr_acc = 0  # 正确识别的个数
@@ -169,19 +176,32 @@ def compute_accuracy():
         for t in range(len(y_)):
             if prediction[t] != 33:
                 p_s +=1
+                iden_p+=1
 
             if y_[t] != 33:
                 r_s +=1
+                iden_r+=1
+                if prediction[t]!=33:
+                    iden_acc+=1
                 if y_[t] == prediction[t]:
                     pr_acc +=1
 
     print('----------------------------------------------------')
+    print('Trigger Identification:')
+    print(str(iden_acc) + '------'+str(iden_p)+'------' + str(iden_r))
+    p = iden_acc / iden_p
+    r = iden_acc / iden_r
+    if p+r!=0:
+        f = 2 * p * r / (p + r)
+        print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+    print('Trigger Classification:')
     print(str(pr_acc) + '------'+str(p_s)+'------' + str(r_s))
     p = pr_acc / p_s
     r = pr_acc / r_s
     if p+r!=0:
         f = 2 * p * r / (p + r)
         print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+        print('----------------------------------------------------')
         return f
 
     return 0
@@ -210,9 +230,11 @@ with tf.Session() as sess:
 
         # print(np.array(batch_xs).shape)
         #
-        # a,b=sess.run(pred, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
+        # a,b,c=sess.run(pred, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
         # print(np.array(a).shape)
         # print(np.array(b).shape)
+        # print(np.array(c).shape)
+        # sys.exit()
         # print(b)
         # print(np.array(xx).shape)
         # print(np.array(con2d_result).shape)
