@@ -95,17 +95,32 @@ def read_file(xml_path, text_path, event_type):
 
 def encode_corpus(flag):
     if flag=='train':
-        doclist_train=homepath+'/ace05/new_filelist_ACE_training.txt'
+        doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
         doclist_train_f=[acepath+i.replace('\n','') for i in open(doclist_train,'r')]
         return doclist_train_f
     if flag=='test':
-        doclist_train=homepath+'/ace05/new_filelist_ACE_test.txt'
+        doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
         doclist_train_f=[acepath+i.replace('\n','') for i in open(doclist_train,'r')]
         return doclist_train_f
     if flag=='dev':
-        doclist_train=homepath+'/ace05/new_filelist_ACE_dev.txt'
+        doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
         doclist_train_f=[acepath+i.replace('\n','') for i in open(doclist_train,'r')]
         return doclist_train_f
+
+def get_apf_info(test_tokens,test_anchors,event_type):
+    trigger=[]
+    length=len(test_tokens)
+    for i in range(length):
+        token=test_tokens[i]
+        anchor=test_anchors[i]
+        if anchor!=0:
+            trigger.append(token)
+        # token_len=len(token)
+        # for j in range(token_len):
+        #     if anchor[j]!=0:
+        #         trigger.append(token[j]+":"+event_type[anchor[j]])
+    return trigger
+
 
 def read_corpus(event_type,flag):
     count = 0
@@ -113,10 +128,13 @@ def read_corpus(event_type,flag):
     tokens, anchors = [], []
     for file_path in file_list:
         tok, anc = read_file(file_path + ".apf.xml", file_path + ".sgm", event_type)
+        # print(file_path)
+        # print(get_apf_info(tok,anc,event_type))
         count += 1
         tokens.append(tok)
         anchors.append(anc)
     #print(count, len(event_type))
+    print(event_type)
     return tokens, anchors
 
 def clean_str(string, TREC=False):
@@ -125,20 +143,20 @@ def clean_str(string, TREC=False):
     Every dataset is lower cased except for TREC
     """
 
-    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-    string = re.sub("'m", r" 'm", string)
-    string = re.sub("'s", " \'s", string)
-    string = re.sub("'ve", " \'ve", string)
-    string = re.sub("n\'t", " n\'t", string)
-    string = re.sub("'re", " \'re", string)
-    string = re.sub("'d", " \'d", string)
-    string = re.sub("'ll", " \'ll", string)
-    string = re.sub(".", " <dot> ", string)
-    string = re.sub(",", r" , ", string)
-    string = re.sub("!", " <dot> ", string)
-    string = re.sub("\(", "  ", string)
-    string = re.sub("\)", "  ", string)
-    string = re.sub("\?", " <dot> ", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`]", " ", string)
+    string = re.sub(r"\'m", r" 'm", string)
+    string = re.sub(r"\'s", " \'s", string)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r"\.", " <dot> ", string)
+    string = re.sub(r"\,", r" , ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " ( ", string)
+    string = re.sub(r"\)", " ) ", string)
+    string = re.sub(r"\?", " ? ", string)
     string = re.sub(r"\s{2,}", " ", string)
     # print(string)
     return string.strip() if TREC else string.strip().lower()
@@ -167,13 +185,13 @@ def get_word2vec():
 def list2vec(tokens,anchors):
     vec_dict=get_word2vec()
 
-    num=0
-
     X=[]
     Y=[]
+    W=[]
 
     sen_list=[]     #存储句子向量
     label_list=[]
+    sen_word_list=[]
 
     length=len(tokens)
     assert len(tokens)==len(anchors), '句子数目不相等'
@@ -184,25 +202,28 @@ def list2vec(tokens,anchors):
         for j in range(len(token)):
 
             if "<dot>" in token[j]:
-                num+=1
-                X.append(sen_list)
-                Y.append(label_list)
+                if len(sen_list)>=5:
+                    X.append(sen_list)
+                    Y.append(label_list)
+                    W.append(sen_word_list)
                 sen_list=[]
                 label_list=[]
+                sen_word_list=[]
 
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
+                sen_word_list.append(token[j])
                 a = [0.0 for x in range(0, 34)]
                 a[anchor[j]] = 1.0
                 label_list.append(a)
             else:
                 sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+                sen_word_list.append(token[j])
                 a = [0.0 for x in range(0, 34)]
                 a[anchor[j]] = 1.0
                 label_list.append(a)
 
-    print(num)
-    return X,Y
+    return X,Y,W
 
 
 def pre_data():
@@ -214,24 +235,57 @@ def pre_data():
     test_tokens, test_anchors=read_corpus(event_type,'test')
     dev_tokens, dev_anchors=read_corpus(event_type,'dev')
 
-    print(event_type)
 
-    X_train,Y_train=list2vec(train_tokens,train_anchors)
-    X_test,Y_test=list2vec(test_tokens,test_anchors)
-    X_dev,Y_dev=list2vec(dev_tokens,dev_anchors)
 
-    data=X_train,Y_train,X_test,Y_test,X_dev,Y_dev
-    f=open(homepath+'/model/tensorflow/enACEdata/data4/train_data34.data','wb')
+    X_train,Y_train,W_train=list2vec(train_tokens,train_anchors)
+    X_test,Y_test,W_test=list2vec(test_tokens,test_anchors)
+    X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors)
+
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(homepath+'/model/tensorflow/enACEdata/data6/train_data34.data','wb')
     pickle.dump(data,f)
+
+
+#[None, 'Movement_Transport', 'Personnel_Elect', 'Personnel_Start-Position', 'Personnel_Nominate', 'Conflict_Attack', 'Personnel_End-Position', 'Contact_Meet', 'Life_Marry', 'Contact_Phone-Write', 'Transaction_Transfer-Money', 'Justice_Sue', 'Conflict_Demonstrate', 'Business_End-Org', 'Life_Injure', 'Life_Die', 'Justice_Arrest-Jail', 'Transaction_Transfer-Ownership', 'Business_Start-Org', 'Justice_Execute', 'Justice_Trial-Hearing', 'Justice_Sentence', 'Life_Be-Born', 'Justice_Charge-Indict', 'Justice_Convict', 'Business_Declare-Bankruptcy', 'Justice_Release-Parole', 'Justice_Fine', 'Justice_Pardon', 'Justice_Appeal', 'Business_Merge-Org', 'Justice_Extradite', 'Life_Divorce', 'Justice_Acquit']
+
 
 if __name__ == "__main__":
 
-    event_type = [None]
-    test_tokens, test_anchors=read_corpus(event_type,'test')
-    print(event_type)
-    X_test,Y_test=list2vec(test_tokens,test_anchors)
+    pre_data()
+    # data_f = open('../enACEdata/data6/train_data34.data', 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    # data_f.close()
 
-    print(test_tokens)
+    # print(np.array(X_train).shape)
+    # print(np.array(X_test).shape)
+    #
+    # print(W_train[0])
+
+
+    # str='abc.doe!'
+    # print(re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", str))
+    # print(re.sub(r"\.", " <dot> ", str))
+    # print(clean_str(str))
+    # event_type = [None]
+    # test_tokens, test_anchors=read_corpus(event_type,'train')
+    # # print(event_type)
+    # # X_test,Y_test=list2vec(test_tokens,test_anchors)
+    # #
+    # num=0
+    # length=len(test_tokens)
+    # for i in range(length):
+    #     token=test_tokens[i]
+    #     anchor=test_anchors[i]
+    #     token_len=len(token)
+    #     for j in range(token_len):
+    #         if anchor[j]!=0:
+    #             print(token[j]+"\t\t"+event_type[anchor[j]])
+    #
+    #         if '<dot>' in token[j]:
+    #             # print(token)
+    #             num+=1
+    #
+    # print(num)
 
     # pre_data()
 

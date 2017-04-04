@@ -22,17 +22,19 @@ from model.tensorflow.data_process import type_index
 #
 # sys.exit()
 
-data_f = open('../enACEdata/data5/train_data34.data', 'rb')
+data_f = open('../enACEdata/data6/train_data34.data', 'rb')
+X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev=pickle.load(data_f)
 # X_train,Y_train,W_train,X_dev,Y_dev,W_dev,X_test,Y_test,W_test = pickle.load(data_f)
-X_train,Y_train,W_train,X_test,Y_test,W_test = pickle.load(data_f)
+# X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+# X_train,Y_train,X_test,Y_test = pickle.load(data_f)
 data_f.close()
 
-saver_path="../enACEdata/saver/checkpointrnn412.data"
+saver_path="../enACEdata/saver/checkpointrnn415.data"
 
 # 参数
 event_num=len(X_train)
 learningRate = 0.03
-training_iters = event_num*30
+training_iters = event_num*10
 batch_size = 1
 
 nInput = 300
@@ -88,7 +90,7 @@ cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=learningRate).minimize(cost)
 
 
-def compute_accuracy(X):
+def compute_accuracy(X,Y):
     # saver = tf.train.Saver(tf.global_variables())
     # saver.restore(sess, "../enACEdata/saver/checkpoint.data")
     # 载入测试集进行测试
@@ -104,29 +106,29 @@ def compute_accuracy(X):
         test_len = len(X[i])
         test_data = np.array(X[i]).reshape((-1, nSteps, nInput))  # 8
         train_seq_len = np.ones(test_len) * nSteps
-        test_label = Y_test[i]
-        word=W_test[i]
+        test_label = Y[i]
+        # word=W_test[i]
         # prediction识别出的结果，y_测试集中的正确结果
         prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label,seq_len:train_seq_len})
         for t in range(len(y_)):
-            if prediction[t] != 33:
+            if prediction[t] != 0:
                 p_s +=1
                 iden_p+=1
 
-            if y_[t] != 33:
+            if y_[t] != 0:
                 r_s +=1
                 iden_r+=1
-                if prediction[t]!=33:
+                if prediction[t]!=0:
                     iden_acc+=1
                 if y_[t] == prediction[t]:
                     pr_acc +=1
                 #没识别出来的
-                if prediction[t]==33:
-                    true_type=''
-                    for key, value in type_index.EVENT_MAP.items():
-                        if value == y_[t]+1:
-                            true_type=key
-                    print(word[t]+"\t\t"+true_type)
+                # if prediction[t]==33:
+                #     true_type=''
+                #     for key, value in type_index.EVENT_MAP.items():
+                #         if value == y_[t]+1:
+                #             true_type=key
+                #     print(word[t]+"\t\t"+true_type)
 
             # # # 预测出结果，但没预测正确
             # if prediction[t] != 33 and y_[t] != 33 and y_[t] != prediction[t]:
@@ -163,12 +165,12 @@ def compute_accuracy(X):
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
-    sess.run(init)
+    # sess.run(init)
 
-    # saver = tf.train.Saver(tf.global_variables())
-    # saver.restore(sess, saver_path)
-    # compute_accuracy(X_test)
-    # sys.exit()
+    saver = tf.train.Saver(tf.global_variables())
+    saver.restore(sess, saver_path)
+    compute_accuracy(X_train,Y_train)
+    sys.exit()
 
     k = 0
     max_f=0
@@ -185,8 +187,13 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,seq_len:train_seq_len})
 
         if k!=0 and step==0:
+            print('-----------train------dev---------test-----------------')
+            # compute_accuracy(X_train)
+            compute_accuracy(X_dev,Y_dev)
+            f=compute_accuracy(X_test,Y_test)
 
-            f=compute_accuracy(X_test)
+            print('')
+            print('')
             if f>max_f:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
