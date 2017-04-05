@@ -19,7 +19,7 @@ data_f = open('./data/1/train_data_form34.data', 'rb')
 X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
 data_f.close()
 
-# print(np.array(X_train).shape)
+print(np.array(X_train).shape)
 # print(np.array(Y_train).shape)
 # print(np.array(W_train).shape)
 # print(np.array(X_test).shape)
@@ -28,7 +28,7 @@ data_f.close()
 # print(np.array(X_dev).shape)
 # print(np.array(Y_dev).shape)
 # print(np.array(W_dev).shape)
-
+sys.exit()
 event_num=len(X_train)
 
 # RNN学习时使用的参数
