@@ -18,7 +18,7 @@ class Model:
         bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        output, _ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
+        output, _ = tf.contrib.learn.models.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
         weight, bias = self.weight_and_bias(2 * args.rnn_size, args.class_size)
@@ -26,7 +26,7 @@ class Model:
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
         self.loss = self.cost()
-        optimizer = tf.train.GradientDescentOptimizer(args.learning_rate)
+        optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
@@ -98,7 +98,7 @@ def f1(prediction, target, length):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn2_1.data"
+    saver_path="./data/saver/checkpointrnn2.data"
 
     data_f = open('./data/1/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -115,8 +115,6 @@ def train(args):
         # saver = tf.train.Saver(tf.global_variables())
         # saver.restore(sess, saver_path)
 
-        pred, length = sess.run([model.prediction, model.length]
-                                , {model.input_data: test_a_inp,model.output_data: test_a_out})
 
         # maximum=f1(pred, test_a_out, length)
 
@@ -124,6 +122,9 @@ def train(args):
             for ptr in range(0, len(train_inp), args.batch_size):
                 sess.run(model.train_op, {model.input_data: train_inp[ptr:ptr + args.batch_size]
                     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+
+            pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: test_a_inp,model.output_data: test_a_out})
 
             m = f1(pred, test_a_out, length)
             if m>maximum:
@@ -137,10 +138,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=30, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
-parser.add_argument('--learning_rate', type=float, default=0.03,help='number of classes')
+parser.add_argument('--learning_rate', type=float, default=0.03,help='learning_rate')
 parser.add_argument('--rnn_size', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
-parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
+parser.add_argument('--batch_size', type=int, default=128, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=30, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 train(parser.parse_args())
