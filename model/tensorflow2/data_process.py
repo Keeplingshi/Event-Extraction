@@ -266,7 +266,7 @@ def pre_data():
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors,phrase_posi_dict)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/1/train_data34.data','wb')
+    f=open(homepath+'/model/tensorflow2/data/2/train_data34.data','wb')
     pickle.dump(data,f)
 
 # 规范句子长度
@@ -298,18 +298,18 @@ def padding_mask(x, y,w,max_len):
 
 if __name__ == "__main__":
 
-    #pre_data()
-    data_f = open('./data/1/train_data34.data', 'rb')
+    pre_data()
+    data_f = open('./data/2/train_data34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
-    max_len=30
+    max_len=60
     X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
     X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
     X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/1/train_data_form34.data','wb')
+    f=open(homepath+'/model/tensorflow2/data/2/train_data_form34.data','wb')
     pickle.dump(data,f)
 
     print(np.array(X_train).shape)
