@@ -24,7 +24,7 @@ saver_path="../enACEdata/saver/checkpointrnn51.data"
 # 参数
 event_num=12524
 learningRate = 0.03
-training_iters = event_num*10
+training_iters = event_num*5
 batch_size = 1
 
 nInput = 300
@@ -140,15 +140,15 @@ def compute_accuracy():
 
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
-    sess.run(init)
+    # sess.run(init)
 
-    # saver = tf.train.Saver(tf.global_variables())
-    # saver.restore(sess, saver_path)
+    saver = tf.train.Saver(tf.global_variables())
+    saver.restore(sess, saver_path)
     # compute_accuracy()
     # sys.exit()
 
     k = 0
-    max_f=0
+    max_f=0.5817409766454352
     while k < training_iters:
         step = k % event_num
 
