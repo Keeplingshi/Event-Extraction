@@ -1,5 +1,7 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
+import numpy as np
+import sys
 
 def compute_accuracy(v_x, v_y):
     global prediction
@@ -25,7 +27,7 @@ def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
 
 # load mnist data
-mnist = input_data.read_data_sets("../MNIST_data/", one_hot=True)
+mnist = input_data.read_data_sets("./data/", one_hot=True)
 
 x = tf.placeholder(tf.float32, [None,784])
 y = tf.placeholder(tf.float32, [None,10])
@@ -38,8 +40,10 @@ x_image = tf.reshape(x, [-1,28,28,1])
 W_conv1 = weight_variable([5,5,1,32])
 b_conv1 = bias_variable([32])
 # input a imagine and make a 5*5*1 to 32 with stride=1*1, and activate with relu
+t1=conv2d(x_image, W_conv1)
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1) # output size 28*28*32
 h_pool1 = max_pool_2x2(h_conv1) # output size 14*14*32
+t2=max_pool_2x2(h_conv1)
 
 # ********************** conv2 *********************************
 # transfer a 5*5*32 imagine into 64 sequence
@@ -56,6 +60,7 @@ b_fc1 = bias_variable([1024])
 h_pool2_flat = tf.reshape(h_pool2, [-1,7*7*64])
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 h_fc1_drop = tf.nn.dropout(h_fc1,keep_prob)
+t3=tf.nn.dropout(h_fc1,keep_prob)
 
 # ********************* func2 layer *********************************
 W_fc2 = weight_variable([1024, 10])
@@ -71,8 +76,23 @@ train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
+# ********************* test *********************************
+batch_x, batch_y = mnist.train.next_batch(100)
+print(np.array(batch_x).shape)
+print(np.array(batch_y).shape)
+
+x_image=sess.run(x_image,feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
+print(np.array(x_image).shape)
+t1=sess.run(t1,feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
+print(np.array(t1).shape)
+t2=sess.run(t2,feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
+print(np.array(t2).shape)
+t3=sess.run(t3,feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
+print(np.array(t3).shape)
+sys.exit()
+
 for i in range(1000):
-    batch_x, batch_y = mnist.train.next_batch(100)
+
     sess.run(train_step,feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
     if i % 50 == 0:
         print(compute_accuracy(mnist.test.images, mnist.test.labels))
