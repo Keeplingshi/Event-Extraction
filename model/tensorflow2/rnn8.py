@@ -11,28 +11,22 @@ class Model:
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
 
-
-        # cnn_test_weight = self.cnn_weight_variable([5,5,1,32])
-        # cnn_test_bias=self.cnn_bias_variable([32])
-        # cnn_test_weight2 = self.cnn_weight_variable([5,5,32,64])
-        # cnn_test_bias2=self.cnn_bias_variable([64])
-        # W_fc1 = self.cnn_weight_variable([15*75*64, 200])
-        # b_fc1 = self.cnn_bias_variable([200])
-        # cnn_test_output=self.cnn_conv2d_max_pool2(self.input_data,args,cnn_test_weight,cnn_test_bias
-        #                                                ,cnn_test_weight2,cnn_test_bias2,W_fc1,b_fc1)
-
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(cnn_test_output)
-
         #cnn process
-        cnn_weight = self.cnn_weight_variable([7,7,1,1])
+        cnn_weight = self.cnn_weight_variable([5,5,1,1])
         cnn_bias=self.cnn_bias_variable([1])
         cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
         cnn_output=tf.reshape(cnn_output,[-1,args.word_dim])
         cnn_extend=[]
         for i in range(args.sentence_length):
             cnn_extend.append(cnn_output)
+
+        cnn_weight_3x3 = self.cnn_weight_variable([3,3,1,1])
+        cnn_bias_3x3=self.cnn_bias_variable([1])
+        cnn_output_3x3=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight_3x3,cnn_bias_3x3)
+        cnn_output_3x3=tf.reshape(cnn_output_3x3,[-1,args.word_dim])
+        cnn_extend_3x3=[]
+        for i in range(args.sentence_length):
+            cnn_extend_3x3.append(cnn_output_3x3)
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -53,10 +47,10 @@ class Model:
 
         # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
         #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,cnn_extend])
+        lstm_cnn_output=tf.concat(2,[output,cnn_extend,cnn_extend_3x3])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.word_dim, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.word_dim])
+        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.word_dim+args.word_dim, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.word_dim+args.word_dim])
 
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
@@ -90,20 +84,6 @@ class Model:
         max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length,1,1], strides=[1,1,1,1], padding='VALID')
         return max_pool1
 
-    # @staticmethod
-    # def cnn_conv2d_max_pool2(data,args,cnn_weight,cnn_bias,cnn_test_weight2,cnn_test_bias2,W_fc1,b_fc1):
-    #     x = tf.reshape(data, [-1,args.sentence_length,args.word_dim,1])
-    #     conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='SAME')
-    #     h_conv1 = tf.nn.relu(conv1 + cnn_bias)
-    #     max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
-    #
-    #     conv2=tf.nn.conv2d(max_pool1, cnn_test_weight2, strides=[1,1,1,1], padding='SAME')
-    #     h_conv2 = tf.nn.relu(conv2 + cnn_test_bias2)
-    #     max_pool2 = tf.nn.max_pool(h_conv2, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME') # output size 7*7*64
-    #
-    #     h_pool2_flat = tf.reshape(max_pool2, [-1,15*75*64])
-    #     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-    #     return h_fc1
 
     @staticmethod
     def cnn_weight_variable(shape):
@@ -171,7 +151,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn4_1.data"
+    saver_path="./data/saver/checkpointrnn8_1.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)

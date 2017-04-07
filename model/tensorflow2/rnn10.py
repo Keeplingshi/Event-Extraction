@@ -26,7 +26,7 @@ class Model:
         #     cnn_extend.append(cnn_test_output)
 
         #cnn process
-        cnn_weight = self.cnn_weight_variable([7,7,1,1])
+        cnn_weight = self.cnn_weight_variable([3,3,1,1])
         cnn_bias=self.cnn_bias_variable([1])
         cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
         cnn_output=tf.reshape(cnn_output,[-1,args.word_dim])
@@ -171,7 +171,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn4_1.data"
+    saver_path="./data/saver/checkpointrnn10_1.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)

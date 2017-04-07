@@ -26,7 +26,7 @@ class Model:
         #     cnn_extend.append(cnn_test_output)
 
         #cnn process
-        cnn_weight = self.cnn_weight_variable([7,7,1,1])
+        cnn_weight = self.cnn_weight_variable([5,5,1,1])
         cnn_bias=self.cnn_bias_variable([1])
         cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
         cnn_output=tf.reshape(cnn_output,[-1,args.word_dim])
@@ -43,8 +43,8 @@ class Model:
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
 
-        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
@@ -89,21 +89,6 @@ class Model:
         h_conv1 = tf.nn.relu(conv1 + cnn_bias)
         max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length,1,1], strides=[1,1,1,1], padding='VALID')
         return max_pool1
-
-    # @staticmethod
-    # def cnn_conv2d_max_pool2(data,args,cnn_weight,cnn_bias,cnn_test_weight2,cnn_test_bias2,W_fc1,b_fc1):
-    #     x = tf.reshape(data, [-1,args.sentence_length,args.word_dim,1])
-    #     conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='SAME')
-    #     h_conv1 = tf.nn.relu(conv1 + cnn_bias)
-    #     max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
-    #
-    #     conv2=tf.nn.conv2d(max_pool1, cnn_test_weight2, strides=[1,1,1,1], padding='SAME')
-    #     h_conv2 = tf.nn.relu(conv2 + cnn_test_bias2)
-    #     max_pool2 = tf.nn.max_pool(h_conv2, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME') # output size 7*7*64
-    #
-    #     h_pool2_flat = tf.reshape(max_pool2, [-1,15*75*64])
-    #     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-    #     return h_fc1
 
     @staticmethod
     def cnn_weight_variable(shape):
@@ -171,7 +156,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn4_1.data"
+    saver_path="./data/saver/checkpointrnn6_1.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
