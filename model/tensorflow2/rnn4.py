@@ -10,6 +10,7 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
+        self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
         cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
@@ -26,8 +27,9 @@ class Model:
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
-        used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
-        self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
+        # used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
+        # self.length1 = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
+        self.length=tf.cast(self.input_length, tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
@@ -40,6 +42,10 @@ class Model:
 
         weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
         output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
+
+        # weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
+        # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
+
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -140,8 +146,8 @@ def f1(prediction, target, length,iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn4_1.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f = open('./data/3/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev = pickle.load(data_f)
     data_f.close()
     train_inp=X_train
     train_out=Y_train
@@ -183,9 +189,9 @@ def train(args):
                 #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
                 # print(np.array(cnn_output).shape)
                 #
-                # cnn_output=sess.run(model.cnn_extend,{model.input_data: train_inp[ptr:ptr + args.batch_size]
+                # cnn_output=sess.run(model.cnn_output,{model.input_data: train_inp[ptr:ptr + args.batch_size]
                 #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(cnn_output).shape)
+                # print(cnn_output)
                 # sys.exit()
                 # pred=sess.run(model.prediction, {model.input_data: train_inp[ptr:ptr + args.batch_size]
                 #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
@@ -194,12 +200,24 @@ def train(args):
                 #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
                 # print(np.array(od).shape)
                 # print('-----------------1---------------------')
+                # a=sess.run(model.length1, {model.input_data: train_inp[ptr:ptr + args.batch_size]
+                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]
+                #     ,model.input_length:L_train[ptr:ptr + args.batch_size]})
+                #
+                # b=sess.run(model.length, {model.input_data: train_inp[ptr:ptr + args.batch_size]
+                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]
+                #     ,model.input_length:L_train[ptr:ptr + args.batch_size]})
+                #
+                # print(a)
+                # print(b)
+
                 sess.run(model.train_op, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                    ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+                    ,model.output_data: train_out[ptr:ptr + args.batch_size]
+                    ,model.input_length:L_train[ptr:ptr + args.batch_size]})
 
 
             pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: test_a_inp,model.output_data: test_a_out})
+                                    , {model.input_data: test_a_inp,model.output_data: test_a_out,model.input_length:L_test})
 
             m = f1(pred, test_a_out, length,e)
             if m>maximum:
@@ -221,5 +239,5 @@ parser.add_argument('--batch_size', type=int, default=100, help='batch size of t
 parser.add_argument('--epoch', type=int, default=50, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=5, help='conv filter size')
+parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
 train(parser.parse_args())

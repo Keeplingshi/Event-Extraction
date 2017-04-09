@@ -294,22 +294,55 @@ def padding_mask(x, y,w,max_len):
     return X_train,Y_train,W_train
 
 #[None, 'Movement_Transport', 'Personnel_Elect', 'Personnel_Start-Position', 'Personnel_Nominate', 'Conflict_Attack', 'Personnel_End-Position', 'Contact_Meet', 'Life_Marry', 'Contact_Phone-Write', 'Transaction_Transfer-Money', 'Justice_Sue', 'Conflict_Demonstrate', 'Business_End-Org', 'Life_Injure', 'Life_Die', 'Justice_Arrest-Jail', 'Transaction_Transfer-Ownership', 'Business_Start-Org', 'Justice_Execute', 'Justice_Trial-Hearing', 'Justice_Sentence', 'Life_Be-Born', 'Justice_Charge-Indict', 'Justice_Convict', 'Business_Declare-Bankruptcy', 'Justice_Release-Parole', 'Justice_Fine', 'Justice_Pardon', 'Justice_Appeal', 'Business_Merge-Org', 'Justice_Extradite', 'Life_Divorce', 'Justice_Acquit']
+#sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+
+'''
+规范句子长度
+补零的词汇用np.random.uniform(-0.25, 0.25, 300).tolist()代替
+'''
+def padding_mask_random(x, y,w,max_len):
+    X_train=[]
+    Y_train=[]
+    W_train=[]
+    L_train=[]
+
+    x_zero_list=np.random.uniform(-0.25, 0.25, 300).tolist()
+    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list[0]=1.0
+    unknown='unknow_word'
+    for i, (x, y) in enumerate(zip(x, y)):
+        sen_len=len(x)
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+                w.append(unknown)
+        else:
+            sen_len=max_len
+            x=x[:max_len]
+            y=y[:max_len]
+            w=w[:max_len]
+        L_train.append(sen_len)
+        X_train.append(x)
+        Y_train.append(y)
+        W_train.append(w)
+    return X_train,Y_train,W_train,L_train
 
 
 if __name__ == "__main__":
 
-    pre_data()
-    data_f = open('./data/2/train_data34.data', 'rb')
+    # pre_data()
+    data_f = open('./data/3/train_data34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
     max_len=60
-    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
-    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
-    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
+    X_train,Y_train,W_train,L_train=padding_mask_random(X_train,Y_train,W_train,max_len)
+    X_test,Y_test,W_test,L_test=padding_mask_random(X_test,Y_test,W_test,max_len)
+    X_dev,Y_dev,W_dev,L_dev=padding_mask_random(X_dev,Y_dev,W_dev,max_len)
 
-    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/2/train_data_form34.data','wb')
+    data=X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev
+    f=open(homepath+'/model/tensorflow2/data/3/train_data_form34.data','wb')
     pickle.dump(data,f)
 
     print(np.array(X_train).shape)
@@ -321,6 +354,9 @@ if __name__ == "__main__":
     print(np.array(X_dev).shape)
     print(np.array(Y_dev).shape)
     print(np.array(W_dev).shape)
+    print(L_train)
+    print(L_test)
+    print(L_dev)
 
 
 
