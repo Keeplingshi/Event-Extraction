@@ -44,4 +44,10 @@ def conv2d_test():
         print("The shape of y:\t", y.shape, ",\t and the y.reshape(3,3) is :")
         print(y.reshape(3,1))
 
-conv2d_test()
+# conv2d_test()
+
+a=[1,2,3,4]
+print(a[2:5])
+a.extend(a)
+print(a)
+
