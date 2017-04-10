@@ -10,20 +10,7 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-
-
-        # cnn_test_weight = self.cnn_weight_variable([5,5,1,32])
-        # cnn_test_bias=self.cnn_bias_variable([32])
-        # cnn_test_weight2 = self.cnn_weight_variable([5,5,32,64])
-        # cnn_test_bias2=self.cnn_bias_variable([64])
-        # W_fc1 = self.cnn_weight_variable([15*75*64, 200])
-        # b_fc1 = self.cnn_bias_variable([200])
-        # cnn_test_output=self.cnn_conv2d_max_pool2(self.input_data,args,cnn_test_weight,cnn_test_bias
-        #                                                ,cnn_test_weight2,cnn_test_bias2,W_fc1,b_fc1)
-
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(cnn_test_output)
+        self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
         cnn_weight = self.cnn_weight_variable([3,3,1,1])
@@ -38,20 +25,10 @@ class Model:
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
-        # self.x=tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2]))
-
-        # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
-        # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
-
-        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
-        used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
-        self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
+        self.length=tf.cast(self.input_length, tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
-
-        # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
         #cnn lstm contact
         lstm_cnn_output=tf.concat(2,[output,cnn_extend])
 
@@ -89,21 +66,6 @@ class Model:
         h_conv1 = tf.nn.relu(conv1 + cnn_bias)
         max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length,1,1], strides=[1,1,1,1], padding='VALID')
         return max_pool1
-
-    # @staticmethod
-    # def cnn_conv2d_max_pool2(data,args,cnn_weight,cnn_bias,cnn_test_weight2,cnn_test_bias2,W_fc1,b_fc1):
-    #     x = tf.reshape(data, [-1,args.sentence_length,args.word_dim,1])
-    #     conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='SAME')
-    #     h_conv1 = tf.nn.relu(conv1 + cnn_bias)
-    #     max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
-    #
-    #     conv2=tf.nn.conv2d(max_pool1, cnn_test_weight2, strides=[1,1,1,1], padding='SAME')
-    #     h_conv2 = tf.nn.relu(conv2 + cnn_test_bias2)
-    #     max_pool2 = tf.nn.max_pool(h_conv2, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME') # output size 7*7*64
-    #
-    #     h_pool2_flat = tf.reshape(max_pool2, [-1,15*75*64])
-    #     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-    #     return h_fc1
 
     @staticmethod
     def cnn_weight_variable(shape):
@@ -173,8 +135,8 @@ def f1(prediction, target, length,iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn10_1.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f = open('./data/3/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev = pickle.load(data_f)
     data_f.close()
     train_inp=X_train
     train_out=Y_train
@@ -199,37 +161,20 @@ def train(args):
         # print(np.array(train_inp).shape)
         for e in range(args.epoch):
             for ptr in range(0, len(train_inp), args.batch_size):
-                # lstm_out=sess.run(model.output, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # x=sess.run(model.x, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(lstm_out).shape)
-                # print(result)
-                # print(np.array(x).shape)
-                # print(x)
 
-                # cnn_output=sess.run(model.cnn_test_output,{model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(cnn_output).shape)
-                # sys.exit()
-                # pred=sess.run(model.prediction, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(pred).shape)
-                # od=sess.run(model.output_data, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(od).shape)
-                # print('-----------------1---------------------')
                 sess.run(model.train_op, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                    ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+                    ,model.output_data: train_out[ptr:ptr + args.batch_size]
+                    ,model.input_length:L_train[ptr:ptr + args.batch_size]})
 
 
             pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: test_a_inp,model.output_data: test_a_out})
+                                    , {model.input_data: test_a_inp,model.output_data: test_a_out,model.input_length:L_test})
 
             m = f1(pred, test_a_out, length,e)
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
+                maximum=m
 
 
 

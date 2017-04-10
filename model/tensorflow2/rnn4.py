@@ -74,7 +74,7 @@ class Model:
     def cnn_conv2d_max_pool(data,args,cnn_weight,cnn_bias):
         x = tf.reshape(data, [-1,args.sentence_length,args.word_dim,1])
         conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='VALID')
-        h_conv1 = tf.nn.relu(conv1 + cnn_bias)
+        h_conv1 = tf.nn.sigmoid(conv1 + cnn_bias)
         max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length-args.filter_size+1,1,1], strides=[1,1,1,1], padding='VALID')
         return max_pool1
 
@@ -144,7 +144,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn4_1.data"
+    saver_path="./data/saver/checkpointrnn4_2.data"
 
     data_f = open('./data/3/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev = pickle.load(data_f)
