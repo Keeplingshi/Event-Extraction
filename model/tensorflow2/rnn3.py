@@ -12,48 +12,53 @@ class Model:
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
         # self.input_length=tf.placeholder(tf.int64, [None])
 
-        #cnn process
-        cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
-        cnn_bias=self.cnn_bias_variable([args.feature_maps])
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
-        self.cnn_output=tf.reshape(tf.transpose(self.cnn_output,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(self.cnn_output)
+        cnn_weight = self.cnn_weight_variable([args.filter_size, args.word_dim, 1, args.feature_maps])
+        cnn_bias = self.cnn_bias_variable([args.feature_maps])
+        self.cnn_output = self.cnn_conv2d_max_pool(self.input_data, args, cnn_weight, cnn_bias)
+
+
+        # #cnn process
+        # cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
+        # cnn_bias=self.cnn_bias_variable([args.feature_maps])
+        # self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
+        # self.cnn_output=tf.reshape(tf.transpose(self.cnn_output,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
+        # # cnn_extend=[]
+        # # for i in range(args.sentence_length):
+        # #     cnn_extend.append(self.cnn_output)
+        # #
+        # # self.cnn_extend=cnn_extend
         #
-        # self.cnn_extend=cnn_extend
-
-        #lstm process
-        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-
-        used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
-        self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        #self.length=tf.cast(self.input_length, tf.int32)
-        output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-                                               tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
-                                               dtype=tf.float32, sequence_length=self.length)
-
-        self.lstm_output=output
+        # #lstm process
+        # fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        # bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         #
-        # # # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
-        #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
-
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
-
-        # weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
-        # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
-
-
-        prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
-        self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
-        self.loss = self.cost()
-        optimizer = tf.train.AdamOptimizer(args.learning_rate)
-        tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
-        self.train_op = optimizer.apply_gradients(zip(grads, tvars))
+        # used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
+        # self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
+        # #self.length=tf.cast(self.input_length, tf.int32)
+        # output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
+        #                                        tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+        #                                        dtype=tf.float32, sequence_length=self.length)
+        #
+        # self.lstm_output=output
+        # #
+        # # # # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
+        # #cnn lstm contact
+        # lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
+        #
+        # weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
+        # output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
+        #
+        # # weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
+        # # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
+        #
+        #
+        # prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
+        # self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
+        # self.loss = self.cost()
+        # optimizer = tf.train.AdamOptimizer(args.learning_rate)
+        # tvars = tf.trainable_variables()
+        # grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
+        # self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
         cross_entropy = self.output_data * tf.log(self.prediction)
@@ -72,6 +77,7 @@ class Model:
 
     @staticmethod
     def cnn_conv2d_max_pool(data,args,cnn_weight,cnn_bias):
+
         pad_seqs = []
         pad_seq=[]
         pad_len=int((args.filter_size-1)/2)
@@ -85,8 +91,33 @@ class Model:
         x=tf.concat(1,[conv_pad,x,conv_pad])
         conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='VALID')
         h_conv1 = tf.nn.sigmoid(conv1 + cnn_bias)
+        conv1_len=args.sentence_length
+        h_conv1= tf.reshape(h_conv1, [-1,conv1_len,args.feature_maps])
+
+        #Dynamic Multi-max_pool
+        y=[]
+        #对每个句子
+        for seq_conv_i in range(args.batch_size):
+            h_conv1_i=h_conv1[seq_conv_i]       #每个句子的特征
+            sentence_feature=[]
+            #对每个词
+            for i in range(conv1_len):
+                word_max_pool=[]            #存入每个词的特征
+                h_conv1_i_up=tf.transpose(tf.slice(h_conv1_i, [0, 0], [i+1, args.feature_maps]),[1,0])
+                h_conv1_i_down=tf.transpose(tf.slice(h_conv1_i, [i+1, 0], [-1, args.feature_maps]),[1,0])
+                for j in range(args.feature_maps):
+                    a_j=tf.reduce_max(h_conv1_i_up[j])
+                    b_j=tf.reduce_max(h_conv1_i_down[j])
+                    word_max_pool.append(a_j)
+                    word_max_pool.append(b_j)
+                sentence_feature.append(word_max_pool)
+
+            return sentence_feature
+            y.append(sentence_feature)
+
+
         # max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length-args.filter_size+1,1,1], strides=[1,1,1,1], padding='VALID')
-        return h_conv1
+        return y
 
     @staticmethod
     def cnn_weight_variable(shape):
@@ -154,7 +185,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn3_3.data"
+    saver_path="./data/saver/checkpointrnn3_5.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -168,17 +199,16 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-#         saver = tf.train.Saver(tf.global_variables())
-#         saver.restore(sess, saver_path)
-#
-#         pred, length = sess.run([model.prediction, model.length]
-#                                     , {model.input_data: test_a_inp,model.output_data: test_a_out})
-#
-#         maximum=f1(pred, test_a_out, length,1)
-#         sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(train_inp), args.batch_size):
+
+                cnn_output=sess.run(model.cnn_output,{model.input_data: train_inp[ptr:ptr + args.batch_size]
+                    ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+                print(np.array(cnn_output).shape)
+                print(cnn_output)
+                sys.exit()
+
                 batch_xs=train_inp[ptr:ptr + args.batch_size]
                 batch_ys=train_out[ptr:ptr + args.batch_size]
 
@@ -220,8 +250,8 @@ parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_
 parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
-parser.add_argument('--epoch', type=int, default=50, help='number of epochs')
+parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=5, help='conv filter size')
+parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
 train(parser.parse_args())
