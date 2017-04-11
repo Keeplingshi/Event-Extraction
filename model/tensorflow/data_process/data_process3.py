@@ -289,7 +289,7 @@ if __name__ == "__main__":
 
     # pre_data()
 
-    # data_f = open('../enACEdata/data4/train_data34.data', 'rb')
+    # data_f = open('../enACEdata/4/train_data34.data', 'rb')
     # X_train,Y_train,X_test,Y_test,X_dev,Y_dev = pickle.load(data_f)
     # data_f.close()
     #

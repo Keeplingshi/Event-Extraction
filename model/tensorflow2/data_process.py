@@ -329,34 +329,119 @@ def padding_mask_random(x, y,w,max_len):
     return X_train,Y_train,W_train,L_train
 
 
+# 规范句子长度
+def padding_mask_full(x, y,w,max_len):
+    X_train=[]
+    Y_train=[]
+    W_train=[]
+    x_zero_list=[0.0 for i in range(300)]
+    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list[0]=1.0
+    unknown='unknow_word'
+    for i, (x, y) in enumerate(zip(x, y)):
+        x_len=len(x)
+        iter_num=int(x_len/max_len)
+        if iter_num==0:
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+                w.append(unknown)
+            X_train.append(x)
+            Y_train.append(y)
+            W_train.append(w)
+        else:
+            for j in range(iter_num):
+                if (j+2)*max_len>x_len:
+                    a=x[(j+1)*max_len:x_len]
+                    b=y[(j+1)*max_len:x_len]
+                    c=w[(j+1)*max_len:x_len]
+                    for k in range((j+2)*max_len-x_len):
+                        a.append(x_zero_list)
+                        b.append(y_zero_list)
+                        c.append(unknown)
+                    X_train.append(a)
+                    Y_train.append(b)
+                    W_train.append(c)
+                else:
+                    X_train.append(x[j*max_len:(j+1)*max_len])
+                    Y_train.append(y[j*max_len:(j+1)*max_len])
+                    W_train.append(w[j*max_len:(j+1)*max_len])
+                    # print(len(w[j*max_len:(j+1)*max_len]))
+
+
+    return X_train,Y_train,W_train
+
 if __name__ == "__main__":
+    pass
+    # data_f = open('./data/4/train_data34.data', 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    # data_f.close()
+    #
+    # for i in X_train:
+    #     if len(i)>60:
+    #         print(len(i))
+    #
+    # num=0
+    # for i in range(len(Y_test)):
+    #     for j in range(len(Y_test[i])):
+    #         if Y_test[i][j][0]!=1.0:
+    #             num+=1
+    #
+    # print(num)
+    #
+    # max_len=60
+    # # X_train,Y_train,W_train=padding_mask_full(X_train,Y_train,W_train,max_len)
+    # X_test,Y_test,W_test=padding_mask_full(X_test,Y_test,W_test,max_len)
+    # # X_dev,Y_dev,W_dev=padding_mask_full(X_dev,Y_dev,W_dev,max_len)
+    #
+    # # data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    # # f=open(homepath+'/model/tensorflow2/data/4/train_data_len60_form34.data','wb')
+    # # pickle.dump(data,f)
+    # #
+    # # print(np.array(X_train).shape)
+    # # print(np.array(Y_train).shape)
+    # # print(np.array(W_train).shape)
+    # print(np.array(X_test).shape)
+    # print(np.array(Y_test).shape)
+    # print(np.array(W_test).shape)
+    # # print(np.array(X_dev).shape)
+    # # print(np.array(Y_dev).shape)
+    # # print(np.array(W_dev).shape)
+    #
+    # num=0
+    # for i in range(len(Y_test)):
+    #     for j in range(len(Y_test[i])):
+    #         if Y_test[i][j][0]!=1.0:
+    #             num+=1
+    #
+    # print(num)
 
     # pre_data()
-    data_f = open('./data/3/train_data34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    max_len=60
-    X_train,Y_train,W_train,L_train=padding_mask_random(X_train,Y_train,W_train,max_len)
-    X_test,Y_test,W_test,L_test=padding_mask_random(X_test,Y_test,W_test,max_len)
-    X_dev,Y_dev,W_dev,L_dev=padding_mask_random(X_dev,Y_dev,W_dev,max_len)
-
-    data=X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev
-    f=open(homepath+'/model/tensorflow2/data/3/train_data_form34.data','wb')
-    pickle.dump(data,f)
-
-    print(np.array(X_train).shape)
-    print(np.array(Y_train).shape)
-    print(np.array(W_train).shape)
-    print(np.array(X_test).shape)
-    print(np.array(Y_test).shape)
-    print(np.array(W_test).shape)
-    print(np.array(X_dev).shape)
-    print(np.array(Y_dev).shape)
-    print(np.array(W_dev).shape)
-    print(L_train)
-    print(L_test)
-    print(L_dev)
+    # data_f = open('./data/3/train_data34.data', 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    # data_f.close()
+    #
+    # max_len=60
+    # X_train,Y_train,W_train,L_train=padding_mask_random(X_train,Y_train,W_train,max_len)
+    # X_test,Y_test,W_test,L_test=padding_mask_random(X_test,Y_test,W_test,max_len)
+    # X_dev,Y_dev,W_dev,L_dev=padding_mask_random(X_dev,Y_dev,W_dev,max_len)
+    #
+    # data=X_train,Y_train,W_train,L_train,X_test,Y_test,W_test,L_test,X_dev,Y_dev,W_dev,L_dev
+    # f=open(homepath+'/model/tensorflow2/data/3/train_data_form34.data','wb')
+    # pickle.dump(data,f)
+    #
+    # print(np.array(X_train).shape)
+    # print(np.array(Y_train).shape)
+    # print(np.array(W_train).shape)
+    # print(np.array(X_test).shape)
+    # print(np.array(Y_test).shape)
+    # print(np.array(W_test).shape)
+    # print(np.array(X_dev).shape)
+    # print(np.array(Y_dev).shape)
+    # print(np.array(W_dev).shape)
+    # print(L_train)
+    # print(L_test)
+    # print(L_dev)
 
 
 

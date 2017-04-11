@@ -146,15 +146,15 @@ def train(args):
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: test_a_inp,model.output_data: test_a_out})
-        #
-        # maximum=f1(pred, test_a_out, length,1)
-        # sys.exit()
+#        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: test_a_inp,model.output_data: test_a_out,model.input_length:L_test})
+
+        maximum=f1(pred, test_a_out, length,1)
+        sys.exit()
 
         # train_inp=train_inp[:84]
         # train_out=train_out[:84]
