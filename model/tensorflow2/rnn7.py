@@ -52,7 +52,7 @@ class Model:
         self.loss = self.cost()
         optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
@@ -154,7 +154,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn5_5.data"
+    saver_path="./data/saver/checkpointrnn7_1.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -167,28 +167,28 @@ def train(args):
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-#         saver = tf.train.Saver(tf.global_variables())
-#         saver.restore(sess, saver_path)
-#
-#         test_pred = []
-#         test_len = []
-#         for ptr in range(0, len(test_a_inp), args.batch_size):
-#             batch_xs = test_a_inp[ptr:ptr + args.batch_size]
-#             batch_ys = test_a_out[ptr:ptr + args.batch_size]
-#
-#             if len(batch_xs) < args.batch_size:
-#                 batch_xs.extend(test_a_inp[0:args.batch_size - len(batch_xs)])
-#                 batch_ys.extend(test_a_out[0:args.batch_size - len(batch_ys)])
-#
-#             pred, length = sess.run([model.prediction, model.length]
-#                                     , {model.input_data: batch_xs, model.output_data: batch_ys})
-#             test_pred.extend(pred)
-#             test_len.extend(length)
-#
-#         m = f1(test_pred, test_a_out, test_len, 1)
-#         maximum=m
-#         sys.exit()
+#        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        test_pred = []
+        test_len = []
+        for ptr in range(0, len(test_a_inp), args.batch_size):
+            batch_xs = test_a_inp[ptr:ptr + args.batch_size]
+            batch_ys = test_a_out[ptr:ptr + args.batch_size]
+
+            if len(batch_xs) < args.batch_size:
+                batch_xs.extend(test_a_inp[0:args.batch_size - len(batch_xs)])
+                batch_ys.extend(test_a_out[0:args.batch_size - len(batch_ys)])
+
+            pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: batch_xs, model.output_data: batch_ys})
+            test_pred.extend(pred)
+            test_len.extend(length)
+
+        m = f1(test_pred, test_a_out, test_len, 1)
+        maximum=m
+        sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(train_inp), args.batch_size):
@@ -201,7 +201,7 @@ def train(args):
 
                 sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
-            if e%10==0:
+            if e%5==0:
                 train_pred = []
                 train_len = []
                 for ptr in range(0, len(train_inp), args.batch_size):

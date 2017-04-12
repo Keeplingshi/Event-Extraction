@@ -381,7 +381,6 @@ def pos_tag_add():
     word_list=[]
     for sentence in W_test:
         for word in sentence:
-
             # tag=nltk.pos_tag(word)[0][1]
             word_list.append(word)
             # if tag not in pos_tag:
@@ -391,9 +390,42 @@ def pos_tag_add():
     # print(pos_tag)
 
 
+def get_posi():
+    data_f = open('./data/2/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+    posi=[]
+    for sentence in X_train:
+        for i in range(len(sentence)):
+            word=sentence[i]
+            if word[0]==0:
+                posi.append(i)
+                break
+
+    for sentence in X_test:
+        for i in range(len(sentence)):
+            word = sentence[i]
+            if word[0] == 0:
+                posi.append(i)
+                break
+
+    for sentence in X_dev:
+        for i in range(len(sentence)):
+            word = sentence[i]
+            if word[0] == 0:
+                posi.append(i)
+                break
+
+    posi_f = open('./data/2/posi.txt', 'w')
+    for i in posi:
+        for j in range(i):
+            posi_f.write(str(j)+' ')
+        posi_f.write('\n')
+
 if __name__ == "__main__":
 
-    pos_tag_add()
+    get_posi()
+    # pos_tag_add()
 
     # Rfiltered =nltk.pos_tag('today')
     #
