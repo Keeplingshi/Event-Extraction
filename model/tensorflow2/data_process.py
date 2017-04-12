@@ -2,7 +2,8 @@ import xml.etree.ElementTree as ET
 import pickle, re, sys, os
 import numpy as np
 import nltk
-
+from gensim.models import word2vec
+import time
 
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
@@ -422,9 +423,22 @@ def get_posi():
             posi_f.write(str(j)+' ')
         posi_f.write('\n')
 
-if __name__ == "__main__":
+def posi_embedding():
+    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
 
-    get_posi()
+    sentences =word2vec.Text8Corpus("./data/2/posi.txt")
+    model =word2vec.Word2Vec(sentences, size=5,min_count=1,iter=15)
+    model.save_word2vec_format("./data/2/posi_embed.bin", binary=True)
+
+    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+
+if __name__ == "__main__":
+    posi_embedding()
+
+    posi_model =word2vec.Word2Vec.load_word2vec_format("./data/2/posi_embed.bin",binary=True)
+    print(posi_model['1'])
+
+    # get_posi()
     # pos_tag_add()
 
     # Rfiltered =nltk.pos_tag('today')
