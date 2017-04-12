@@ -10,18 +10,15 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        # self.input_length=tf.placeholder(tf.int64, [None])
+
+        # self.x_front = tf.slice(self.input_data, [0, 0, 0], [-1, -1, args.word_dim])
+        # x_posi = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
         #cnn process
         cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
         cnn_bias=self.cnn_bias_variable([args.feature_maps])
         self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
         self.cnn_output=tf.reshape(tf.transpose(self.cnn_output,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(self.cnn_output)
-        #
-        # self.cnn_extend=cnn_extend
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -29,23 +26,17 @@ class Model:
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        #self.length=tf.cast(self.input_length, tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
 
-        self.lstm_output=output
-        #
-        # # # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
+        # self.posi=tf.transpose(x_posi,[1,0,2])
         #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
+        self.lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
-
-        # weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
-        # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
-
+        weight_x=2 * args.hidden_layers+args.feature_maps
+        weight, bias = self.weight_and_bias(weight_x, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(self.lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -85,7 +76,6 @@ class Model:
         x=tf.concat(1,[conv_pad,x,conv_pad])
         conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='VALID')
         h_conv1 = tf.nn.sigmoid(conv1 + cnn_bias)
-        # max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length-args.filter_size+1,1,1], strides=[1,1,1,1], padding='VALID')
         return h_conv1
 
     @staticmethod
@@ -154,9 +144,9 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn10_2.data"
+    saver_path="./data/saver/checkpointrnn10_3.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
+    data_f = open('./data/2/train_data_posi_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
     train_inp=X_train
@@ -194,10 +184,21 @@ def train(args):
             for ptr in range(0, len(train_inp), args.batch_size):
                 batch_xs=train_inp[ptr:ptr + args.batch_size]
                 batch_ys=train_out[ptr:ptr + args.batch_size]
+                # print(np.array(batch_xs).shape)
+                # print(batch_xs[0][0])
+                # print(len(batch_xs[0][0]))
 
                 if len(batch_xs)<args.batch_size:
                     batch_xs.extend(train_inp[0:args.batch_size-len(batch_xs)])
                     batch_ys.extend(train_out[0:args.batch_size - len(batch_ys)])
+
+                # x_embed=sess.run(model.x_front, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(x_embed).shape)
+                # x_posi=sess.run(model.x_posi, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(x_posi).shape)
+                # x_posi=sess.run(model.lstm_cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(x_posi).shape)
+                # sys.exit()
 
                 sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
@@ -226,26 +227,18 @@ def train(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
+parser.add_argument('--word_dim', type=int,default=305, help='dimension of word vector')
+parser.add_argument('--word_dist', type=int,default=5, help='distance of word in sentence')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
 parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
-parser.add_argument('--batch_size', type=int, default=50, help='batch size of training')
+parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
-parser.add_argument('--feature_maps', type=int, default=150, help='feature maps')
+parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
 parser.add_argument('--filter_size', type=int, default=5, help='conv filter size')
 train(parser.parse_args())
 
-"""
------------------------1-----------------------------
-Trigger Identification:
-271------360------405
-P=0.7527777777777778	R=0.6691358024691358	F=0.7084967320261438
-Trigger Classification:
-263------360------405
-P=0.7305555555555555	R=0.6493827160493827	F=0.6875816993464052
-------------------------1----------------------------
-"""
+

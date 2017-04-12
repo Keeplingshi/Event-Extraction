@@ -89,7 +89,7 @@ class Model:
         return tf.Variable(bias)
 
 
-def f1(prediction, target, length,iter):
+def f1(prediction, target, length, iter_num):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -119,7 +119,7 @@ def f1(prediction, target, length,iter):
                 iden_acc+=1
 
     try:
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('Trigger Identification:')
         print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
         p = iden_acc / iden_p
@@ -134,12 +134,12 @@ def f1(prediction, target, length,iter):
         if p + r != 0:
             f = 2 * p * r / (p + r)
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-            print('------------------------' + str(iter) + '----------------------------')
+            print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
 
 
