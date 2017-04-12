@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import pickle, re, sys, os
 import numpy as np
+import nltk
 
 
 homepath='D:/Code/pycharm/Event-Extraction/'
@@ -371,8 +372,33 @@ def padding_mask_full(x, y,w,max_len):
 
     return X_train,Y_train,W_train
 
+def pos_tag_add():
+    data_f = open('./data/2/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    pos_tag=[]
+    word_list=[]
+    for sentence in W_test:
+        for word in sentence:
+
+            # tag=nltk.pos_tag(word)[0][1]
+            word_list.append(word)
+            # if tag not in pos_tag:
+            #     pos_tag.append(tag)
+    # print(word_list)
+    # print(nltk.pos_tag(word_list))
+    # print(pos_tag)
+
+
 if __name__ == "__main__":
-    pass
+
+    pos_tag_add()
+
+    # Rfiltered =nltk.pos_tag('today')
+    #
+    # print(Rfiltered[0][1])
+    # pass
     # data_f = open('./data/4/train_data34.data', 'rb')
     # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     # data_f.close()

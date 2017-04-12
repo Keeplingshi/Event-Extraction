@@ -13,15 +13,16 @@ class Model:
         # self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
-        cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
+        cnn_weight = self.cnn_weight_variable([3,args.word_dim,1,args.feature_maps])
         cnn_bias=self.cnn_bias_variable([args.feature_maps])
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
+        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias,3)
         self.cnn_output=tf.reshape(tf.transpose(self.cnn_output,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(self.cnn_output)
-        #
-        # self.cnn_extend=cnn_extend
+
+        cnn_weight_5x5 = self.cnn_weight_variable([5,args.word_dim,1,args.feature_maps])
+        cnn_bias_5x5=self.cnn_bias_variable([args.feature_maps])
+        self.cnn_output_5x5=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight_5x5,cnn_bias_5x5,5)
+        self.cnn_output_5x5=tf.reshape(tf.transpose(self.cnn_output_5x5,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
+
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -35,17 +36,12 @@ class Model:
                                                dtype=tf.float32, sequence_length=self.length)
 
         self.lstm_output=output
-        #
-        # # # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
+
         #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
+        lstm_cnn_output=tf.concat(2,[output,self.cnn_output,self.cnn_output_5x5])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
-
-        # weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
-        # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
-
+        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps+args.feature_maps, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps+args.feature_maps])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -71,10 +67,10 @@ class Model:
         return tf.Variable(weight), tf.Variable(bias)
 
     @staticmethod
-    def cnn_conv2d_max_pool(data,args,cnn_weight,cnn_bias):
+    def cnn_conv2d_max_pool(data,args,cnn_weight,cnn_bias,filter_size):
         pad_seqs = []
         pad_seq=[]
-        pad_len=int((args.filter_size-1)/2)
+        pad_len=int((filter_size-1)/2)
         zero_seq=[0.0 for j in range(args.word_dim)]
         for i in range(pad_len):
             pad_seq.append(zero_seq)
@@ -154,7 +150,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn8_2.data"
+    saver_path="./data/saver/checkpointrnn12_2.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -230,12 +226,12 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
-parser.add_argument('--batch_size', type=int, default=50, help='batch size of training')
+parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
-parser.add_argument('--feature_maps', type=int, default=100, help='feature maps')
+parser.add_argument('--feature_maps', type=int, default=150, help='feature maps')
 parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
 train(parser.parse_args())
 
