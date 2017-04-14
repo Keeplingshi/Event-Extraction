@@ -1,3 +1,7 @@
+"""
+BiLSTM+CNN(only conv)
+"""
+
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
@@ -16,12 +20,12 @@ class Model:
         cnn_weight = self.cnn_weight_variable([args.filter_size,args.word_dim,1,args.feature_maps])
         cnn_bias=self.cnn_bias_variable([args.feature_maps])
         self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,args,cnn_weight,cnn_bias)
-        self.cnn_output=tf.reshape(self.cnn_output,[-1,args.feature_maps])
-        cnn_extend=[]
-        for i in range(args.sentence_length):
-            cnn_extend.append(self.cnn_output)
-
-        self.cnn_extend=cnn_extend
+        self.cnn_output=tf.reshape(tf.transpose(self.cnn_output,[1,0,2,3]), [args.sentence_length, args.batch_size,args.feature_maps])
+        # cnn_extend=[]
+        # for i in range(args.sentence_length):
+        #     cnn_extend.append(self.cnn_output)
+        #
+        # self.cnn_extend=cnn_extend
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -29,7 +33,7 @@ class Model:
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        # self.length=tf.cast(self.input_length, tf.int32)
+        #self.length=tf.cast(self.input_length, tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
@@ -38,7 +42,7 @@ class Model:
         #
         # # # output = tf.reshape(output, [args.sentence_length, args.batch_size,2*args.hidden_layers])
         #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,cnn_extend])
+        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
 
         weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
         output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
@@ -52,7 +56,7 @@ class Model:
         self.loss = self.cost()
         optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
@@ -72,12 +76,21 @@ class Model:
 
     @staticmethod
     def cnn_conv2d_max_pool(data,args,cnn_weight,cnn_bias):
+        pad_seqs = []
+        pad_seq=[]
+        pad_len=int((args.filter_size-1)/2)
+        zero_seq=[0.0 for j in range(args.word_dim)]
+        for i in range(pad_len):
+            pad_seq.append(zero_seq)
+        for i in range(args.batch_size):
+            pad_seqs.append(pad_seq)
+        conv_pad = tf.reshape(pad_seqs, [args.batch_size, pad_len,args.word_dim,1])
         x = tf.reshape(data, [-1,args.sentence_length,args.word_dim,1])
+        x=tf.concat(1,[conv_pad,x,conv_pad])
         conv1=tf.nn.conv2d(x, cnn_weight, strides=[1,1,1,1], padding='VALID')
         h_conv1 = tf.nn.sigmoid(conv1 + cnn_bias)
-        max_pool=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length-args.filter_size+1,1,1], strides=[1,1,1,1], padding='VALID')
-        max_pool=tf.nn.dropout(max_pool,0.5)
-        return max_pool
+        # max_pool1=tf.nn.max_pool(h_conv1, ksize=[1,args.sentence_length-args.filter_size+1,1,1], strides=[1,1,1,1], padding='VALID')
+        return h_conv1
 
     @staticmethod
     def cnn_weight_variable(shape):
@@ -145,7 +158,7 @@ def f1(prediction, target, length,iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn4_3.data"
+    saver_path="./data/saver/checkpointrnn5_5.data"
 
     data_f = open('./data/2/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -159,47 +172,73 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+#         saver = tf.train.Saver(tf.global_variables())
+#         saver.restore(sess, saver_path)
+#
+#         test_pred = []
+#         test_len = []
+#         for ptr in range(0, len(test_a_inp), args.batch_size):
+#             batch_xs = test_a_inp[ptr:ptr + args.batch_size]
+#             batch_ys = test_a_out[ptr:ptr + args.batch_size]
+#
+#             if len(batch_xs) < args.batch_size:
+#                 batch_xs.extend(test_a_inp[0:args.batch_size - len(batch_xs)])
+#                 batch_ys.extend(test_a_out[0:args.batch_size - len(batch_ys)])
+#
+#             pred, length = sess.run([model.prediction, model.length]
+#                                     , {model.input_data: batch_xs, model.output_data: batch_ys})
+#             test_pred.extend(pred)
+#             test_len.extend(length)
+#
+#         m = f1(test_pred, test_a_out, test_len, 1)
+#         maximum=m
+#         sys.exit()
 
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # test_pred = []
-        # test_len = []
-        # for ptr in range(0, len(test_a_inp), args.batch_size):
-        #     batch_xs = test_a_inp[ptr:ptr + args.batch_size]
-        #     batch_ys = test_a_out[ptr:ptr + args.batch_size]
-        #
-        #     if len(batch_xs) < args.batch_size:
-        #         batch_xs.extend(test_a_inp[0:args.batch_size - len(batch_xs)])
-        #         batch_ys.extend(test_a_out[0:args.batch_size - len(batch_ys)])
-        #
-        #     pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: batch_xs, model.output_data: batch_ys})
-        #     test_pred.extend(pred)
-        #     test_len.extend(length)
-        #
-        # m = f1(test_pred, test_a_out, test_len, 1)
-        # maximum=m
-
-        # train_inp=train_inp[:84]
-        # train_out=train_out[:84]
-        # print(np.array(train_inp).shape)
         for e in range(args.epoch):
             for ptr in range(0, len(train_inp), args.batch_size):
+                batch_xs=train_inp[ptr:ptr + args.batch_size]
+                batch_ys=train_out[ptr:ptr + args.batch_size]
 
-                # a=sess.run(model.cnn_output, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                #     ,model.output_data: train_out[ptr:ptr + args.batch_size]})
-                # print(np.array(a).shape)
-                # sys.exit()
+                if len(batch_xs)<args.batch_size:
+                    batch_xs.extend(train_inp[0:args.batch_size-len(batch_xs)])
+                    batch_ys.extend(train_out[0:args.batch_size - len(batch_ys)])
 
-                sess.run(model.train_op, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                    ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+                sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
+            if e%10==0:
+                train_pred = []
+                train_len = []
+                for ptr in range(0, len(train_inp), args.batch_size):
+                    batch_xs = train_inp[ptr:ptr + args.batch_size]
+                    batch_ys = train_out[ptr:ptr + args.batch_size]
 
-            pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: test_a_inp,model.output_data: test_a_out})
+                    if len(batch_xs) < args.batch_size:
+                        batch_xs.extend(train_inp[0:args.batch_size - len(batch_xs)])
+                        batch_ys.extend(train_out[0:args.batch_size - len(batch_ys)])
 
-            m = f1(pred, test_a_out, length,e)
+                    pred, length = sess.run([model.prediction, model.length]
+                                            , {model.input_data: batch_xs, model.output_data: batch_ys})
+                    train_pred.extend(pred)
+                    train_len.extend(length)
+
+                f1(train_pred, train_out, train_len, 'train')
+
+            test_pred=[]
+            test_len=[]
+            for ptr in range(0, len(test_a_inp), args.batch_size):
+                batch_xs=test_a_inp[ptr:ptr + args.batch_size]
+                batch_ys=test_a_out[ptr:ptr + args.batch_size]
+
+                if len(batch_xs)<args.batch_size:
+                    batch_xs.extend(test_a_inp[0:args.batch_size-len(batch_xs)])
+                    batch_ys.extend(test_a_out[0:args.batch_size - len(batch_ys)])
+
+                pred, length = sess.run([model.prediction, model.length]
+                                        , {model.input_data: batch_xs, model.output_data: batch_ys})
+                test_pred.extend(pred)
+                test_len.extend(length)
+
+            m = f1(test_pred, test_a_out, test_len,e)
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
@@ -216,8 +255,9 @@ parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_
 parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
-parser.add_argument('--epoch', type=int, default=50, help='number of epochs')
+parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
-parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
+parser.add_argument('--feature_maps', type=int, default=300, help='feature maps')
+parser.add_argument('--filter_size', type=int, default=5, help='conv filter size')
 train(parser.parse_args())
+
