@@ -195,7 +195,7 @@ with tf.Session() as sess:
 #             for i in range(length):
 #                 test_len = len(X_test[i])
 #                 test_data = np.array(X_test[i]).reshape(
-#                     (-1, nSteps, nInput))  # 8
+#                     (-1, nSteps, nInput))  # 6
 #                 test_label = Y_test[i]
 #                 # prediction识别出的结果，y_测试集中的正确结果
 #                 prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
@@ -232,7 +232,7 @@ with tf.Session() as sess:
 #     for i in range(length):
 #         test_len = len(X_test[i])
 #         test_data = np.array(X_test[i]).reshape(
-#             (-1, nSteps, nInput))  # 8
+#             (-1, nSteps, nInput))  # 6
 #         test_label = Y_test[i]
 #         # prediction识别出的结果，y_测试集中的正确结果
 #         prediction, y_ = sess.run(

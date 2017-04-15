@@ -31,7 +31,7 @@ n_classes = 10  # 输出的数量，因为是分类问题，0~9个数字，这�
 # batch_xs, batch_ys = mnist.train.next_batch(batch_size)
 # print(batch_xs.tolist()[0])
 # # 对数据进行处理，使得其符合输入
-# batch_xs = batch_xs.reshape((batch_size, n_steps, n_input))  # 7
+# batch_xs = batch_xs.reshape((batch_size, n_steps, n_input))  # 6
 # print(batch_xs.tolist()[0])
 
 # 构建tensorflow的输入X的placeholder
@@ -112,7 +112,7 @@ with tf.Session() as sess:
         sys.exit()
 
         # 对数据进行处理，使得其符合输入
-        batch_xs = batch_xs.reshape((batch_size, n_steps, n_input))  # 7
+        batch_xs = batch_xs.reshape((batch_size, n_steps, n_input))  # 6
         # 迭代
         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,
                                        istate: np.zeros((batch_size, 2 * n_hidden))})

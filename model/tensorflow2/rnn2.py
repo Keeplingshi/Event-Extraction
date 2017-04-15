@@ -110,15 +110,15 @@ def f1(prediction, target, length, iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn2_5.data"
+    saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f = open('./data/6/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test = pickle.load(data_f)
     data_f.close()
-    train_inp=X_train
-    train_out=Y_train
-    test_a_inp=X_test
-    test_a_out=Y_test
+    # train_inp=X_train
+    # train_out=Y_train
+    # test_a_inp=X_test
+    # test_a_out=Y_test
 
     model = Model(args)
     maximum = 0
@@ -135,15 +135,15 @@ def train(args):
 
 
         for e in range(args.epoch):
-            for ptr in range(0, len(train_inp), args.batch_size):
+            for ptr in range(0, len(X_train), args.batch_size):
 
-                sess.run(model.train_op, {model.input_data: train_inp[ptr:ptr + args.batch_size]
-                    ,model.output_data: train_out[ptr:ptr + args.batch_size]})
+                sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
+                    ,model.output_data: Y_train[ptr:ptr + args.batch_size]})
 
             pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: test_a_inp,model.output_data: test_a_out})
+                                    , {model.input_data: X_test,model.output_data: Y_test})
 
-            m = f1(pred, test_a_out, length,e)
+            m = f1(pred, Y_test, length,e)
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
@@ -152,7 +152,7 @@ def train(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
+parser.add_argument('--word_dim', type=int,default=305, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
