@@ -19,9 +19,15 @@ def conv2d(x, filter_num, filter_size,filter_length,stddev=0.1,active_func="tanh
             conv_output = tf.nn.relu(conv)
         elif active_func=="sigmod":
             conv_output = tf.nn.sigmoid(conv)
+        elif active_func=="leaky_relu":
+            conv_output=leaky_relu(conv)
         else:
             conv_output = tf.nn.tanh(conv)
         return conv_output
+
+
+def leaky_relu(input_tensor, leak=0.2, name="leaky_relu"):
+    return tf.maximum(input_tensor, leak * input_tensor)
 
 
 # add batch normalization in conv2d

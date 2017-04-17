@@ -21,14 +21,15 @@ class Model:
         # x_posi = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
         #cnn process
-        filter_sizes = [5]
-        filter_numbers = [100]
-        conv2d_maxpool=self.cnn_conv2d_max_pool(self.input_data,args,filter_sizes,filter_numbers)
+        filter_sizes = [5,3]
+        filter_numbers = [100,100]
+        max_k=[2,2]
+        self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
         #self.cnn_output = official_batch_norm_layer(conv2d_maxpool,sum(filter_numbers),True,False,scope="cnn_batch_norm")
         #self.cnn_output = batch_norm(cnn_output,sum(filter_numbers),"cnn_batch_norm",True)
         cnn_extend=[]
         for i in range(args.sentence_length):
-            cnn_extend.append(conv2d_maxpool)
+            cnn_extend.append(self.cnn_output)
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -43,7 +44,7 @@ class Model:
         #cnn lstm contact
         lstm_cnn_output=tf.concat(2,[output,cnn_extend])
 
-        weight_x=2 * args.hidden_layers+sum(filter_numbers)
+        weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
         weight, bias = self.weight_and_bias(weight_x, args.class_size)
         output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
 
@@ -72,13 +73,15 @@ class Model:
 
 
     @staticmethod
-    def cnn_conv2d_max_pool(data,args,filter_sizes,filter_numbers):
+    def cnn_conv2d_k_max_pool(data,args,filter_sizes,filter_numbers,max_k):
         x=tf.expand_dims(data,-1)
         pooled_outputs = []
         for idx, filter_size in enumerate(filter_sizes):
             conv = conv2d(x,filter_numbers[idx],filter_size,args.word_dim,active_func="sigmod",name="kernel%d" % idx)
-            pool = tf.nn.max_pool(conv,ksize=[1,args.sentence_length-filter_size+1,1,1],strides=[1, 1, 1, 1],padding='VALID')
-            pooled_outputs.append(tf.squeeze(pool))
+            conv=tf.transpose(tf.squeeze(conv),perm=[0,2,1])
+            top_values, _ = tf.nn.top_k(conv, max_k[idx], sorted=False)
+            k_max_pool = tf.reshape(top_values, [-1, max_k[idx]*filter_numbers[idx]])
+            pooled_outputs.append(tf.squeeze(k_max_pool))
 
         if len(filter_sizes) > 1:
             cnn_output = tf.concat(1,pooled_outputs)
@@ -155,8 +158,8 @@ def f1(prediction, target, length, iter_num):
 def train(args):
     saver_path="./data/saver/checkpointrnn5_1.data"
 
-    data_f = open('./data/6/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test = pickle.load(data_f)
+    data_f = open('./data/2/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
     model = Model(args)
@@ -174,7 +177,6 @@ def train(args):
         # maximum=m
         # sys.exit()
 
-
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
                 batch_xs=X_train[ptr:ptr + args.batch_size]
@@ -182,7 +184,6 @@ def train(args):
 
                 # cnn_output=sess.run(model.cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
                 # print(np.array(cnn_output).shape)
-                # # print(np.reshape(cnn_output,[100,58,200]).shape)
                 # print(cnn_output)
                 # sys.exit()
 
