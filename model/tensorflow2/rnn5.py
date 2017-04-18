@@ -169,15 +169,15 @@ def train(args):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, saver_path)
-
-        pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: X_test,model.output_data: Y_test})
-
-        m = f1(pred, Y_test, length,'load')
-        maximum=m
-        sys.exit()
+        # saver = tf.train.Saver(tf.global_variables())
+        # saver.restore(sess, saver_path)
+        #
+        # pred, length = sess.run([model.prediction, model.length]
+        #                             , {model.input_data: X_test,model.output_data: Y_test})
+        #
+        # m = f1(pred, Y_test, length,'load')
+        # maximum=m
+        # sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
@@ -191,6 +191,11 @@ def train(args):
 
                 sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
+            if e%10==0:
+                pred, length = sess.run([model.prediction, model.length]
+                                        , {model.input_data: X_train[:2000], model.output_data: Y_train[:2000]})
+
+                f1(pred, Y_train[:2000], length, e)
 
             pred, length = sess.run([model.prediction, model.length]
                                     , {model.input_data: X_test,model.output_data: Y_test})
