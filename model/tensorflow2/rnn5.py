@@ -21,7 +21,7 @@ class Model:
         # x_posi = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
         #cnn process
-        filter_sizes = [5,3]
+        filter_sizes = [3,5]
         filter_numbers = [100,100]
         max_k=[2,2]
         self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
@@ -169,15 +169,15 @@ def train(args):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: X_test,model.output_data: Y_test})
-        #
-        # m = f1(pred, Y_test, length,'load')
-        # maximum=m
-        # sys.exit()
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: X_test,model.output_data: Y_test})
+
+        m = f1(pred, Y_test, length,'load')
+        maximum=m
+        sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
