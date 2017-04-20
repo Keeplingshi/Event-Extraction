@@ -202,22 +202,20 @@ def list2vec(tokens, arguments):
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
                 sen_word_list.append(token[j])
-                a = [0.0 for x in range(0, 33)]
+                a = [0.0 for x in range(0, 34)]
                 a[anchor[j]] = 1.0
                 label_list.append(a)
             else:
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
                     arg_words=arg_tokens.split(' ')
-
-
-                    # if trigger_tmp3 in phrase_posi_dict.keys():
-                    #     new_trigger=trigger_tmp3.split(' ')[int(phrase_posi_dict[trigger_tmp3])-1]
-                    #     sen_list.append(vec_dict.get(new_trigger))
-                    #     sen_word_list.append(new_trigger)
-                    #     a = [0.0 for x in range(0, 33)]
-                    #     a[anchor[j]] = 1.0
-                    #     label_list.append(a)
+                    for k in range(len(arg_words)):
+                        if vec_dict.get(arg_words[k]) is not None:
+                            sen_list.append(vec_dict.get(arg_words[k]))
+                            sen_word_list.append(arg_words[k])
+                            a = [0.0 for x in range(0, 34)]
+                            a[anchor[j]] = 1.0
+                            label_list.append(a)
 
     return X,Y,W
 
@@ -234,12 +232,68 @@ def pre_data():
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_arguments)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/8/train_data34.data','wb')
+    f=open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data','wb')
     pickle.dump(data,f)
 
+
+# 规范句子长度
+def padding_mask(x, y,w,max_len):
+    X_train=[]
+    Y_train=[]
+    W_train=[]
+    x_zero_list=[0.0 for i in range(300)]
+    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list[0]=1.0
+    unknown='unknow_word'
+    for i, (x, y,w) in enumerate(zip(x, y,w)):
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+                w.append(unknown)
+        else:
+            x=x[:max_len]
+            y=y[:max_len]
+            w=w[:max_len]
+        X_train.append(x)
+        Y_train.append(y)
+        W_train.append(w)
+    return X_train,Y_train,W_train
+
+
+def form_data():
+
+    data_f = open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    max_len=60
+    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
+    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
+    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
+
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(homepath+'/model/tensorflow2/data/8/argument_train_data_form34.data','wb')
+    pickle.dump(data,f)
+
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    print(np.array(W_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(Y_test).shape)
+    print(np.array(W_test).shape)
+    print(np.array(X_dev).shape)
+    print(np.array(Y_dev).shape)
+    print(np.array(W_dev).shape)
+
 if __name__ == "__main__":
-    file_path=acepath+"/nw/timex2norm/AFP_ENG_20030323.0020"
-    argument_type=[]
+
+    # pre_data()
+
+    form_data()
+
+    # file_path=acepath+"/nw/timex2norm/AFP_ENG_20030323.0020"
+    # argument_type=[]
 
     # train_tokens, train_anchors=read_corpus(argument_type,'train')
     # print(argument_type)
@@ -250,6 +304,7 @@ if __name__ == "__main__":
     # dev_tokens, dev_anchors=read_corpus(argument_type,'dev')
     # print(argument_type)
     # print(len(argument_type))
+    # print(dev_tokens)
 
     # tok, anc = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
     # assert len(tok)==len(anc),"长度不一"
