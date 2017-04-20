@@ -76,7 +76,7 @@ def read_file(xml_path, text_path, argument_type):
                         text = re.sub(r"\n", r"", charseq.text)
                         argument_tupple = (arg_type, start, end, text)
                         if argument_tupple in argument_ident:
-                            sys.stderr.write("dulicapte event {}\n".format(ev_id))
+                            #sys.stderr.write("dulicapte event {}\n".format(ev_id))
                             argument_map[ev_id] = argument_ident[argument_tupple]
                             continue
                         argument_ident[argument_tupple] = ev_id
@@ -202,7 +202,7 @@ def list2vec(tokens, arguments):
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
                 sen_word_list.append(token[j])
-                a = [0.0 for x in range(0, 34)]
+                a = [0.0 for x in range(0, 67)]
                 a[anchor[j]] = 1.0
                 label_list.append(a)
             else:
@@ -211,11 +211,21 @@ def list2vec(tokens, arguments):
                     arg_words=arg_tokens.split(' ')
                     for k in range(len(arg_words)):
                         if vec_dict.get(arg_words[k]) is not None:
-                            sen_list.append(vec_dict.get(arg_words[k]))
-                            sen_word_list.append(arg_words[k])
-                            a = [0.0 for x in range(0, 34)]
-                            a[anchor[j]] = 1.0
-                            label_list.append(a)
+
+                            if k==0:
+                                #如果是首个单词
+                                sen_list.append(vec_dict.get(arg_words[k]))
+                                sen_word_list.append(arg_words[k])
+                                a = [0.0 for x in range(0, 67)]
+                                a[anchor[j]] = 1.0
+                                label_list.append(a)
+                            else:
+                                #如果不是首个单词，则type_mid
+                                sen_list.append(vec_dict.get(arg_words[k]))
+                                sen_word_list.append(arg_words[k])
+                                a = [0.0 for x in range(0, 67)]
+                                a[anchor[j]+33] = 1.0
+                                label_list.append(a)
 
     return X,Y,W
 
@@ -229,6 +239,11 @@ def pre_data():
 
     X_train,Y_train,W_train=list2vec(train_tokens,train_arguments)
     X_test,Y_test,W_test=list2vec(test_tokens,test_arguments)
+    for i in range(len(Y_train)):
+        if np.argmax(Y_train[i])>30:
+            print(np.argmax(Y_train[i]))
+            print('yes')
+    print('----------------------------------------------')
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_arguments)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
@@ -242,7 +257,7 @@ def padding_mask(x, y,w,max_len):
     Y_train=[]
     W_train=[]
     x_zero_list=[0.0 for i in range(300)]
-    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list=[0.0 for i in range(67)]
     y_zero_list[0]=1.0
     unknown='unknow_word'
     for i, (x, y,w) in enumerate(zip(x, y,w)):
@@ -266,6 +281,9 @@ def form_data():
     data_f = open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
+    for i in range(len(Y_test)):
+        if np.argmax(Y_test[i])>30:
+            print(np.argmax(Y_test[i]))
 
     max_len=60
     X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
@@ -288,13 +306,25 @@ def form_data():
 
 if __name__ == "__main__":
 
-    # pre_data()
+#[None, 'Vehicle', 'Artifact', 'Person', 'Attacker', 'Place', 'Entity', 'Giver', 'Plaintiff', 'Recipient', 'Money', 'Position', 'Victim', 'Agent', 'Target', 'Time-Ending', 'Buyer', 'Instrument', 'Destination', 'Time-Within', 'Org', 'Time-Before', 'Beneficiary', 'Defendant', 'Adjudicator', 'Origin', 'Crime', 'Time-Holds', 'Time-Starting', 'Time-After', 'Prosecutor', 'Seller', 'Sentence', 'Price']
+
+    pre_data()
 
     form_data()
+    print('------------over-------------')
+    data_f = open('./data/8/argument_train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    for i in range(len(Y_test)):
+        if np.argmax(Y_test[i])>20:
+            print(np.argmax(Y_test[i]))
+
+
 
     # file_path=acepath+"/nw/timex2norm/AFP_ENG_20030323.0020"
-    # argument_type=[]
-
+    # argument_type=[None]
+    #
     # train_tokens, train_anchors=read_corpus(argument_type,'train')
     # print(argument_type)
     # print(len(argument_type))
