@@ -118,6 +118,23 @@ def f_score(prediction, target, length, iter_num,W_test):
 
     target_list=[]
 
+
+    # for i in range(len(target)):
+    #     for j in range(length[i]):
+    #         if prediction[i][j]!=0:
+    #             classify_p+=1
+    #             iden_p+=1
+    #
+    #         if target[i][j]!=0:
+    #             classify_r+=1
+    #             iden_r+=1
+    #
+    #         if target[i][j]==prediction[i][j] and target[i][j]!=0:
+    #             classify_acc+=1
+    #
+    #         if prediction[i][j]!=0 and target[i][j]!=0:
+    #             iden_acc+=1
+
     for i in range(len(target)):
         word_num=0
         target_type=0
@@ -210,7 +227,7 @@ def train(args):
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        #sess.run(tf.global_variables_initializer())
+        # sess.run(tf.global_variables_initializer())
 
         saver = tf.train.Saver(tf.global_variables())
         saver.restore(sess, saver_path)
@@ -221,7 +238,6 @@ def train(args):
         m = f_score(pred, Y_test, length,'load',W_test)
         maximum=m
 
-        # f3_1(67,pred,Y_test,length)
         sys.exit()
 
         for e in range(args.epoch):
@@ -256,7 +272,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 # parser.add_argument('--word_dist', type=int,default=5, help='distance of word in sentence')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
-parser.add_argument('--class_size', type=int, default=67,help='number of classes')
+parser.add_argument('--class_size', type=int, default=71,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
 parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')

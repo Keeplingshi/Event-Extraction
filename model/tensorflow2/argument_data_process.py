@@ -12,6 +12,14 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
+arg_type_num=71
+
+def number_form(s):
+    num_list = re.findall("\d+\s,\s\d+", s)
+    for re_num in num_list:
+        s = s.replace(re_num, re_num.replace(" ", ""))
+    return s
+
 
 def clean_str(string, TREC=False):
     string = re.sub(r"[^A-Za-z0-9(),.!?\'\`]", " ", string)
@@ -55,21 +63,22 @@ def read_file(xml_path, text_path, argument_type):
     argument_end = {}
 
     argument_ident={}
-    argument_map = {}
     event_argument=dict()
 
     for events in root.iter("event"):
 
         for mention in events.iter("event_mention"):
-            ev_id = mention.attrib["ID"]
-            mention_argument = mention.find("event_mention_argument")
-            if mention_argument is not None:
+
+            mention_arguments = mention.findall("event_mention_argument")
+            for mention_argument in mention_arguments:
+                ev_id = mention_argument.attrib["REFID"]
                 # 时间要素类型
                 arg_type=mention_argument.attrib["ROLE"]
                 if arg_type not in argument_type:
                     argument_type.append(arg_type)
 
                 for extend in mention_argument:
+
                     for charseq in extend:
                         start = int(charseq.attrib["START"])
                         end = int(charseq.attrib["END"]) + 1
@@ -77,12 +86,18 @@ def read_file(xml_path, text_path, argument_type):
                         argument_tupple = (arg_type, start, end, text)
                         if argument_tupple in argument_ident:
                             #sys.stderr.write("dulicapte event {}\n".format(ev_id))
-                            argument_map[ev_id] = argument_ident[argument_tupple]
+                            # argument_map[ev_id] = argument_ident[argument_tupple]
                             continue
                         argument_ident[argument_tupple] = ev_id
                         event_argument[ev_id] = [ev_id, arg_type, start, end, text]
                         argument_start[start] = ev_id
                         argument_end[end] = ev_id
+
+    # print(len(argument_ident))
+    # print(len(event_argument))
+    # print(argument_ident)
+    # print(event_argument)
+    # print('--------------------------------------------------------')
 
     doc = open(text_path).read()
     doc = re.sub(r"<[^>]+>", r"", doc)
@@ -141,15 +156,15 @@ def read_file(xml_path, text_path, argument_type):
 从语料读取信息
 """
 def read_corpus(argument_type,flag):
-    count = 0
     file_list = encode_corpus(flag)
     tokens, arguments = [], []
     for file_path in file_list:
         tok, arg = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
-        count += 1
+        assert len(tok) == len(arg), file_path+"\t长度不一"
         tokens.append(tok)
         arguments.append(arg)
     return tokens, arguments
+
 
 def get_word2vec():
     word2vec_file=homepath+'/ace05/word2vec/wordvector'
@@ -191,23 +206,27 @@ def list2vec(tokens, arguments):
         for j in range(len(token)):
             #如果是句号，结束符
             if "<dot>" in token[j]:
-                if len(sen_list)>=5:
-                    X.append(sen_list)
-                    Y.append(label_list)
-                    W.append(sen_word_list)
-                sen_list=[]
-                label_list=[]
-                sen_word_list=[]
+                if "u <dot> s <dot>" in token[j]:
+                    token[j] = token[j].replace("u <dot> s <dot>", "u.s.")
+                else:
+                    if len(sen_list)>=5:
+                        X.append(sen_list)
+                        Y.append(label_list)
+                        W.append(sen_word_list)
+                    sen_list=[]
+                    label_list=[]
+                    sen_word_list=[]
 
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
                 sen_word_list.append(token[j])
-                a = [0.0 for x in range(0, 67)]
+                a = [0.0 for x in range(0, arg_type_num)]
                 a[anchor[j]] = 1.0
                 label_list.append(a)
             else:
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
+                    arg_tokens=number_form(arg_tokens)
                     arg_words=arg_tokens.split(' ')
                     for k in range(len(arg_words)):
                         if vec_dict.get(arg_words[k]) is not None:
@@ -216,15 +235,15 @@ def list2vec(tokens, arguments):
                                 #如果是首个单词
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
-                                a = [0.0 for x in range(0, 67)]
+                                a = [0.0 for x in range(0, arg_type_num)]
                                 a[anchor[j]] = 1.0
                                 label_list.append(a)
                             else:
                                 #如果不是首个单词，则type_mid
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
-                                a = [0.0 for x in range(0, 67)]
-                                a[anchor[j]+33] = 1.0
+                                a = [0.0 for x in range(0, arg_type_num)]
+                                a[anchor[j] + 35] = 1.0
                                 label_list.append(a)
 
     return X,Y,W
@@ -237,13 +256,12 @@ def pre_data():
     test_tokens, test_arguments=read_corpus(argument_type,'test')
     dev_tokens, dev_arguments=read_corpus(argument_type,'dev')
 
+    print(argument_type)
+    print(len(argument_type))
+    print('-------------------------------')
+
     X_train,Y_train,W_train=list2vec(train_tokens,train_arguments)
     X_test,Y_test,W_test=list2vec(test_tokens,test_arguments)
-    for i in range(len(Y_train)):
-        if np.argmax(Y_train[i])>30:
-            print(np.argmax(Y_train[i]))
-            print('yes')
-    print('----------------------------------------------')
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_arguments)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
@@ -257,7 +275,7 @@ def padding_mask(x, y,w,max_len):
     Y_train=[]
     W_train=[]
     x_zero_list=[0.0 for i in range(300)]
-    y_zero_list=[0.0 for i in range(67)]
+    y_zero_list=[0.0 for i in range(arg_type_num)]
     y_zero_list[0]=1.0
     unknown='unknow_word'
     for i, (x, y,w) in enumerate(zip(x, y,w)):
@@ -281,9 +299,6 @@ def form_data():
     data_f = open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
-    for i in range(len(Y_test)):
-        if np.argmax(Y_test[i])>30:
-            print(np.argmax(Y_test[i]))
 
     max_len=60
     X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
@@ -305,20 +320,35 @@ def form_data():
     print(np.array(W_dev).shape)
 
 if __name__ == "__main__":
-
-#[None, 'Vehicle', 'Artifact', 'Person', 'Attacker', 'Place', 'Entity', 'Giver', 'Plaintiff', 'Recipient', 'Money', 'Position', 'Victim', 'Agent', 'Target', 'Time-Ending', 'Buyer', 'Instrument', 'Destination', 'Time-Within', 'Org', 'Time-Before', 'Beneficiary', 'Defendant', 'Adjudicator', 'Origin', 'Crime', 'Time-Holds', 'Time-Starting', 'Time-After', 'Prosecutor', 'Seller', 'Sentence', 'Price']
-
     pre_data()
 
     form_data()
-    print('------------over-------------')
-    data_f = open('./data/8/argument_train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
+    # file_path = acepath + "nw/timex2norm/AFP_ENG_20030401.0476"
+    # argument_type=[None]
+    #
+    # tok, anc = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
+    # assert len(tok)==len(anc),"长度不一"
+    # print(tok)
+    # print(anc)
+    # print(argument_type)
+    # for i in range(len(tok)):
+    #     if anc[i] != 0:
+    #         print(str(anc[i]) + "\t" + tok[i])
 
-    for i in range(len(Y_test)):
-        if np.argmax(Y_test[i])>20:
-            print(np.argmax(Y_test[i]))
+
+#[None, 'Vehicle', 'Artifact', 'Person', 'Attacker', 'Place', 'Entity', 'Giver', 'Plaintiff', 'Recipient', 'Money', 'Position', 'Victim', 'Agent', 'Target', 'Time-Ending', 'Buyer', 'Instrument', 'Destination', 'Time-Within', 'Org', 'Time-Before', 'Beneficiary', 'Defendant', 'Adjudicator', 'Origin', 'Crime', 'Time-Holds', 'Time-Starting', 'Time-After', 'Prosecutor', 'Seller', 'Sentence', 'Price']
+
+    # pre_data()
+
+    # form_data()
+    # print('------------over-------------')
+    # data_f = open('./data/8/argument_train_data_form34.data', 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    # data_f.close()
+    #
+    # for i in range(len(Y_test)):
+    #     if np.argmax(Y_test[i])>20:
+    #         print(np.argmax(Y_test[i]))
 
 
 
