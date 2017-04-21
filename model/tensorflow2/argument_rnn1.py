@@ -101,7 +101,26 @@ class Model:
         return tf.Variable(bias)
 
 
+def get_arg_tuple_list(Y_label,length):
+    arg_list=[]
+    for i in range(len(Y_label)):
+        for j in range(length[i]):
+            arg_type=Y_label[i][j]
+            if arg_type!=0:
+                word_num=0
+                if j+1<len(Y_label[i]):
+                    arg_type_next=Y_label[i][j + 1]
+                    if arg_type_next==arg_type+36:
+                        for jj in range(j+1, len(Y_label[i])):
+                            word_num+=1
+                            if Y_label[i][jj]==0:
+                                break
 
+                if arg_type<=36:
+                    arg_tuple=(i,j,word_num,arg_type)
+                    arg_list.append(arg_tuple)
+
+    return arg_list
 
 def f_score(prediction, target, length, iter_num,W_test):
 
@@ -116,105 +135,58 @@ def f_score(prediction, target, length, iter_num,W_test):
     classify_r = 0  # 测试集中存在个个体总数
     classify_acc = 0  # 正确识别的个数
 
-    target_list=[]
+    arg_target_list=get_arg_tuple_list(target,length)
+    arg_pred_list=get_arg_tuple_list(prediction,length)
 
+    # Argument Identification
+    iden_p=len(arg_pred_list)
+    iden_r=len(arg_target_list)
 
-    # for i in range(len(target)):
-    #     for j in range(length[i]):
-    #         if prediction[i][j]!=0:
-    #             classify_p+=1
-    #             iden_p+=1
-    #
-    #         if target[i][j]!=0:
-    #             classify_r+=1
-    #             iden_r+=1
-    #
-    #         if target[i][j]==prediction[i][j] and target[i][j]!=0:
-    #             classify_acc+=1
-    #
-    #         if prediction[i][j]!=0 and target[i][j]!=0:
-    #             iden_acc+=1
+    # Argument Classification
+    classify_p=len(arg_pred_list)
+    classify_r=len(arg_target_list)
+    for arg_pred in arg_pred_list:
+        (pi,pj,pnum,pred_type)=arg_pred
+        for arg_target in arg_target_list:
+            (ti,tj,tnum,target_type)=arg_target
+            if pi==ti and pj==tj and pnum==tnum:
+                iden_acc+=1
+                if pred_type==target_type:
+                    classify_acc+=1
 
-    for i in range(len(target)):
-        word_num=0
-        target_type=0
-        sen_order=0
-        word_order=0
-        for j in range(length[i]):
-            if target[i][j]==0:
-                if target_type!=0 and word_num!=0:
-                    target_tuple=(sen_order,word_order,word_num,target_type)
-                    target_list.append(target_tuple)
-                    a=[]
-                    for ii in range(word_num):
-                        a.append(W_test[sen_order][word_order+ii])
-                    print(a)
-
-                word_num=0
-                target_type=0
-                sen_order=0
-                word_order=0
-            else:
-                word_num+=1
-                target_type=target[i][j]
-                sen_order=i
-                word_order=j
-
-
-
-
-            # #target,如果单个单词是要素
-            # if j+1<=length[i]:
-            #     if target[i][j]!=0 and target[i][j+1]==0:
-            #         classify_r+=1
-            #         iden_r+=1
-            #     else:
-            #         # 如果短语是要素
-            #
-            #         pass
-            # else:
-            #     if target[i][j]!=0:
-            #         classify_r+=1
-            #         iden_r+=1
-
-
-            # if prediction[i][j]!=0:
-            #     classify_p+=1
-            #     iden_p+=1
-            #
-            # if target[i][j]!=0:
-            #     classify_r+=1
-            #     iden_r+=1
-            #
-            # if target[i][j]==prediction[i][j] and target[i][j]!=0:
-            #     classify_acc+=1
-            #
-            # if prediction[i][j]!=0 and target[i][j]!=0:
-            #     iden_acc+=1
-
+    print('------------------------' + str(iter_num) + '----------------------------')
     try:
-        print('-----------------------' + str(iter_num) + '-----------------------------')
-        print('Argument Identification:')
-        print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
         p = iden_acc / iden_p
         r = iden_acc / iden_r
         if p + r != 0:
             f = 2 * p * r / (p + r)
+            print('Argument Identification:')
+            print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-        print('Argument Classification:')
-        print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
+
+    except ZeroDivisionError:
+        print("-----------------------error-----------------------")
+        print('Argument Identification:')
+        print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
+        print("-----------------------error-----------------------")
+
+    try:
         p = classify_acc / classify_p
         r = classify_acc / classify_r
         if p + r != 0:
             f = 2 * p * r / (p + r)
+            print('Argument Classification:')
+            print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
             print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter_num) + '-----------------------------')
-        print('all zero')
-        print('-----------------------' + str(iter_num) + '-----------------------------')
-        return 0
+        print("-----------------------error-----------------------")
+        print('Argument Classification:')
+        print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
+        print("-----------------------error-----------------------")
+    print('------------------------' + str(iter_num) + '----------------------------')
+    return 0
 
 
 def train(args):
@@ -227,18 +199,18 @@ def train(args):
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        # sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer())
 
-        saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, saver_path)
-
-        pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: X_test,model.output_data: Y_test})
-
-        m = f_score(pred, Y_test, length,'load',W_test)
-        maximum=m
-
-        sys.exit()
+        # saver = tf.train.Saver(tf.global_variables())
+        # saver.restore(sess, saver_path)
+        #
+        # pred, length = sess.run([model.prediction, model.length]
+        #                             , {model.input_data: X_test,model.output_data: Y_test})
+        #
+        # m = f_score(pred, Y_test, length,'load',W_test)
+        # maximum=m
+        #
+        # sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
@@ -272,7 +244,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 # parser.add_argument('--word_dist', type=int,default=5, help='distance of word in sentence')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
-parser.add_argument('--class_size', type=int, default=71,help='number of classes')
+parser.add_argument('--class_size', type=int, default=72,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
 parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')

@@ -12,7 +12,7 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
-arg_type_num=71
+arg_type_num=72
 
 def number_form(s):
     num_list = re.findall("\d+\s,\s\d+", s)
@@ -243,7 +243,7 @@ def list2vec(tokens, arguments):
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
                                 a = [0.0 for x in range(0, arg_type_num)]
-                                a[anchor[j] + 35] = 1.0
+                                a[anchor[j] + 36] = 1.0
                                 label_list.append(a)
 
     return X,Y,W
@@ -319,10 +319,80 @@ def form_data():
     print(np.array(Y_dev).shape)
     print(np.array(W_dev).shape)
 
-if __name__ == "__main__":
-    pre_data()
 
-    form_data()
+def get_arg_tuple_list(Y_train):
+    arg_list=[]
+    for i in range(len(Y_train)):
+        for j in range(len(Y_train[i])):
+            arg_type=np.argmax(Y_train[i][j])
+            if arg_type!=0:
+                word_num=0
+                if j+1<len(Y_train[i]):
+                    arg_type_next=np.argmax(Y_train[i][j+1])
+                    if arg_type_next==arg_type+36:
+                        for jj in range(j+1,len(Y_train[i])):
+                            word_num+=1
+                            if np.argmax(Y_train[i][jj])==0:
+                                break
+
+
+                if arg_type<=36:
+                    arg_tuple=(i,j,word_num,arg_type)
+                    arg_list.append(arg_tuple)
+
+    return arg_list
+    # for arg_tuple in arg_list:
+    #     print(arg_tuple)
+
+
+if __name__ == "__main__":
+    # pre_data()
+    #
+    # form_data()
+
+    data_f = open('./data/8/argument_train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    arg_list=get_arg_tuple_list(Y_test)
+    for (i,j,word_num,arg_type) in arg_list:
+        a=[]
+        if word_num==0:
+            a.append(W_test[i][j])
+        for m in range(word_num):
+            a.append(W_test[i][j+m])
+        print(a)
+
+    # arg_list=[]
+    # for i in range(len(Y_train)):
+    #     for j in range(len(Y_train[i])):
+    #         arg_type=np.argmax(Y_train[i][j])
+    #         if arg_type!=0:
+    #             word_num=0
+    #             if j+1<len(Y_train[i]):
+    #                 arg_type_next=np.argmax(Y_train[i][j+1])
+    #                 if arg_type_next==arg_type+36:
+    #                     for jj in range(j+1,len(Y_train[i])):
+    #                         if np.argmax(Y_train[i][jj])==0:
+    #                             break
+    #                         word_num+=1
+    #
+    #             if arg_type<=36:
+    #                 arg_tuple=(i,j,word_num,arg_type)
+    #                 arg_list.append(arg_tuple)
+    #
+    #
+    # for arg_tuple in arg_list:
+    #     print(arg_tuple)
+
+            # if arg_type==0:
+            #     print(arg_type)
+            # else:
+            #     sen_order=i
+            #     word_order=j
+            #     word_num+=1
+            #     target_type=arg_type
+
     # file_path = acepath + "nw/timex2norm/AFP_ENG_20030401.0476"
     # argument_type=[None]
     #
