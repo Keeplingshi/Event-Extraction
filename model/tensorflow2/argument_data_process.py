@@ -12,9 +12,24 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
+stop_words_path=homepath+'/ace05/word2vec/stop_words'
+
 arg_type_num=36
 
+def get_stop_words():
+    stop_words_f=open(stop_words_path,'r')
+    for line in stop_words_f.readlines():
+        print(line.strip())
+    return 0
+
+
+# get_stop_words()
+# sys.exit()
+
 def number_form(s):
+    num_list = re.findall("\d+\s<dot>\s\d+", s)
+    for re_num in num_list:
+        s = s.replace(re_num, re_num.replace(" <dot> ", "."))
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
@@ -205,6 +220,7 @@ def list2vec(tokens, arguments):
         assert len(token)==len(anchor), '句子数目不相等'
         for j in range(len(token)):
             #如果是句号，结束符
+            token[j]=number_form(token[j])
             if "<dot>" in token[j]:
                 if "u <dot> s <dot>" in token[j]:
                     token[j] = token[j].replace("u <dot> s <dot>", "u.s.")
@@ -226,7 +242,7 @@ def list2vec(tokens, arguments):
             else:
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
-                    arg_tokens=number_form(arg_tokens)
+                    # arg_tokens = number_form(arg_tokens)
                     arg_words=arg_tokens.split(' ')
                     if len(arg_words)<=5:
                         for k in range(len(arg_words)):
@@ -268,56 +284,6 @@ def pre_data():
     pickle.dump(data,f)
 
 
-# 规范句子长度
-def padding_mask(x, y,w,max_len):
-    X_train=[]
-    Y_train=[]
-    W_train=[]
-    x_zero_list=[0.0 for i in range(300)]
-    y_zero_list=[0.0 for i in range(arg_type_num)]
-    y_zero_list[0]=1.0
-    unknown='unknow_word'
-    for i, (x, y,w) in enumerate(zip(x, y,w)):
-        if max_len>len(x):
-            for j in range(max_len-len(x)):
-                x.append(x_zero_list)
-                y.append(y_zero_list)
-                w.append(unknown)
-        else:
-            x=x[:max_len]
-            y=y[:max_len]
-            w=w[:max_len]
-        X_train.append(x)
-        Y_train.append(y)
-        W_train.append(w)
-    return X_train,Y_train,W_train
-
-
-def form_data():
-
-    data_f = open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    max_len=60
-    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
-    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
-    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
-
-    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/8/argument_train_data_form34.data','wb')
-    pickle.dump(data,f)
-
-    print(np.array(X_train).shape)
-    print(np.array(Y_train).shape)
-    print(np.array(W_train).shape)
-    print(np.array(X_test).shape)
-    print(np.array(Y_test).shape)
-    print(np.array(W_test).shape)
-    print(np.array(X_dev).shape)
-    print(np.array(Y_dev).shape)
-    print(np.array(W_dev).shape)
-
 
 def get_arg_tuple_list(Y_train):
     arg_list=[]
@@ -346,105 +312,43 @@ def get_arg_tuple_list(Y_train):
     # for arg_tuple in arg_list:
     #     print(arg_tuple)
 
+def number_form2(s):
+    num_list = re.findall("\d+\s<dot>\s\d+", s)
+    for re_num in num_list:
+        s = s.replace(re_num, re_num.replace(" <dot> ", "."))
+    num_list = re.findall("\d+\s,\s\d+", s)
+    for re_num in num_list:
+        s = s.replace(re_num, re_num.replace(" ", ""))
+    return s
+
 
 if __name__ == "__main__":
     pre_data()
 
-    form_data()
+    # s="1 <dot> 0 million dollars"
+    # s = "aaa <dot> 0 million dollars"
+    # print(number_form2(s))
 
-    data_f = open('./data/8/argument_train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    arg_list=get_arg_tuple_list(Y_test)
-    for (i,j,word_num,arg_type) in arg_list:
-        a=[]
-        if word_num==0:
-            a.append(W_test[i][j])
-        for m in range(word_num):
-            a.append(W_test[i][j+m])
-        print(a)
-
-    # arg_list=[]
-    # for i in range(len(Y_train)):
-    #     for j in range(len(Y_train[i])):
-    #         arg_type=np.argmax(Y_train[i][j])
-    #         if arg_type!=0:
-    #             word_num=0
-    #             if j+1<len(Y_train[i]):
-    #                 arg_type_next=np.argmax(Y_train[i][j+1])
-    #                 if arg_type_next==arg_type+36:
-    #                     for jj in range(j+1,len(Y_train[i])):
-    #                         if np.argmax(Y_train[i][jj])==0:
-    #                             break
-    #                         word_num+=1
-    #
-    #             if arg_type<=36:
-    #                 arg_tuple=(i,j,word_num,arg_type)
-    #                 arg_list.append(arg_tuple)
-    #
-    #
-    # for arg_tuple in arg_list:
-    #     print(arg_tuple)
-
-            # if arg_type==0:
-            #     print(arg_type)
-            # else:
-            #     sen_order=i
-            #     word_order=j
-            #     word_num+=1
-            #     target_type=arg_type
-
-    # file_path = acepath + "nw/timex2norm/AFP_ENG_20030401.0476"
     # argument_type=[None]
-    #
-    # tok, anc = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
-    # assert len(tok)==len(anc),"长度不一"
+    # file_path=acepath+"nw/timex2norm/AFP_ENG_20030430.0075"
+    # tok, arg = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
     # print(tok)
-    # print(anc)
-    # print(argument_type)
-    # for i in range(len(tok)):
-    #     if anc[i] != 0:
-    #         print(str(anc[i]) + "\t" + tok[i])
+    #
+    # for i in range(len(arg)):
+    #     if arg[i]!=0:
+    #         print(tok[i])
 
 
-#[None, 'Vehicle', 'Artifact', 'Person', 'Attacker', 'Place', 'Entity', 'Giver', 'Plaintiff', 'Recipient', 'Money', 'Position', 'Victim', 'Agent', 'Target', 'Time-Ending', 'Buyer', 'Instrument', 'Destination', 'Time-Within', 'Org', 'Time-Before', 'Beneficiary', 'Defendant', 'Adjudicator', 'Origin', 'Crime', 'Time-Holds', 'Time-Starting', 'Time-After', 'Prosecutor', 'Seller', 'Sentence', 'Price']
-
-    # pre_data()
-
-    # form_data()
-    # print('------------over-------------')
-    # data_f = open('./data/8/argument_train_data_form34.data', 'rb')
+    # data_f = open('./data/8/argument_train_data34.data', 'rb')
     # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     # data_f.close()
     #
-    # for i in range(len(Y_test)):
-    #     if np.argmax(Y_test[i])>20:
-    #         print(np.argmax(Y_test[i]))
-
-
-
-    # file_path=acepath+"/nw/timex2norm/AFP_ENG_20030323.0020"
-    # argument_type=[None]
-    #
-    # train_tokens, train_anchors=read_corpus(argument_type,'train')
-    # print(argument_type)
-    # print(len(argument_type))
-    # test_tokens, test_anchors=read_corpus(argument_type,'test')
-    # print(argument_type)
-    # print(len(argument_type))
-    # dev_tokens, dev_anchors=read_corpus(argument_type,'dev')
-    # print(argument_type)
-    # print(len(argument_type))
-    # print(dev_tokens)
-
-    # tok, anc = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
-    # assert len(tok)==len(anc),"长度不一"
-    # print(tok)
-    # print(anc)
-    # print(argument_type)
-    #
-    # for i in range(len(tok)):
-    #     if anc[i]!=0:
-    #         print(tok[i]+"\t\t"+str(anc[i]))
+    # arg_list=get_arg_tuple_list(Y_test)
+    # for (i,j,word_num,arg_type) in arg_list:
+    #     a=[]
+    #     if word_num==0:
+    #         a.append(W_test[i][j])
+    #     for m in range(word_num):
+    #         a.append(W_test[i][j+m])
+    #     print(a)
 
