@@ -20,16 +20,16 @@ class Model:
         # self.x_front = tf.slice(self.input_data, [0, 0, 0], [-1, -1, args.word_dim])
         # x_posi = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
-        # #cnn process
-        # filter_sizes = [3]
-        # filter_numbers = [100]
-        # max_k=[2]
-        # self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
-        # #self.cnn_output = official_batch_norm_layer(conv2d_maxpool,sum(filter_numbers),True,False,scope="cnn_batch_norm")
-        # #self.cnn_output = batch_norm(cnn_output,sum(filter_numbers),"cnn_batch_norm",True)
-        # cnn_extend=[]
-        # for i in range(args.sentence_length):
-        #     cnn_extend.append(self.cnn_output)
+        #cnn process
+        filter_sizes = [3,5]
+        filter_numbers = [100,100]
+        max_k=[2,2]
+        self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
+        #self.cnn_output = official_batch_norm_layer(conv2d_maxpool,sum(filter_numbers),True,False,scope="cnn_batch_norm")
+        #self.cnn_output = batch_norm(cnn_output,sum(filter_numbers),"cnn_batch_norm",True)
+        cnn_extend=[]
+        for i in range(args.sentence_length):
+            cnn_extend.append(self.cnn_output)
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -42,16 +42,16 @@ class Model:
                                                dtype=tf.float32, sequence_length=self.length)
 
         # #cnn lstm contact
-        # lstm_cnn_output=tf.concat(2,[output,cnn_extend])
+        lstm_cnn_output=tf.concat(2,[output,cnn_extend])
 
-        # weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
-        # weight, bias = self.weight_and_bias(weight_x, args.class_size)
-        # output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
-
-
-        weight_x=2 * args.hidden_layers
+        weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
         weight, bias = self.weight_and_bias(weight_x, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, weight_x])
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
+
+
+        # weight_x=2 * args.hidden_layers
+        # weight, bias = self.weight_and_bias(weight_x, args.class_size)
+        # output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, weight_x])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -161,10 +161,12 @@ def f_score(prediction, target, length, iter_num,W_test):
         (pi,pj,pnum,pred_type)=arg_pred
         for arg_target in arg_target_list:
             (ti,tj,tnum,target_type)=arg_target
-            if pi==ti and pj==tj and pnum==tnum:
-                iden_acc+=1
-                if pred_type==target_type:
-                    classify_acc+=1
+            if pi==ti:
+                if tj<=pj+pnum and pj<=tj+tnum:
+                    iden_acc+=1
+                    if pred_type==target_type:
+                        classify_acc+=1
+
 
     print('------------------------' + str(iter_num) + '----------------------------')
     try:

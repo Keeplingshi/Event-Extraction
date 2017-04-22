@@ -8,23 +8,24 @@ import time
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
 
-doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
-doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
-doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
+doclist_train=homepath+'/ace05/split3.0/new_filelist_ACE_training.txt'
+doclist_test=homepath+'/ace05/split3.0/new_filelist_ACE_test.txt'
+doclist_dev=homepath+'/ace05/split3.0/new_filelist_ACE_dev.txt'
 
 stop_words_path=homepath+'/ace05/word2vec/stop_words'
+
+data_save_path=homepath+"/model/tensorflow2/data/8/argument_train_data34.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/8/argument_train_data_form34.data"
 
 arg_type_num=36
 
 def get_stop_words():
+    stop_list=[]
     stop_words_f=open(stop_words_path,'r')
     for line in stop_words_f.readlines():
-        print(line.strip())
-    return 0
+        stop_list.append(line.strip())
+    return stop_list
 
-
-# get_stop_words()
-# sys.exit()
 
 def number_form(s):
     num_list = re.findall("\d+\s<dot>\s\d+", s)
@@ -33,6 +34,10 @@ def number_form(s):
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
+    if "u <dot> s <dot>" in s:
+        s = s.replace("u <dot> s <dot>", "u.s.")
+    if "u <dot> k <dot>" in s:
+        s = s.replace("u <dot> k <dot>", "u.k.")
     return s
 
 
@@ -52,6 +57,7 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\)", " ) ", string)
     string = re.sub(r"\?", " ? ", string)
     string = re.sub(r"\s{2,}", " ", string)
+    string=number_form(string)
     return string.strip() if TREC else string.strip().lower()
 
 """
@@ -108,11 +114,6 @@ def read_file(xml_path, text_path, argument_type):
                         argument_start[start] = ev_id
                         argument_end[end] = ev_id
 
-    # print(len(argument_ident))
-    # print(len(event_argument))
-    # print(argument_ident)
-    # print(event_argument)
-    # print('--------------------------------------------------------')
 
     doc = open(text_path).read()
     doc = re.sub(r"<[^>]+>", r"", doc)
@@ -203,6 +204,7 @@ def get_word2vec():
 
 def list2vec(tokens, arguments):
     vec_dict=get_word2vec()
+    stop_list=get_stop_words()
 
     X=[]
     Y=[]
@@ -220,18 +222,14 @@ def list2vec(tokens, arguments):
         assert len(token)==len(anchor), '句子数目不相等'
         for j in range(len(token)):
             #如果是句号，结束符
-            token[j]=number_form(token[j])
             if "<dot>" in token[j]:
-                if "u <dot> s <dot>" in token[j]:
-                    token[j] = token[j].replace("u <dot> s <dot>", "u.s.")
-                else:
-                    if len(sen_list)>=5:
-                        X.append(sen_list)
-                        Y.append(label_list)
-                        W.append(sen_word_list)
-                    sen_list=[]
-                    label_list=[]
-                    sen_word_list=[]
+                if len(sen_list)>=5:
+                    X.append(sen_list)
+                    Y.append(label_list)
+                    W.append(sen_word_list)
+                sen_list=[]
+                label_list=[]
+                sen_word_list=[]
 
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
@@ -242,15 +240,20 @@ def list2vec(tokens, arguments):
             else:
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
-                    # arg_tokens = number_form(arg_tokens)
                     arg_words=arg_tokens.split(' ')
+                    if anchor[j]==0:
+                        print(str(anchor[j])+"\t"+arg_tokens)
+
                     if len(arg_words)<=5:
                         for k in range(len(arg_words)):
                             if vec_dict.get(arg_words[k]) is not None:
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
                                 a = [0.0 for x in range(0, arg_type_num)]
-                                a[anchor[j]] = 1.0
+                                if arg_words[k] in stop_list:
+                                    a[0] = 1.0
+                                else:
+                                    a[anchor[j]] = 1.0
                                 label_list.append(a)
                     else:
                         for k in range(len(arg_words)):
@@ -280,10 +283,58 @@ def pre_data():
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_arguments)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(homepath+'/model/tensorflow2/data/8/argument_train_data34.data','wb')
+    f=open(data_save_path,'wb')
     pickle.dump(data,f)
 
+# 规范句子长度
+def padding_mask(x, y,w,max_len):
+    X_train=[]
+    Y_train=[]
+    W_train=[]
+    x_zero_list=[0.0 for i in range(300)]
+    y_zero_list=[0.0 for i in range(arg_type_num)]
+    y_zero_list[0]=1.0
+    unknown='unknow_word'
+    for i, (x, y,w) in enumerate(zip(x, y,w)):
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+                w.append(unknown)
+        else:
+            x=x[:max_len]
+            y=y[:max_len]
+            w=w[:max_len]
+        X_train.append(x)
+        Y_train.append(y)
+        W_train.append(w)
+    return X_train,Y_train,W_train
 
+
+def form_data():
+
+    data_f = open(data_save_path, 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    max_len=60
+    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
+    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
+    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
+
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(form_data_save_path,'wb')
+    pickle.dump(data,f)
+
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    print(np.array(W_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(Y_test).shape)
+    print(np.array(W_test).shape)
+    print(np.array(X_dev).shape)
+    print(np.array(Y_dev).shape)
+    print(np.array(W_dev).shape)
 
 def get_arg_tuple_list(Y_train):
     arg_list=[]
@@ -312,18 +363,11 @@ def get_arg_tuple_list(Y_train):
     # for arg_tuple in arg_list:
     #     print(arg_tuple)
 
-def number_form2(s):
-    num_list = re.findall("\d+\s<dot>\s\d+", s)
-    for re_num in num_list:
-        s = s.replace(re_num, re_num.replace(" <dot> ", "."))
-    num_list = re.findall("\d+\s,\s\d+", s)
-    for re_num in num_list:
-        s = s.replace(re_num, re_num.replace(" ", ""))
-    return s
-
 
 if __name__ == "__main__":
     pre_data()
+    form_data()
+
 
     # s="1 <dot> 0 million dollars"
     # s = "aaa <dot> 0 million dollars"
@@ -339,16 +383,16 @@ if __name__ == "__main__":
     #         print(tok[i])
 
 
-    # data_f = open('./data/8/argument_train_data34.data', 'rb')
-    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    # data_f.close()
-    #
-    # arg_list=get_arg_tuple_list(Y_test)
-    # for (i,j,word_num,arg_type) in arg_list:
-    #     a=[]
-    #     if word_num==0:
-    #         a.append(W_test[i][j])
-    #     for m in range(word_num):
-    #         a.append(W_test[i][j+m])
-    #     print(a)
+    data_f = open(data_save_path, 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    arg_list=get_arg_tuple_list(Y_test)
+    for (i,j,word_num,arg_type) in arg_list:
+        a=[]
+        if word_num==0:
+            a.append(W_test[i][j])
+        for m in range(word_num):
+            a.append(W_test[i][j+m])
+        print(a)
 
