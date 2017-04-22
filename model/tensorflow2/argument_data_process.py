@@ -12,7 +12,7 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
-arg_type_num=72
+arg_type_num=36
 
 def number_form(s):
     num_list = re.findall("\d+\s,\s\d+", s)
@@ -228,22 +228,21 @@ def list2vec(tokens, arguments):
                 if ' ' in arg_tokens:
                     arg_tokens=number_form(arg_tokens)
                     arg_words=arg_tokens.split(' ')
-                    for k in range(len(arg_words)):
-                        if vec_dict.get(arg_words[k]) is not None:
-
-                            if k==0:
-                                #如果是首个单词
+                    if len(arg_words)<=5:
+                        for k in range(len(arg_words)):
+                            if vec_dict.get(arg_words[k]) is not None:
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
                                 a = [0.0 for x in range(0, arg_type_num)]
                                 a[anchor[j]] = 1.0
                                 label_list.append(a)
-                            else:
-                                #如果不是首个单词，则type_mid
+                    else:
+                        for k in range(len(arg_words)):
+                            if vec_dict.get(arg_words[k]) is not None:
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
                                 a = [0.0 for x in range(0, arg_type_num)]
-                                a[anchor[j] + 36] = 1.0
+                                a[0] = 1.0
                                 label_list.append(a)
 
     return X,Y,W
@@ -329,14 +328,17 @@ def get_arg_tuple_list(Y_train):
                 word_num=0
                 if j+1<len(Y_train[i]):
                     arg_type_next=np.argmax(Y_train[i][j+1])
-                    if arg_type_next==arg_type+36:
+                    if arg_type_next==arg_type:
                         for jj in range(j+1,len(Y_train[i])):
                             word_num+=1
                             if np.argmax(Y_train[i][jj])==0:
                                 break
-
-
-                if arg_type<=36:
+                flag=True
+                for (a,b,c,d) in arg_list:
+                    if a==i and d==arg_type:
+                        if j+word_num<=b+c:
+                            flag=False
+                if flag:
                     arg_tuple=(i,j,word_num,arg_type)
                     arg_list.append(arg_tuple)
 
@@ -346,9 +348,9 @@ def get_arg_tuple_list(Y_train):
 
 
 if __name__ == "__main__":
-    # pre_data()
-    #
-    # form_data()
+    pre_data()
+
+    form_data()
 
     data_f = open('./data/8/argument_train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
