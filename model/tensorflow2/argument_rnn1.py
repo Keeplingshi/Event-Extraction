@@ -20,16 +20,16 @@ class Model:
         # self.x_front = tf.slice(self.input_data, [0, 0, 0], [-1, -1, args.word_dim])
         # x_posi = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
-        #cnn process
-        filter_sizes = [3]
-        filter_numbers = [100]
-        max_k=[2]
-        self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
-        #self.cnn_output = official_batch_norm_layer(conv2d_maxpool,sum(filter_numbers),True,False,scope="cnn_batch_norm")
-        #self.cnn_output = batch_norm(cnn_output,sum(filter_numbers),"cnn_batch_norm",True)
-        cnn_extend=[]
-        for i in range(args.sentence_length):
-            cnn_extend.append(self.cnn_output)
+        # #cnn process
+        # filter_sizes = [3]
+        # filter_numbers = [100]
+        # max_k=[2]
+        # self.cnn_output=self.cnn_conv2d_k_max_pool(self.input_data,args,filter_sizes,filter_numbers,max_k)
+        # #self.cnn_output = official_batch_norm_layer(conv2d_maxpool,sum(filter_numbers),True,False,scope="cnn_batch_norm")
+        # #self.cnn_output = batch_norm(cnn_output,sum(filter_numbers),"cnn_batch_norm",True)
+        # cnn_extend=[]
+        # for i in range(args.sentence_length):
+        #     cnn_extend.append(self.cnn_output)
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
@@ -41,12 +41,17 @@ class Model:
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
 
-        #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,cnn_extend])
+        # #cnn lstm contact
+        # lstm_cnn_output=tf.concat(2,[output,cnn_extend])
 
-        weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
+        # weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
+        # weight, bias = self.weight_and_bias(weight_x, args.class_size)
+        # output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
+
+
+        weight_x=2 * args.hidden_layers
         weight, bias = self.weight_and_bias(weight_x, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_x])
+        output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, weight_x])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -110,15 +115,22 @@ def get_arg_tuple_list(Y_label,length):
                 word_num=0
                 if j+1<len(Y_label[i]):
                     arg_type_next=Y_label[i][j + 1]
-                    if arg_type_next==arg_type+36:
+                    if arg_type_next==arg_type:
                         for jj in range(j+1, len(Y_label[i])):
                             word_num+=1
                             if Y_label[i][jj]==0:
                                 break
-
-                if arg_type<=36:
-                    arg_tuple=(i,j,word_num,arg_type)
+                flag = True
+                for (a, b, c, d) in arg_list:
+                    if a == i and d == arg_type:
+                        if j + word_num <= b + c:
+                            flag = False
+                if flag:
+                    arg_tuple = (i, j, word_num, arg_type)
                     arg_list.append(arg_tuple)
+                # if arg_type<=36:
+                #     arg_tuple=(i,j,word_num,arg_type)
+                #     arg_list.append(arg_tuple)
 
     return arg_list
 
@@ -228,12 +240,12 @@ def train(args):
                 pred, length = sess.run([model.prediction, model.length]
                                         , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
 
-                f_score(pred, Y_train[:4000], length, 'train')
+                f_score(pred, Y_train[:4000], length, 'train',W_train[0:4000])
 
             pred, length = sess.run([model.prediction, model.length]
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
-            m = f_score(pred, Y_test, length, e)
+            m = f_score(pred, Y_test, length, e,W_test)
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
@@ -244,7 +256,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 # parser.add_argument('--word_dist', type=int,default=5, help='distance of word in sentence')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
-parser.add_argument('--class_size', type=int, default=72,help='number of classes')
+parser.add_argument('--class_size', type=int, default=36,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
 parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
