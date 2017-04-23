@@ -364,10 +364,57 @@ def get_arg_tuple_list(Y_train):
     #     print(arg_tuple)
 
 
+
+
+def read_file2(xml_path):
+    apf_tree = ET.parse(xml_path)
+    root = apf_tree.getroot()
+
+    # argment process
+    argument_start = {}
+    argument_end = {}
+
+    argument_ident={}
+    event_argument=dict()
+
+    for events in root.iter("event"):
+
+        for mention in events.iter("event_mention"):
+
+            mention_arguments = mention.findall("event_mention_argument")
+            for mention_argument in mention_arguments:
+                ev_id = mention_argument.attrib["REFID"]
+                # 时间要素类型
+                arg_type=mention_argument.attrib["ROLE"]
+
+                for extend in mention_argument:
+
+                    for charseq in extend:
+                        start = int(charseq.attrib["START"])
+                        end = int(charseq.attrib["END"]) + 1
+                        text = re.sub(r"\n", r"", charseq.text)
+                        argument_tupple = (arg_type, start, end, text)
+                        if argument_tupple in argument_ident:
+                            #sys.stderr.write("dulicapte event {}\n".format(ev_id))
+                            # argument_map[ev_id] = argument_ident[argument_tupple]
+                            continue
+                        argument_ident[argument_tupple] = ev_id
+                        event_argument[ev_id] = [ev_id, arg_type, start, end, text]
+                        argument_start[start] = ev_id
+                        argument_end[end] = ev_id
+
+
+    print(str(len(event_argument))+"\t"+xml_path)
+
+
 if __name__ == "__main__":
     pre_data()
     form_data()
 
+    # file_list=[acepath+i.replace('\n','') for i in open(doclist_test,'r')]
+    # for file_path in file_list:
+    #     file_path=file_path + ".apf.xml"
+    #     read_file2(file_path)
 
     # s="1 <dot> 0 million dollars"
     # s = "aaa <dot> 0 million dollars"
@@ -383,16 +430,16 @@ if __name__ == "__main__":
     #         print(tok[i])
 
 
-    data_f = open(data_save_path, 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    arg_list=get_arg_tuple_list(Y_test)
-    for (i,j,word_num,arg_type) in arg_list:
-        a=[]
-        if word_num==0:
-            a.append(W_test[i][j])
-        for m in range(word_num):
-            a.append(W_test[i][j+m])
-        print(a)
+    # data_f = open(data_save_path, 'rb')
+    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    # data_f.close()
+    #
+    # arg_list=get_arg_tuple_list(Y_test)
+    # for (i,j,word_num,arg_type) in arg_list:
+    #     a=[]
+    #     if word_num==0:
+    #         a.append(W_test[i][j])
+    #     for m in range(word_num):
+    #         a.append(W_test[i][j+m])
+    #     print(a)
 

@@ -44,7 +44,7 @@ class Model:
         #cnn lstm contact
         lstm_cnn_output=tf.concat(2,[output,cnn_extend])
 
-        lstm_cnn_output=tf.nn.dropout(lstm_cnn_output,0.5)
+        # lstm_cnn_output=tf.nn.dropout(lstm_cnn_output,0.5)
 
         weight_x=2 * args.hidden_layers+sum(list(map(lambda x: x[0]*x[1], zip(filter_numbers, max_k))))
         weight, bias = self.weight_and_bias(weight_x, args.class_size)
