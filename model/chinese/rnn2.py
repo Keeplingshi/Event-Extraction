@@ -20,8 +20,9 @@ class Model:
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
 
-        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
@@ -70,18 +71,18 @@ def f1(prediction, target, length, iter_num):
 
     for i in range(len(target)):
         for j in range(length[i]):
-            if prediction[i][j]!=33:
+            if prediction[i][j]!=0:
                 classify_p+=1
                 iden_p+=1
 
-            if target[i][j]!=33:
+            if target[i][j]!=0:
                 classify_r+=1
                 iden_r+=1
 
-            if target[i][j]==prediction[i][j] and target[i][j]!=33:
+            if target[i][j]==prediction[i][j] and target[i][j]!=0:
                 classify_acc+=1
 
-            if prediction[i][j]!=33 and target[i][j]!=33:
+            if prediction[i][j]!=0 and target[i][j]!=0:
                 iden_acc+=1
 
     try:
@@ -136,6 +137,14 @@ def train(args):
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
                     ,model.output_data: Y_train[ptr:ptr + args.batch_size]})
 
+
+
+            if e%10==0:
+                pred, length = sess.run([model.prediction, model.length]
+                                        , {model.input_data: X_train, model.output_data: Y_train})
+
+                f1(pred, Y_train, length, 'train')
+
             pred, length = sess.run([model.prediction, model.length]
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
@@ -152,9 +161,9 @@ parser.add_argument('--word_dim', type=int,default=200, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
-parser.add_argument('--epoch', type=int, default=30, help='number of epochs')
+parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 train(parser.parse_args())

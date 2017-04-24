@@ -36,7 +36,7 @@ def content2wordvec(text_content,start_end_type_list):
         if flag==1:
             label.append(start_end_type[2])
         else:
-            label.append(34)
+            label.append(0)
         
         tmp_i=tmp_j+1
 
@@ -47,7 +47,6 @@ def content2wordvec(text_content,start_end_type_list):
 
 
 def get_text_from_sgm(sgm_file):
-    foldorname=""
     if '/bn/' in sgm_file:
         foldorname="bn"
     elif '/nw/' in sgm_file:
@@ -96,7 +95,6 @@ def read_answer(filename_prefix):
         trigger_list=[]
         sen_list=[]
         event_list=[]
-        start_end_type_list = []
         
         start_end_type_list = []
          
@@ -198,7 +196,7 @@ def pre_word2vec_data():
             try:
                 word_vector = model[word]
             except KeyError:
-                word_vector = np.array([random.uniform(-0.25, 0.25) for i in range(200)])
+                word_vector = np.array([0.0 for i in range(200)])
 
             #如果存在词向量
             sen_vec.append(word_vector)
@@ -221,10 +219,9 @@ def padding_mask(x, y,max_len):
         y_temp=[]
         for b in a:
             label=[0.0 for i in range(34)]
-            label[b-1]=1.0
+            label[b]=1.0
             y_temp.append(label)
         y_form.append(y_temp)
-        y_temp=[]
 
 
 
@@ -232,7 +229,7 @@ def padding_mask(x, y,max_len):
     Y_train=[]
     x_zero_list=[0.0 for i in range(200)]
     y_zero_list=[0.0 for i in range(34)]
-    y_zero_list[33]=1.0
+    y_zero_list[0]=1.0
     for i, (x, y_form) in enumerate(zip(x, y_form)):
         if max_len>len(x):
             for j in range(max_len-len(x)):
@@ -269,9 +266,9 @@ def form_data():
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
     #read_answer('/bn/adj/CTV20001228.1330.1196')
-    # prepare_data()
-    #
-    # pre_word2vec_data()
+    prepare_data()
+
+    pre_word2vec_data()
 
     form_data()
 

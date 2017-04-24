@@ -36,51 +36,50 @@ def content2wordvec(text_content,start_end_type_list):
         if flag==1:
             label.append(start_end_type[2])
         else:
-            label.append(34)
-        
+            label.append(0)
+
         tmp_i=tmp_j+1
 
-      
+
     assert len(word_list)==len(label),'word_list与label长度不相等'
 
     return (word_list,label)
 
 
 def get_text_from_sgm(sgm_file):
-    foldorname=""
     if '/bn/' in sgm_file:
         foldorname="bn"
     elif '/nw/' in sgm_file:
         foldorname="nw"
     else:
         foldorname="wl"
-    
+
     text=""
     doc = minidom.parse(sgm_file)
     root = doc.documentElement
-    
+
     if foldorname=="bn":
         turn_nodes = xml_parse_base.get_xmlnode(None,root, 'TURN')
         for turn_node in turn_nodes:
             text+=xml_parse_base.get_nodevalue(None,turn_node,0).replace("\n", "")
-                        
+
     elif foldorname=="nw":
         text_node = xml_parse_base.get_xmlnode(None,root, 'TEXT')[0]
         text+=xml_parse_base.get_nodevalue(None,text_node,0).replace("\n", "")
-                    
+
     else:
         post_node=xml_parse_base.get_xmlnode(None,root, 'POST')[0]
         text+=xml_parse_base.get_nodevalue(None,post_node,4).replace("\n", "")
-    
+
     return text
 
 '''
 读入文件名称，获取词向量
 '''
 def read_answer(filename_prefix):
-    
+
     corpus_path=homepath+'/ace_ch_experiment/corpus/'
-    
+
     # 获取apf文件位置
     tag_filename = filename_prefix+'.apf.xml'
     tag_filepath=corpus_path+tag_filename
@@ -90,52 +89,51 @@ def read_answer(filename_prefix):
     text_filename= filename_prefix+".sgm"
     text_filepath=corpus_path+text_filename
     text_content=get_text_from_sgm(text_filepath)
-    
+
     try:
         doc=etree.fromstring(tag_content)
         trigger_list=[]
         sen_list=[]
         event_list=[]
+
         start_end_type_list = []
-        
-        start_end_type_list = []
-         
+
         for i in doc.xpath("//event"):
             assert len(i.xpath(".//anchor"))>0,'len(i.xpath(".//anchor"))>0报错'
             cur_ele = i.xpath(".//anchor")
 
             event_type = i.xpath("./@TYPE")[0]+'.'+i.xpath("./@SUBTYPE")[0]
             event_num = EVENT_MAP[event_type]
-            
+
             ldc_scope_ele=i.xpath(".//ldc_scope")
             for ldc_scope in ldc_scope_ele:
                 sentence_str=ldc_scope.xpath("./charseq/text()")[0].replace('\n','')
                 sen_list.append(sentence_str)
-            
+
             for anchor in cur_ele:
                 trigger_str = anchor.xpath("./charseq/text()")[0].replace('\n','')
                 trigger_list.append(trigger_str)
                 event_list.append(event_num)
-        
+
         assert len(trigger_list)==len(sen_list),'触发词数目与句子数目不相等'
         assert len(trigger_list)==len(event_list),'触发词数目与事件类型数目不相等'
-        
+
         trilen=len(trigger_list)
         for i in range(trilen):
             # 触发词在事件句中的位置
             tri_position=sen_list[i].index(trigger_list[i])
             # 事件句在文章中的位置
             sen_position=text_content.index(sen_list[i])
-            
+
             assert tri_position!=-1,'（'+trigger_list[i]+'）不在（'+sen_list[i]+'）中'
             assert sen_position!=-1,'（'+sen_list[i]+'）不在（'+text_content+'）中'
-            
+
             #触发词在文章中的位置
             tri_start=tri_position+sen_position
             tri_end=tri_start+len(trigger_list[i])-1
-            
+
             start_end_type_list.append((int(tri_start),int(tri_end),event_list[i]))
-        
+
         return content2wordvec(text_content,start_end_type_list)
     except Exception as e:
         print(e)
@@ -171,7 +169,7 @@ def prepare_data():
             if i==u'。':
                 new_train_data.append((sentence[tmp_i:index],label[tmp_i:index]))
                 tmp_i=index+1
- 
+
     rs_f=open('./chACEdata/class_pre_data2_2.txt','w', encoding='utf8')
     for item in new_train_data:
         word=item[0]
@@ -198,15 +196,15 @@ def pre_word2vec_data():
             try:
                 word_vector = model[word]
             except KeyError:
-                word_vector = np.array([random.uniform(-0.25, 0.25) for i in range(200)])
+                word_vector = np.array([0.0 for i in range(200)])
 
             #如果存在词向量
             sen_vec.append(word_vector)
-                
-        x.append(sen_vec)        
+
+        x.append(sen_vec)
         #x.append([word_to_index[word] if word in word_to_index else word_to_index[unknown_token] for word in item[0]])
         y.append(item[1])
-    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)  
+    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)
 
     data=X_train,X_test,Y_train,Y_test
     f=open('./chACEdata/class_train_data.data','wb')
@@ -221,18 +219,16 @@ def padding_mask(x, y,max_len):
         y_temp=[]
         for b in a:
             label=[0.0 for i in range(34)]
-            label[b-1]=1.0
+            label[b]=1.0
             y_temp.append(label)
         y_form.append(y_temp)
-        y_temp=[]
-
 
 
     X_train=[]
     Y_train=[]
     x_zero_list=[0.0 for i in range(200)]
     y_zero_list=[0.0 for i in range(34)]
-    y_zero_list[33]=1.0
+    y_zero_list[0]=1.0
     for i, (x, y_form) in enumerate(zip(x, y_form)):
         if max_len>len(x):
             for j in range(max_len-len(x)):
