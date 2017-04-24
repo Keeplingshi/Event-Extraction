@@ -15,7 +15,7 @@ from sklearn import cross_validation
 from gensim.models import word2vec
 import random
 import numpy as np
-from cb.test2.type_index import EVENT_MAP
+from model.keras.test2.type_index import EVENT_MAP
 
 homepath='D:/Code/pydev/EventExtract/'
 
@@ -212,13 +212,86 @@ def pre_word2vec_data():
     f=open('./chACEdata/class_train_data.data','wb')
     pickle.dump(data,f)
 
+
+# 规范句子长度
+def padding_mask(x, y,max_len):
+
+    y_form=[]
+    for a in y:
+        y_temp=[]
+        for b in a:
+            label=[0.0 for i in range(34)]
+            label[b-1]=1.0
+            y_temp.append(label)
+        y_form.append(y_temp)
+        y_temp=[]
+
+
+
+    X_train=[]
+    Y_train=[]
+    x_zero_list=[0.0 for i in range(200)]
+    y_zero_list=[0.0 for i in range(34)]
+    y_zero_list[33]=1.0
+    for i, (x, y_form) in enumerate(zip(x, y_form)):
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y_form.append(y_zero_list)
+        else:
+            x=x[:max_len]
+            y_form=y_form[:max_len]
+        X_train.append(x)
+        Y_train.append(y_form)
+    return X_train,Y_train
+
+
+def form_data():
+
+    data_f = open('./chACEdata/class_train_data.data', 'rb')
+    X_train,X_test,Y_train,Y_test=pickle.load(data_f)
+    data_f.close()
+
+    max_len=60
+    X_train,Y_train=padding_mask(X_train,Y_train,max_len)
+    X_test,Y_test=padding_mask(X_test,Y_test,max_len)
+
+    data=X_train,Y_train,X_test,Y_test
+    f=open('./chACEdata/class_train_form_data.data','wb')
+    pickle.dump(data,f)
+
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(Y_test).shape)
+
+
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
     #read_answer('/bn/adj/CTV20001228.1330.1196')
-    #prepare_data()
-    
-    pre_word2vec_data()
-    
+    # prepare_data()
+    #
+    # pre_word2vec_data()
+
+    form_data()
+
+    # f=open('./chACEdata/class_train_data.data','rb')
+    # X_train,X_test,Y_train,Y_test=pickle.load(f)
+    #
+    #
+    # print(np.array(X_train).shape)
+    # print(len(X_test[0]))
+    # print(len(X_train[1]))
+    # print(len(X_train[0][0]))
+    # print(len(X_train[1][1]))
+    # print(Y_test)
+    #
+    # l=[34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34]
+    # print(len(l))
+
+#
+
+
 #     m=read_answer('/wl/adj/CTV20001030.1330.0326.0844')
 #     for i in range(len(m[1])):
 #         if m[1][i]==1:

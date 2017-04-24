@@ -160,7 +160,7 @@ def f1(prediction, target, length,iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn5_5.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
+    data_f = open('./data/7/train_data_form34.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
     train_inp=X_train
@@ -258,6 +258,6 @@ parser.add_argument('--batch_size', type=int, default=100, help='batch size of t
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 parser.add_argument('--feature_maps', type=int, default=300, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=5, help='conv filter size')
+parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
 train(parser.parse_args())
 
