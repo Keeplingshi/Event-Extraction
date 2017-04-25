@@ -257,7 +257,7 @@ parser.add_argument('--num_layers', type=int, default=2, help='number of layers 
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
-parser.add_argument('--feature_maps', type=int, default=300, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=3, help='conv filter size')
+parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
+parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')
 train(parser.parse_args())
 

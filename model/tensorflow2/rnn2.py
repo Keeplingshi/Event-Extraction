@@ -17,7 +17,7 @@ class Model:
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
-        fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
+        # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
 
         # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
@@ -112,8 +112,8 @@ def f1(prediction, target, length, iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open('./data/6/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test = pickle.load(data_f)
+    data_f = open('./data/2/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
     # train_inp=X_train
     # train_out=Y_train
@@ -128,9 +128,9 @@ def train(args):
         # saver.restore(sess, saver_path)
         #
         # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: test_a_inp,model.output_data: test_a_out})
+        #                             , {model.input_data: X_test,model.output_data: Y_test})
         #
-        # maximum=f1(pred, test_a_out, length,1)
+        # maximum=f1(pred, Y_test, length,1)
         # sys.exit()
 
 
@@ -152,7 +152,7 @@ def train(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=305, help='dimension of word vector')
+parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')

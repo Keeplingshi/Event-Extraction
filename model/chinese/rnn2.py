@@ -20,8 +20,8 @@ class Model:
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
 
-        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
@@ -120,15 +120,15 @@ def train(args):
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: test_a_inp,model.output_data: test_a_out})
-        #
-        # maximum=f1(pred, test_a_out, length,1)
-        # sys.exit()
+        #sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: X_test,model.output_data: Y_test})
+
+        maximum=f1(pred, Y_test, length,1)
+        sys.exit()
 
 
         for e in range(args.epoch):

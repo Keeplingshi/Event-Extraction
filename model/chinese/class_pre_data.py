@@ -196,7 +196,7 @@ def pre_word2vec_data():
             try:
                 word_vector = model[word]
             except KeyError:
-                word_vector = np.array([0.0 for i in range(200)])
+                word_vector = np.array([random.uniform(-0.25,0.25) for i in range(200)])
 
             #如果存在词向量
             sen_vec.append(word_vector)
@@ -204,7 +204,7 @@ def pre_word2vec_data():
         x.append(sen_vec)
         #x.append([word_to_index[word] if word in word_to_index else word_to_index[unknown_token] for word in item[0]])
         y.append(item[1])
-    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)
+    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.2, random_state=0)
 
     data=X_train,X_test,Y_train,Y_test
     f=open('./chACEdata/class_train_data.data','wb')
@@ -264,6 +264,16 @@ def form_data():
 
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
+
+
+    # data_f = open('./chACEdata/class_train_form_data.data', 'rb')
+    # X_train,Y_train,X_test,Y_test = pickle.load(data_f)
+    # data_f.close()
+    #
+    # print(X_train[0][0])
+    # for i in Y_train:
+    #     print(i)
+
     #read_answer('/bn/adj/CTV20001228.1330.1196')
     prepare_data()
 
