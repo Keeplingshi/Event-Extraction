@@ -1,263 +1,212 @@
-# coding:utf-8
 """
-Created on 2017年4月4日
-事件识别  34分类
-rnn 测试提交
-@author: chenbin
+BiLSTM+CNN(only conv)
 """
 
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-import pickle
-import nltk
-import itertools
-import json
+import argparse,pickle
 import sys
-import time
-
-data_f = open('./data/1/train_data_form34.data', 'rb')
-X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-data_f.close()
-
-print(np.array(X_train).shape)
-# print(np.array(Y_train).shape)
-# print(np.array(W_train).shape)
-# print(np.array(X_test).shape)
-# print(np.array(Y_test).shape)
-# print(np.array(W_test).shape)
-# print(np.array(X_dev).shape)
-# print(np.array(Y_dev).shape)
-# print(np.array(W_dev).shape)
-sys.exit()
-event_num=len(X_train)
-
-# RNN学习时使用的参数
-learning_rate = 0.03
-training_iters = 10000
-batch_size = 128
-display_step = 10
-
-# 神经网络的参数
-n_input = 300  # 输入层的n
-n_steps = 30  # 28长度
-n_hidden = 128  # 隐含层的特征数
-n_classes = 34  # 输出的数量，因为是分类问题，0~9个数字，这里一共有10个
-
-x = tf.placeholder("float", [None, n_steps, n_input])
-# istate = tf.placeholder("float", [None, 2 * n_hidden])
-y = tf.placeholder("float", [None, n_classes])
-
-# 随机初始化每一层的权值和偏置
-weights = {
-    'hidden': tf.Variable(tf.random_normal([n_input, n_hidden])),
-    'out': tf.Variable(tf.random_normal([2*n_hidden, n_classes]))
-}
-biases = {
-    'hidden': tf.Variable(tf.random_normal([n_hidden])),
-    'out': tf.Variable(tf.random_normal([n_classes]))
-}
-
-def lstm_pred(x, weights, biases):
-    x = tf.transpose(x, [1, 0, 2])
-    x = tf.reshape(x, [-1, n_input])
-    x = tf.split(0, n_steps, x)
-
-    lstm_fw_cell=tf.nn.rnn_cell.BasicLSTMCell(n_hidden,forget_bias=1.0)
-    lstm_bw_cell=tf.nn.rnn_cell.BasicLSTMCell(n_hidden,forget_bias=1.0)
-
-    outputs, _, _ = tf.nn.bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x, dtype=tf.float32)
-    # results = tf.matmul(outputs[-1], weights['out']) + biases['out']
-
-    return outputs,x
-
-pred = lstm_pred(x, weights, biases)
-
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
-
-init = tf.global_variables_initializer()
-
-# 开始运行
-with tf.Session() as sess:
-    sess.run(init)
-    step = 0
-    # 持续迭代
-    while step < training_iters:
-
-        start=step*batch_size%event_num
-        end=(step+1)*batch_size
-
-        if start<event_num and end<=event_num:
-            pass
-        else:
-            start%=event_num
-            end%=event_num
-
-        if start>=end:
-            end=event_num-1
-
-        # 随机抽出这一次迭代训练时用的数据
-        batch_xs=X_train[start:end]
-        batch_ys=Y_train[start:end]
-
-        batch_xs = np.array(batch_xs).reshape([batch_size, n_steps, n_input])
-
-        output,x=sess.run(pred, feed_dict={x: batch_xs})
-        print(output[0])
-        print(output[1])
-        print(np.array(output).shape)
-
-        print(np.array(x).shape)
-        sys.exit()
-
-        # batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-        # batch_xs = batch_xs.reshape((batch_size, n_steps, n_input))
-
-        # sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-        #
-        # if step % display_step == 0:
-        #     pass
-        step += 1
-    print("Optimization Finished!")
 
 
-# # 参数
-# event_num=12524
-# learningRate = 0.001
-# training_iters = event_num*100
-# batch_size = 1
-#
-# nInput = 300
-# nSteps = 1
-# nHidden = 100
-# nClasses = 2
-#
-# x = tf.placeholder('float', [None, nSteps, nInput])
-# y = tf.placeholder('float', [None, nClasses])
-#
-# weights = tf.Variable(tf.random_normal([2 * nHidden, nClasses]))
-#
-# biases = tf.Variable(tf.random_normal([nClasses]))
-#
-#
-# def gru_RNN(x, weights, biases):
-#     x = tf.transpose(x, [1, 0, 2])
-#     x = tf.reshape(x, [-1, nInput])
-#     # x = tf.reshape(x, [-1, nSteps, nInput])
-#     x = tf.split(0, nSteps, x)
-#
-#     # Define gru cells with tensorflow
-#     # Forward direction cell
-#     gru_fw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-#     # Backward direction cell
-#     gru_bw_cell = tf.nn.rnn_cell.GRUCell(nHidden)
-#
-#     # Get gru cell output
-#     outputs, _, _ = tf.nn.bidirectional_rnn(gru_fw_cell, gru_bw_cell, x, dtype=tf.float32)
-#     #outputs, output_states = tf.nn.bidirectional_dynamic_rnn(gru_fw_cell, gru_bw_cell, x,sequence_length=batch_size, dtype=tf.float32)
-#     results = tf.tanh(tf.matmul(outputs[-1], weights) + biases)
-#
-#     return results
-#
-# pred = gru_RNN(x, weights, biases)
-#
-#
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-# optimizer = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cost)
-#
-# # correctPred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-# # accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
-#
-# init = tf.global_variables_initializer()
-# with tf.Session() as sess:
-#     sess.run(init)
-#
-#     k = 0
-#
-#     while k < training_iters:
-#         step = k % event_num
-#
-#         batch_xs = X_train[step]
-#         batch_ys = Y_train[step]
-#         batch_size = len(batch_xs)
-#
-#         batch_xs = np.array(batch_xs).reshape([batch_size, nSteps, nInput])
-#
-#         sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-#
-#         if k%event_num==0:
-#             # 载入测试集进行测试
-#             length = len(X_test)
-#             test_accuracy = 0.0
-#             p_s = 0  # 识别的个体总数
-#             r_s = 0  # 测试集中存在个个体总数
-#             pr_acc = 0  # 正确识别的个数
-#             for i in range(length):
-#                 test_len = len(X_test[i])
-#                 test_data = np.array(X_test[i]).reshape(
-#                     (-1, nSteps, nInput))  # 6
-#                 test_label = Y_test[i]
-#                 # prediction识别出的结果，y_测试集中的正确结果
-#                 prediction, y_ = sess.run([tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
-#                 for t in range(len(y_)):
-#                     if prediction[t] != 1:
-#                         p_s +=1
-#
-#                     if y_[t] != 1:
-#                         r_s +=1
-#                         if y_[t] == prediction[t]:
-#                             pr_acc +=1
-#
-#             print('----------------------------------------------------')
-#             print(str(pr_acc) + '------'+str(p_s)+'------' + str(r_s))
-#             p = pr_acc / p_s
-#             r = pr_acc / r_s
-#             f = 2 * p * r / (p + r)
-#             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-#             print('\n')
-#
-#
-#
-#         k += 1
-#     print('Optimization finished')
-#
-#     # 载入测试集进行测试
-#     length = len(X_test)
-#     test_accuracy = 0.0
-#     p_s = 0  # 识别的个体总数
-#     r_s = 0  # 测试集中存在个个体总数
-#     pr_acc = 0  # 正确识别的个数
-# #     s = 0
-# #     acc = 0
-#     for i in range(length):
-#         test_len = len(X_test[i])
-#         test_data = np.array(X_test[i]).reshape(
-#             (-1, nSteps, nInput))  # 6
-#         test_label = Y_test[i]
-#         # prediction识别出的结果，y_测试集中的正确结果
-#         prediction, y_ = sess.run(
-#             [tf.argmax(pred, 1), tf.argmax(y, 1)], feed_dict={x: test_data, y: test_label})
-#         for t in range(len(y_)):
-#             if prediction[t] != 1:
-#                 p_s+=1
-#
-#             if y_[t] != 1:
-#                 r_s +=1
-#                 if y_[t] == prediction[t]:
-#                     pr_acc +=1
-#
-#     print('----------------------------------------------------')
-#     print(str(pr_acc) + '------'+str(p_s)+'------' + str(r_s))
-#     p = pr_acc / p_s
-#     r = pr_acc / r_s
-#     f = 2 * p * r / (p + r)
-#     print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-#     print('\n')
-#
-# """
-# 178------326------289
-# P=0.5460122699386503	R=0.615916955017301	F=0.5788617886178862
-#
-# 218------374------337
-# P=0.5828877005347594	R=0.6468842729970327	F=0.6132208157524613
-# """
+class Model:
+    def __init__(self, args):
+        self.args = args
+        self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
+        self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
+        # self.input_length=tf.placeholder(tf.int64, [None])
+
+        #cnn process
+        filter_size = 3
+        feature_map=200
+        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_size,feature_map,args)
+        self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
+
+        #lstm process
+        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+
+        used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
+        self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
+        #self.length=tf.cast(self.input_length, tf.int32)
+        output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
+                                               tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+                                               dtype=tf.float32, sequence_length=self.length)
+
+        self.lstm_output=output
+
+        #cnn lstm contact
+        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
+
+        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
+
+        prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
+        self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
+        self.loss = self.cost()
+        optimizer = tf.train.AdamOptimizer(args.learning_rate)
+        tvars = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
+        self.train_op = optimizer.apply_gradients(zip(grads, tvars))
+
+    def cost(self):
+        cross_entropy = self.output_data * tf.log(self.prediction)
+        cross_entropy = -tf.reduce_sum(cross_entropy, reduction_indices=2)
+        mask = tf.sign(tf.reduce_max(tf.abs(self.output_data), reduction_indices=2))
+        cross_entropy *= mask
+        cross_entropy = tf.reduce_sum(cross_entropy, reduction_indices=1)
+        cross_entropy /= tf.cast(self.length, tf.float32)
+        return tf.reduce_mean(cross_entropy)
+
+    @staticmethod
+    def weight_and_bias(in_size, out_size):
+        weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
+        bias = tf.constant(0.1, shape=[out_size])
+        return tf.Variable(weight), tf.Variable(bias)
+
+
+    @staticmethod
+    def cnn_conv2d_max_pool(input_data,filter_size,feature_map,args):
+
+        input_data=tf.expand_dims(input_data,-1)
+
+        w = tf.get_variable('w', [filter_size, args.word_dim, 1, feature_map],initializer=tf.truncated_normal_initializer(stddev=0.1))
+        b = tf.get_variable('b', [feature_map], initializer=tf.zeros_initializer)
+
+        conv1=tf.nn.conv2d(input_data, w, strides=[1,1,args.word_dim,1], padding='SAME')
+        conv1 = tf.nn.sigmoid(conv1 + b)
+        conv1=tf.squeeze(conv1)
+
+        return conv1
+
+
+    @staticmethod
+    def cnn_weight_variable(shape):
+        weight = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(weight)
+
+    @staticmethod
+    def cnn_bias_variable(shape):
+        bias = tf.constant(0.1, shape=shape)
+        return tf.Variable(bias)
+
+
+def f1(prediction, target, length,iter):
+
+    prediction = np.argmax(prediction, 2)
+    target = np.argmax(target, 2)
+
+    iden_p=0   # 识别的个体总数
+    iden_r=0    # 测试集中存在个个体总数
+    iden_acc=0  # 正确识别的个数
+
+    classify_p = 0  # 识别的个体总数
+    classify_r = 0  # 测试集中存在个个体总数
+    classify_acc = 0  # 正确识别的个数
+
+    for i in range(len(target)):
+        for j in range(length[i]):
+            if prediction[i][j]!=0:
+                classify_p+=1
+                iden_p+=1
+
+            if target[i][j]!=0:
+                classify_r+=1
+                iden_r+=1
+
+            if target[i][j]==prediction[i][j] and target[i][j]!=0:
+                classify_acc+=1
+
+            if prediction[i][j]!=0 and target[i][j]!=0:
+                iden_acc+=1
+
+    try:
+        print('-----------------------' + str(iter) + '-----------------------------')
+        print('Trigger Identification:')
+        print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
+        p = iden_acc / iden_p
+        r = iden_acc / iden_r
+        if p + r != 0:
+            f = 2 * p * r / (p + r)
+            print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+        print('Trigger Classification:')
+        print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
+        p = classify_acc / classify_p
+        r = classify_acc / classify_r
+        if p + r != 0:
+            f = 2 * p * r / (p + r)
+            print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
+            print('------------------------' + str(iter) + '----------------------------')
+            return f
+    except ZeroDivisionError:
+        print('-----------------------' + str(iter) + '-----------------------------')
+        print('all zero')
+        print('-----------------------' + str(iter) + '-----------------------------')
+        return 0
+
+
+def train(args):
+    saver_path="./data/saver/checkpointrnn5_5.data"
+
+    data_f = open('./data/7/train_data_form34.data', 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    model = Model(args)
+    maximum = 0
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        # X_train=X_train[:83]
+        # Y_train=Y_train[:83]
+        # print(len(X_train))
+        for e in range(args.epoch):
+            for ptr in range(0, len(X_train), args.batch_size):
+                batch_xs=X_train[ptr:ptr + args.batch_size]
+                batch_ys=Y_train[ptr:ptr + args.batch_size]
+
+                # cnn_output=sess.run(model.cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(cnn_output).shape)
+                # print(cnn_output)
+                # # lstm_output=sess.run(model.lstm_output, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # # print(np.array(lstm_output).shape)
+                #
+                # sys.exit()
+                # if len(batch_xs)<args.batch_size:
+                #     batch_xs.extend(X_train[0:args.batch_size-len(batch_xs)])
+                #     batch_ys.extend(Y_train[0:args.batch_size - len(batch_ys)])
+
+                sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
+
+            if e%10==0:
+                pred, length = sess.run([model.prediction, model.length]
+                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
+
+                f1(pred, Y_train[:4000], length, e)
+
+            pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: X_test,model.output_data: Y_test})
+
+            m = f1(pred, Y_test, length,e)
+            if m>maximum:
+                saver = tf.train.Saver(tf.global_variables())
+                saver.save(sess,saver_path)
+                maximum=m
+
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
+parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
+parser.add_argument('--class_size', type=int, default=34,help='number of classes')
+parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
+parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
+parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
+parser.add_argument('--restore', type=str, default=None, help="path of saved model")
+parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
+parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')
+train(parser.parse_args())
+
