@@ -17,18 +17,20 @@ class Model:
         # self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
-        filter_size = 5
-        feature_map=200
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_size,feature_map,args)
+        filter_sizes = [2]
+        feature_maps = [200]
+        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
+        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        #self.length=tf.cast(self.input_length, tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
                                                tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
@@ -38,8 +40,8 @@ class Model:
         #cnn lstm contact
         lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+args.feature_maps, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+args.feature_maps])
+        weight, bias = self.weight_and_bias(2 * args.hidden_layers+sum(feature_maps), args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+sum(feature_maps)])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -66,32 +68,32 @@ class Model:
 
 
     @staticmethod
-    def cnn_conv2d_max_pool(input_data,filter_size,feature_map,args):
+    def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,args):
 
         input_data=tf.expand_dims(input_data,-1)
 
-        w = tf.get_variable('w', [filter_size, args.word_dim, 1, feature_map],initializer=tf.truncated_normal_initializer(stddev=0.1))
-        b = tf.get_variable('b', [feature_map], initializer=tf.zeros_initializer)
+        conv_outputs = []
+        for idx, filter_size in enumerate(filter_sizes):
+            with tf.variable_scope("kernel%d" % idx):
+                w = tf.get_variable('w', [filter_size, args.word_dim, 1, feature_maps[idx]],initializer=tf.truncated_normal_initializer(stddev=0.1))
+                b = tf.get_variable('b', [feature_maps[idx]], initializer=tf.zeros_initializer)
 
-        conv1=tf.nn.conv2d(input_data, w, strides=[1,1,args.word_dim,1], padding='SAME')
-        conv1 = tf.nn.sigmoid(conv1 + b)
-        conv1=tf.squeeze(conv1)
-
-        return conv1
-
-
-    @staticmethod
-    def cnn_weight_variable(shape):
-        weight = tf.truncated_normal(shape, stddev=0.1)
-        return tf.Variable(weight)
-
-    @staticmethod
-    def cnn_bias_variable(shape):
-        bias = tf.constant(0.1, shape=shape)
-        return tf.Variable(bias)
+                conv1=tf.nn.conv2d(input_data, w, strides=[1,1,args.word_dim,1], padding='SAME')
+                conv1 = tf.nn.sigmoid(conv1 + b)
+                conv1=tf.squeeze(conv1)
+                conv_outputs.append(conv1)
 
 
-def f1(prediction, target, length,iter):
+        if len(filter_sizes) > 1:
+            cnn_output = tf.concat(2,conv_outputs)
+        else:
+            cnn_output = conv_outputs[0]
+
+        return cnn_output
+
+
+
+def f1(prediction, target, length, iter_num):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -121,27 +123,28 @@ def f1(prediction, target, length,iter):
                 iden_acc+=1
 
     try:
-        print('-----------------------' + str(iter) + '-----------------------------')
-        print('Trigger Identification:')
-        print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
         p = iden_acc / iden_p
         r = iden_acc / iden_r
         if p + r != 0:
             f = 2 * p * r / (p + r)
+            print('-----------------------' + str(iter_num) + '-----------------------------')
+            print('Trigger Identification:')
+            print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-        print('Trigger Classification:')
-        print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
+
         p = classify_acc / classify_p
         r = classify_acc / classify_r
         if p + r != 0:
             f = 2 * p * r / (p + r)
+            print('Trigger Classification:')
+            print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-            print('------------------------' + str(iter) + '----------------------------')
+            print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
 
 
@@ -157,14 +160,14 @@ def train(args):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                         , {model.input_data: X_test,model.output_data: Y_test})
-        #
-        # f1(pred, Y_test, length,"max")
-        # sys.exit()
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                , {model.input_data: X_test,model.output_data: Y_test})
+
+        f1(pred, Y_test, length,"max")
+        sys.exit()
 
         # X_train=X_train[:83]
         # Y_train=Y_train[:83]
@@ -210,12 +213,12 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
-parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
-parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')
+# parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
+# parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')
 train(parser.parse_args())
 
