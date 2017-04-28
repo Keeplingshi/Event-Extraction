@@ -17,9 +17,10 @@ class Model:
         # self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
-        filter_sizes = [3]
-        feature_maps = [300]
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args)
+        filter_sizes = [3,5]
+        feature_maps = [300,200]
+        max_pool_sizes=[100,100]
+        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,max_pool_sizes,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
         #lstm process
@@ -40,8 +41,10 @@ class Model:
         #cnn lstm contact
         lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+sum(feature_maps), args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+sum(feature_maps)])
+        # cnn_width=sum([int(feature_maps[i] / max_pool_sizes[i]) for i in range(len(feature_maps))])
+        cnn_width=sum(max_pool_sizes)
+        weight, bias = self.weight_and_bias(2 * args.hidden_layers+cnn_width, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+cnn_width])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -68,7 +71,7 @@ class Model:
 
 
     @staticmethod
-    def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,args):
+    def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,max_pool_sizes,args):
 
         input_data=tf.expand_dims(input_data,-1)
 
@@ -80,10 +83,9 @@ class Model:
 
                 conv1=tf.nn.conv2d(input_data, w, strides=[1,1,args.word_dim,1], padding='SAME')
                 conv1=tf.nn.sigmoid(conv1 + b)
-                # conv1=tf.squeeze(conv1)
-                max_pool = tf.nn.max_pool(conv1, ksize=[1, 1, 1, 5],strides=[1, 1, 1, 5], padding='VALID')
-                max_pool=tf.squeeze(max_pool)
-                conv_outputs.append(max_pool)
+                conv1 = tf.squeeze(conv1)
+                k_max_pool, _ = tf.nn.top_k(conv1, max_pool_sizes[idx], sorted=False)
+                conv_outputs.append(k_max_pool)
 
 
         if len(filter_sizes) > 1:
