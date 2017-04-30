@@ -12,36 +12,42 @@ import sys
 class Model:
     def __init__(self, args):
         self.args = args
-        self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
+        self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim+args.word_dist])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
         # self.input_length=tf.placeholder(tf.int64, [None])
 
+        self.x_front = tf.slice(self.input_data, [0, 0, 0], [-1, -1, args.word_dim])
+        self.x_back = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
+
         #cnn process
-        filter_sizes = [2]
-        feature_maps = [200]
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args)
+        filter_sizes = [3,5,7]
+        feature_maps = [100,100,100]
+        self.cnn_output=self.cnn_conv2d_max_pool(self.x_front,filter_sizes,feature_maps,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
         #lstm process
         fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
         bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
-        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
 
-        used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
+        used = tf.sign(tf.reduce_max(tf.abs(self.x_front), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
         output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-                                               tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+                                               tf.unpack(tf.transpose(self.x_front, perm=[1, 0, 2])),
                                                dtype=tf.float32, sequence_length=self.length)
 
         self.lstm_output=output
 
-        #cnn lstm contact
-        lstm_cnn_output=tf.concat(2,[output,self.cnn_output])
+        self.x_back=tf.transpose(self.x_back,[1,0,2])
 
-        weight, bias = self.weight_and_bias(2 * args.hidden_layers+sum(feature_maps), args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(lstm_cnn_output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers+sum(feature_maps)])
+        #cnn lstm contact
+        self.lstm_cnn_output=tf.concat(2,[output,self.cnn_output,self.x_back])
+
+        weight_width=2 * args.hidden_layers+sum(feature_maps)+args.word_dist
+        weight, bias = self.weight_and_bias(weight_width, args.class_size)
+        output = tf.reshape(tf.transpose(tf.pack(self.lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_width])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -151,7 +157,7 @@ def f1(prediction, target, length, iter_num):
 def train(args):
     saver_path="./data/saver/checkpointrnn6_1.data"
 
-    data_f = open('./data/7/train_data_form34.data', 'rb')
+    data_f = open('./data/2/train_posi_postag_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
@@ -160,14 +166,14 @@ def train(args):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, saver_path)
-
-        pred, length = sess.run([model.prediction, model.length]
-                                , {model.input_data: X_test,model.output_data: Y_test})
-
-        f1(pred, Y_test, length,"max")
-        sys.exit()
+        # saver = tf.train.Saver(tf.global_variables())
+        # saver.restore(sess, saver_path)
+        #
+        # pred, length = sess.run([model.prediction, model.length]
+        #                         , {model.input_data: X_test,model.output_data: Y_test})
+        #
+        # f1(pred, Y_test, length,"max")
+        # sys.exit()
 
         # X_train=X_train[:83]
         # Y_train=Y_train[:83]
@@ -177,9 +183,14 @@ def train(args):
                 batch_xs=X_train[ptr:ptr + args.batch_size]
                 batch_ys=Y_train[ptr:ptr + args.batch_size]
 
-                # cnn_output=sess.run(model.cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # cnn_output=sess.run(model.x_front, {model.input_data: batch_xs,model.output_data: batch_ys})
                 # print(np.array(cnn_output).shape)
-                # print(cnn_output)
+                #
+                # cnn_output=sess.run(model.x_back, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(cnn_output).shape)
+                #
+                # cnn_output=sess.run(model.lstm_cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
+                # print(np.array(cnn_output).shape)
                 # # lstm_output=sess.run(model.lstm_output, {model.input_data: batch_xs,model.output_data: batch_ys})
                 # # print(np.array(lstm_output).shape)
                 #
@@ -206,14 +217,13 @@ def train(args):
                 maximum=m
 
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
+parser.add_argument('--word_dist', type=int,default=41, help='dimension of position and pos tag')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

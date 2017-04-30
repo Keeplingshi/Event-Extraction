@@ -14,15 +14,22 @@ import random
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
 
-doclist_train=homepath+'/ace05/split4.0/new_filelist_ACE_training.txt'
-doclist_test=homepath+'/ace05/split4.0/new_filelist_ACE_test.txt'
-doclist_dev=homepath+'/ace05/split4.0/new_filelist_ACE_dev.txt'
+doclist_train=homepath+'/ace05/split3.0/new_filelist_ACE_training.txt'
+doclist_test=homepath+'/ace05/split3.0/new_filelist_ACE_test.txt'
+doclist_dev=homepath+'/ace05/split3.0/new_filelist_ACE_dev.txt'
 
-data_save_path=homepath+"/model/tensorflow2/data/3/train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/3/train_data_form.data"
+posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
+
+data_save_path=homepath+"/model/tensorflow2/data/6/train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/6/train_data_form.data"
+#添加位置信息
+form_addposi_data_save_path=homepath+"/model/tensorflow2/data/6/train_addposi_data_form.data"
+#在位置信息添加完之后，添加词性信息
+form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/6/train_posi_postag_data_form.data"
 
 class_size=34
 max_len=60
+sen_min_len=5
 
 
 def get_dot_word():
@@ -161,8 +168,10 @@ def read_corpus(event_type,flag):
     print(event_type)
     return tokens, anchors
 
+
 def clean_str(string, TREC=False):
-    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`]", " ", string)
+    string = re.sub(r"\n\n", "<dot2>", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
     string = re.sub(r"\'m", r" 'm", string)
     string = re.sub(r"\'s", " \'s", string)
     string = re.sub(r"\'ve", " \'ve", string)
@@ -172,11 +181,12 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\'ll", " \'ll", string)
     string = re.sub(r"\.", " <dot> ", string)
     string = re.sub(r"\,", r" , ", string)
-    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"!", " <dot2> ", string)
     string = re.sub(r"\(", " ( ", string)
     string = re.sub(r"\)", " ) ", string)
-    string = re.sub(r"\?", " ? ", string)
+    string = re.sub(r"\?", " <dot2> ", string)
     string = re.sub(r"\s{2,}", " ", string)
+
     # print(string)
     string=number_form(string)
     return string.strip() if TREC else string.strip().lower()
@@ -221,14 +231,15 @@ def list2vec(tokens,anchors,phrase_posi_dict):
         assert len(token)==len(anchor), '句子数目不相等'
         for j in range(len(token)):
             #如果是句号，结束符
-            if "<dot>" in token[j]:
-                if len(sen_list)>=3:
+            if "<dot>" in token[j] or "<dot2>" in token[j]:
+                if len(sen_list)>=sen_min_len:
                     X.append(sen_list)
                     Y.append(label_list)
                     W.append(sen_word_list)
                 sen_list=[]
                 label_list=[]
                 sen_word_list=[]
+                continue
 
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
@@ -298,7 +309,7 @@ def padding_mask(x, y,w,max_len):
     x_zero_list=[0.0 for i in range(300)]
     y_zero_list=[0.0 for i in range(class_size)]
     y_zero_list[0]=1.0
-    unknown='unknow_word'
+    unknown='#'
     for i, (x, y,w) in enumerate(zip(x, y,w)):
         if max_len>len(x):
             for j in range(max_len-len(x)):
@@ -314,163 +325,39 @@ def padding_mask(x, y,w,max_len):
         W_train.append(w)
     return X_train,Y_train,W_train
 
-#[None, 'Movement_Transport', 'Personnel_Elect', 'Personnel_Start-Position', 'Personnel_Nominate', 'Conflict_Attack', 'Personnel_End-Position', 'Contact_Meet', 'Life_Marry', 'Contact_Phone-Write', 'Transaction_Transfer-Money', 'Justice_Sue', 'Conflict_Demonstrate', 'Business_End-Org', 'Life_Injure', 'Life_Die', 'Justice_Arrest-Jail', 'Transaction_Transfer-Ownership', 'Business_Start-Org', 'Justice_Execute', 'Justice_Trial-Hearing', 'Justice_Sentence', 'Life_Be-Born', 'Justice_Charge-Indict', 'Justice_Convict', 'Business_Declare-Bankruptcy', 'Justice_Release-Parole', 'Justice_Fine', 'Justice_Pardon', 'Justice_Appeal', 'Business_Merge-Org', 'Justice_Extradite', 'Life_Divorce', 'Justice_Acquit']
-#sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
 
-'''
-规范句子长度
-补零的词汇用np.random.uniform(-0.25, 0.25, 300).tolist()代替
-'''
-def padding_mask_random(x, y,w,max_len):
-    X_train=[]
-    Y_train=[]
-    W_train=[]
-    L_train=[]
+def form_data():
 
-    x_zero_list=np.random.uniform(-0.25, 0.25, 300).tolist()
-    y_zero_list=[0.0 for i in range(34)]
-    y_zero_list[0]=1.0
-    unknown='unknow_word'
-    for i, (x, y) in enumerate(zip(x, y)):
-        sen_len=len(x)
-        if max_len>len(x):
-            for j in range(max_len-len(x)):
-                x.append(x_zero_list)
-                y.append(y_zero_list)
-                w.append(unknown)
-        else:
-            sen_len=max_len
-            x=x[:max_len]
-            y=y[:max_len]
-            w=w[:max_len]
-        L_train.append(sen_len)
-        X_train.append(x)
-        Y_train.append(y)
-        W_train.append(w)
-    return X_train,Y_train,W_train,L_train
-
-
-# 规范句子长度
-def padding_mask_full(x, y,w,max_len):
-    X_train=[]
-    Y_train=[]
-    W_train=[]
-    x_zero_list=[0.0 for i in range(300)]
-    y_zero_list=[0.0 for i in range(34)]
-    y_zero_list[0]=1.0
-    unknown='unknow_word'
-    for i, (x, y) in enumerate(zip(x, y)):
-        x_len=len(x)
-        iter_num=int(x_len/max_len)
-        if iter_num==0:
-            for j in range(max_len-len(x)):
-                x.append(x_zero_list)
-                y.append(y_zero_list)
-                w.append(unknown)
-            X_train.append(x)
-            Y_train.append(y)
-            W_train.append(w)
-        else:
-            for j in range(iter_num):
-                if (j+2)*max_len>x_len:
-                    a=x[(j+1)*max_len:x_len]
-                    b=y[(j+1)*max_len:x_len]
-                    c=w[(j+1)*max_len:x_len]
-                    for k in range((j+2)*max_len-x_len):
-                        a.append(x_zero_list)
-                        b.append(y_zero_list)
-                        c.append(unknown)
-                    X_train.append(a)
-                    Y_train.append(b)
-                    W_train.append(c)
-                else:
-                    X_train.append(x[j*max_len:(j+1)*max_len])
-                    Y_train.append(y[j*max_len:(j+1)*max_len])
-                    W_train.append(w[j*max_len:(j+1)*max_len])
-
-
-    return X_train,Y_train,W_train
-
-def pos_tag_add():
-    data_f = open('./data/2/train_data_form34.data', 'rb')
+    data_f = open(data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
-    pos_tag=[]
-    word_list=[]
-    for sentence in W_test:
-        for word in sentence:
-            # tag=nltk.pos_tag(word)[0][1]
-            word_list.append(word)
-            # if tag not in pos_tag:
-            #     pos_tag.append(tag)
-    # print(word_list)
-    # print(nltk.pos_tag(word_list))
-    # print(pos_tag)
+    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
+    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
+    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
 
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(form_data_save_path,'wb')
+    pickle.dump(data,f)
 
-def get_posi():
-    data_f = open('./data/2/train_data_form34.data', 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-    posi=[]
-    for sentence in X_train:
-        for i in range(len(sentence)):
-            word=sentence[i]
-            if word[0]==0:
-                posi.append(i)
-                break
-            else:
-                if i==59:
-                    print(i)
-                    posi.append(i)
-
-    for sentence in X_test:
-        for i in range(len(sentence)):
-            word = sentence[i]
-            if word[0] == 0:
-                posi.append(i)
-                break
-            else:
-                if i==59:
-                    print(i)
-                    posi.append(i)
-
-    for sentence in X_dev:
-        for i in range(len(sentence)):
-            word = sentence[i]
-            if word[0] == 0:
-                posi.append(i)
-                break
-            else:
-                if i==59:
-                    print(i)
-                    posi.append(i)
-
-    posi_f = open('./data/2/posi.txt', 'w')
-    for i in posi:
-        for j in range(i+1):
-            posi_f.write(str(j)+' ')
-        posi_f.write('\n')
-
-
-def posi_embedding():
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-
-    sentences =word2vec.Text8Corpus("./data/2/posi.txt")
-    model =word2vec.Word2Vec(sentences, size=5,min_count=1,iter=15)
-    model.save_word2vec_format("./data/2/posi_embed.bin", binary=True)
-
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    print(np.array(W_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(Y_test).shape)
+    print(np.array(W_test).shape)
+    print(np.array(X_dev).shape)
+    print(np.array(Y_dev).shape)
+    print(np.array(W_dev).shape)
 
 
 def add_posi():
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
+    data_f = open(form_data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
-    posi_model =word2vec.Word2Vec.load_word2vec_format("./data/2/posi_embed.bin",binary=True)
+    posi_model =word2vec.Word2Vec.load_word2vec_format(posi_embed_path,binary=True)
 
     zero_posi=[0.0 for i in range(5)]
 
@@ -521,19 +408,8 @@ def add_posi():
         sen_add_posi=[]
 
     data=X_train_addposi,Y_train,W_train,X_test_addposi,Y_test,W_test,X_dev_addposi,Y_dev,W_dev
-    f=open('./data/2/train_data_posi_form34.data','wb')
+    f=open(form_addposi_data_save_path,'wb')
     pickle.dump(data,f)
-
-    print(np.array(X_train).shape)
-    print(np.array(Y_train).shape)
-    print(np.array(W_train).shape)
-    print(np.array(X_test).shape)
-    print(np.array(Y_test).shape)
-    print(np.array(W_test).shape)
-    print(np.array(X_dev).shape)
-    print(np.array(Y_dev).shape)
-    print(np.array(W_dev).shape)
-    print('---------------------------------------')
 
     print(np.array(X_train_addposi).shape)
     print(np.array(Y_train).shape)
@@ -546,30 +422,66 @@ def add_posi():
     print(np.array(W_dev).shape)
 
 
-def form_data():
+"""
+添加词性标注
+"""
+def get_pos_tag(word_list,vec_list):
+    tag_list=['CC', 'CD', 'DT', 'EX', 'FW', 'IN', 'JJ', 'JJR', 'JJS', 'LS', 'MD', 'NN', 'NNS', 'NNP', 'NNPS', 'PDT', 'POS', 'PRP', 'PRP$', 'RB', 'RBR', 'RBS', 'RP', 'TO', 'UH', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'WDT', 'WP', 'WP$', 'WRB','unknown']
 
-    data_f = open(data_save_path, 'rb')
+    word_tag_list=nltk.pos_tag(word_list)
+
+    new_vec_list=[]
+    for i in range(len(word_list)):
+        word_tag=word_tag_list[i]
+        tag_array=[0.0 for x in range(len(tag_list))]
+        try:
+            tag_index=tag_list.index(word_tag[1])
+        except:
+            tag_index=35
+
+        tag_array[tag_index]=1.0
+        word_vec=vec_list[i]
+        word_vec.extend(tag_array)
+        new_vec_list.append(word_vec)
+
+    return new_vec_list
+
+
+
+def add_pos_tag():
+    data_f = open(form_addposi_data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
-    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
-    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
-    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
+    new_X_train=[]
+    new_X_test=[]
+    new_X_dev=[]
+    for word_list,vec_list in zip(W_train,X_train):
+        new_vec_list=get_pos_tag(word_list,vec_list)
+        new_X_train.append(new_vec_list)
 
-    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    f=open(form_data_save_path,'wb')
+    for word_list,vec_list in zip(W_test,X_test):
+        new_vec_list=get_pos_tag(word_list,vec_list)
+        new_X_test.append(new_vec_list)
+
+    for word_list,vec_list in zip(W_dev,X_dev):
+        new_vec_list=get_pos_tag(word_list,vec_list)
+        new_X_dev.append(new_vec_list)
+
+
+    data=new_X_train,Y_train,W_train,new_X_test,Y_test,W_test,new_X_dev,Y_dev,W_dev
+    f=open(form_posi_postag_data_save_path,'wb')
     pickle.dump(data,f)
 
-    print(np.array(X_train).shape)
+    print(np.array(new_X_train).shape)
     print(np.array(Y_train).shape)
     print(np.array(W_train).shape)
-    print(np.array(X_test).shape)
+    print(np.array(new_X_test).shape)
     print(np.array(Y_test).shape)
     print(np.array(W_test).shape)
-    print(np.array(X_dev).shape)
+    print(np.array(new_X_dev).shape)
     print(np.array(Y_dev).shape)
     print(np.array(W_dev).shape)
-
 
 
 if __name__ == "__main__":
@@ -577,3 +489,13 @@ if __name__ == "__main__":
     pre_data()
 
     form_data()
+
+    add_posi()
+
+    add_pos_tag()
+
+    # word_list=["word","unknow_word","run","at",",","#"]
+    # word_tag_list=nltk.pos_tag(word_list)
+    # print(word_tag_list)
+
+

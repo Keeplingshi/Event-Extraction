@@ -17,18 +17,24 @@ class Model:
         # self.input_length=tf.placeholder(tf.int64, [None])
 
         #cnn process
-        filter_sizes = [3,5]
-        feature_maps = [300,200]
-        max_pool_sizes=[100,100]
+        # filter_sizes = [1,3,5]
+        # feature_maps = [300,300,300]
+        # max_pool_sizes=[100,100,100]
+        filter_sizes = [3]
+        feature_maps = [300]
+        max_pool_sizes=[200]
         self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,max_pool_sizes,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
-        #lstm process
-        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        # #lstm process
+        # fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        # bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
-        fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        fw_cell = tf.nn.rnn_cell.GRUCell(args.hidden_layers)
+        bw_cell = tf.nn.rnn_cell.GRUCell(args.hidden_layers)
+
+        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
+        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)

@@ -112,7 +112,7 @@ def f1(prediction, target, length, iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open('./data/2/train_data_form34.data', 'rb')
+    data_f = open('./data/4/train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
     # train_inp=X_train
