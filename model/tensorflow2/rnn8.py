@@ -16,30 +16,15 @@ class Model:
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
 
-        # fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        # bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-
         fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
         bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
-
-        # fw_cell=tf.contrib.rnn.AttentionCellWrapper(fw_cell,attn_length=5, state_is_tuple=True)
-        # bw_cell=tf.contrib.rnn.AttentionCellWrapper(bw_cell,attn_length=5, state_is_tuple=True)
-
-
-        # fw_cell=PhasedLSTMCell(args.hidden_layers)
-        # bw_cell=PhasedLSTMCell(args.hidden_layers)
-
-        # fw_cell = tf.contrib.rnn.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        # bw_cell = tf.contrib.rnn.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
         output, _,_ =tf.contrib.rnn.static_bidirectional_rnn(fw_cell, bw_cell,
                                                                tf.unstack(tf.transpose(self.input_data, perm=[1, 0, 2])),
                                                                dtype=tf.float32, sequence_length=self.length)
-        # output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-        #                                        tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
-        #                                        dtype=tf.float32, sequence_length=self.length)
+
         self.output=output
         weight=self.create_weight_variable("weight",[2 * args.hidden_layers,args.class_size])
         bias=self.create_bias_variable("bias",[args.class_size])

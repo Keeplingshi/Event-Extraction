@@ -20,34 +20,31 @@ class Model:
         self.x_back = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
         #cnn process
-        filter_sizes = [3,5,7]
-        feature_maps = [100,100,100]
+        filter_sizes = [3,5]
+        feature_maps = [100,100]
         self.cnn_output=self.cnn_conv2d_max_pool(self.x_front,filter_sizes,feature_maps,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
         #lstm process
-        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-
-        # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
+        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
+        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
 
         used = tf.sign(tf.reduce_max(tf.abs(self.x_front), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-                                               tf.unpack(tf.transpose(self.x_front, perm=[1, 0, 2])),
-                                               dtype=tf.float32, sequence_length=self.length)
+        output, _,_ =tf.contrib.rnn.static_bidirectional_rnn(fw_cell, bw_cell,
+                                                               tf.unstack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+                                                               dtype=tf.float32, sequence_length=self.length)
 
         self.lstm_output=output
 
         self.x_back=tf.transpose(self.x_back,[1,0,2])
 
         #cnn lstm contact
-        self.lstm_cnn_output=tf.concat(2,[output,self.cnn_output,self.x_back])
+        self.lstm_cnn_output=tf.concat([output,self.cnn_output,self.x_back],2)
 
         weight_width=2 * args.hidden_layers+sum(feature_maps)+args.word_dist
         weight, bias = self.weight_and_bias(weight_width, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(self.lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_width])
+        output = tf.reshape(tf.transpose(tf.stack(self.lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_width])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -91,7 +88,7 @@ class Model:
 
 
         if len(filter_sizes) > 1:
-            cnn_output = tf.concat(2,conv_outputs)
+            cnn_output = tf.concat(conv_outputs,2)
         else:
             cnn_output = conv_outputs[0]
 
@@ -175,29 +172,10 @@ def train(args):
         # f1(pred, Y_test, length,"max")
         # sys.exit()
 
-        # X_train=X_train[:83]
-        # Y_train=Y_train[:83]
-        # print(len(X_train))
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
                 batch_xs=X_train[ptr:ptr + args.batch_size]
                 batch_ys=Y_train[ptr:ptr + args.batch_size]
-
-                # cnn_output=sess.run(model.x_front, {model.input_data: batch_xs,model.output_data: batch_ys})
-                # print(np.array(cnn_output).shape)
-                #
-                # cnn_output=sess.run(model.x_back, {model.input_data: batch_xs,model.output_data: batch_ys})
-                # print(np.array(cnn_output).shape)
-                #
-                # cnn_output=sess.run(model.lstm_cnn_output, {model.input_data: batch_xs,model.output_data: batch_ys})
-                # print(np.array(cnn_output).shape)
-                # # lstm_output=sess.run(model.lstm_output, {model.input_data: batch_xs,model.output_data: batch_ys})
-                # # print(np.array(lstm_output).shape)
-                #
-                # sys.exit()
-                # if len(batch_xs)<args.batch_size:
-                #     batch_xs.extend(X_train[0:args.batch_size-len(batch_xs)])
-                #     batch_ys.extend(Y_train[0:args.batch_size - len(batch_ys)])
 
                 sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 

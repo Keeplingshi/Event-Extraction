@@ -14,8 +14,8 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -24,12 +24,13 @@ class Model:
         # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-                                               tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
-                                               dtype=tf.float32, sequence_length=self.length)
+        output, _,_ =tf.contrib.rnn.static_bidirectional_rnn(fw_cell, bw_cell,
+                                                               tf.unstack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+                                                               dtype=tf.float32, sequence_length=self.length)
+
         self.output=output
         weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
+        output = tf.reshape(tf.transpose(tf.stack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -112,7 +113,7 @@ def f1(prediction, target, length, iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open('./data/4/train_data_form.data', 'rb')
+    data_f = open('./data/2/train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
     # train_inp=X_train
