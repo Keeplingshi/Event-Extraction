@@ -22,8 +22,8 @@ class Model:
         fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
         bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
 
-        fw_cell=tf.contrib.rnn.AttentionCellWrapper(fw_cell,attn_length=5, state_is_tuple=True)
-        bw_cell=tf.contrib.rnn.AttentionCellWrapper(bw_cell,attn_length=5, state_is_tuple=True)
+        # fw_cell=tf.contrib.rnn.AttentionCellWrapper(fw_cell,attn_length=5, state_is_tuple=True)
+        # bw_cell=tf.contrib.rnn.AttentionCellWrapper(bw_cell,attn_length=5, state_is_tuple=True)
 
 
         # fw_cell=PhasedLSTMCell(args.hidden_layers)
@@ -135,7 +135,7 @@ def f1(prediction, target, length, iter):
 
 
 def train(args):
-    saver_path="./data/saver/checkpointrnn2_1.data"
+    saver_path="./data/saver/checkpointrnn2_3.data"
 
     data_f = open('./data/2/train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
