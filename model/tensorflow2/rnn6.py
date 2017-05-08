@@ -210,3 +210,12 @@ parser.add_argument('--restore', type=str, default=None, help="path of saved mod
 # parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')
 train(parser.parse_args())
 
+
+"""
+Trigger Identification:
+269------353------403
+P=0.7620396600566572	R=0.6674937965260546	F=0.7116402116402116
+Trigger Classification:
+263------353------403
+P=0.7450424929178471	R=0.652605459057072	F=0.6957671957671959
+"""

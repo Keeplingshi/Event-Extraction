@@ -148,6 +148,7 @@ def train(args):
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
+                maximum=m
 
 
 

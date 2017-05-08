@@ -8,41 +8,43 @@ import time
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
 
-doclist_train=homepath+'/ace05/split3.0/new_filelist_ACE_training.txt'
-doclist_test=homepath+'/ace05/split3.0/new_filelist_ACE_test.txt'
-doclist_dev=homepath+'/ace05/split3.0/new_filelist_ACE_dev.txt'
+doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
+doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
+doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
-stop_words_path=homepath+'/ace05/word2vec/stop_words'
-
-data_save_path=homepath+"/model/tensorflow2/data/8/argument_train_data34.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/8/argument_train_data_form34.data"
+data_save_path=homepath+"/model/tensorflow2/data/argument_data/2/argument_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/2/argument_train_data_form.data"
 
 arg_type_num=36
 
-def get_stop_words():
-    stop_list=[]
-    stop_words_f=open(stop_words_path,'r')
-    for line in stop_words_f.readlines():
-        stop_list.append(line.strip())
-    return stop_list
 
+def get_dot_word():
+    wordlist_file=homepath+'/ace05/word2vec/wordlist'
+
+    wordlist_f=open(wordlist_file,'r')
+    word_dot_list=dict()
+    for line in wordlist_f:
+        word=line.strip()
+        if "." in word:
+            if "."!=word and "..."!=word:
+                temp=word
+                word_dot_list[temp.replace("."," <dot> ")]=word
+    return word_dot_list
+
+word_dot_list=get_dot_word()
 
 def number_form(s):
-    num_list = re.findall("\d+\s<dot>\s\d+", s)
-    for re_num in num_list:
-        s = s.replace(re_num, re_num.replace(" <dot> ", "."))
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
-    if "u <dot> s <dot>" in s:
-        s = s.replace("u <dot> s <dot>", "u.s.")
-    if "u <dot> k <dot>" in s:
-        s = s.replace("u <dot> k <dot>", "u.k.")
+
+    if s in word_dot_list.keys():
+        s=word_dot_list.get(s)
     return s
 
-
 def clean_str(string, TREC=False):
-    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`]", " ", string)
+    string = re.sub(r"\n\n", " <dot2> ", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
     string = re.sub(r"\'m", r" 'm", string)
     string = re.sub(r"\'s", " \'s", string)
     string = re.sub(r"\'ve", " \'ve", string)
@@ -52,13 +54,15 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\'ll", " \'ll", string)
     string = re.sub(r"\.", " <dot> ", string)
     string = re.sub(r"\,", r" , ", string)
-    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"!", " <dot2> ", string)
     string = re.sub(r"\(", " ( ", string)
     string = re.sub(r"\)", " ) ", string)
-    string = re.sub(r"\?", " ? ", string)
+    string = re.sub(r"\?", " <dot2> ", string)
     string = re.sub(r"\s{2,}", " ", string)
+
     string=number_form(string)
     return string.strip() if TREC else string.strip().lower()
+
 
 """
 获取语料列表
@@ -204,7 +208,6 @@ def get_word2vec():
 
 def list2vec(tokens, arguments):
     vec_dict=get_word2vec()
-    stop_list=get_stop_words()
 
     X=[]
     Y=[]
@@ -222,7 +225,7 @@ def list2vec(tokens, arguments):
         assert len(token)==len(anchor), '句子数目不相等'
         for j in range(len(token)):
             #如果是句号，结束符
-            if "<dot>" in token[j]:
+            if "<dot>" in token[j] or "<dot2>" in token[j]:
                 if len(sen_list)>=5:
                     X.append(sen_list)
                     Y.append(label_list)
@@ -230,6 +233,7 @@ def list2vec(tokens, arguments):
                 sen_list=[]
                 label_list=[]
                 sen_word_list=[]
+                continue
 
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
@@ -241,8 +245,6 @@ def list2vec(tokens, arguments):
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
                     arg_words=arg_tokens.split(' ')
-                    if anchor[j]==0:
-                        print(str(anchor[j])+"\t"+arg_tokens)
 
                     if len(arg_words)<=5:
                         for k in range(len(arg_words)):
@@ -250,10 +252,7 @@ def list2vec(tokens, arguments):
                                 sen_list.append(vec_dict.get(arg_words[k]))
                                 sen_word_list.append(arg_words[k])
                                 a = [0.0 for x in range(0, arg_type_num)]
-                                if arg_words[k] in stop_list:
-                                    a[0] = 1.0
-                                else:
-                                    a[anchor[j]] = 1.0
+                                a[anchor[j]] = 1.0
                                 label_list.append(a)
                     else:
                         for k in range(len(arg_words)):
@@ -263,6 +262,13 @@ def list2vec(tokens, arguments):
                                 a = [0.0 for x in range(0, arg_type_num)]
                                 a[0] = 1.0
                                 label_list.append(a)
+
+                else:
+                    sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+                    sen_word_list.append(token[j])
+                    a = [0.0 for x in range(0, arg_type_num)]
+                    a[anchor[j]] = 1.0
+                    label_list.append(a)
 
     return X,Y,W
 
@@ -336,110 +342,8 @@ def form_data():
     print(np.array(Y_dev).shape)
     print(np.array(W_dev).shape)
 
-def get_arg_tuple_list(Y_train):
-    arg_list=[]
-    for i in range(len(Y_train)):
-        for j in range(len(Y_train[i])):
-            arg_type=np.argmax(Y_train[i][j])
-            if arg_type!=0:
-                word_num=0
-                if j+1<len(Y_train[i]):
-                    arg_type_next=np.argmax(Y_train[i][j+1])
-                    if arg_type_next==arg_type:
-                        for jj in range(j+1,len(Y_train[i])):
-                            word_num+=1
-                            if np.argmax(Y_train[i][jj])==0:
-                                break
-                flag=True
-                for (a,b,c,d) in arg_list:
-                    if a==i and d==arg_type:
-                        if j+word_num<=b+c:
-                            flag=False
-                if flag:
-                    arg_tuple=(i,j,word_num,arg_type)
-                    arg_list.append(arg_tuple)
-
-    return arg_list
-    # for arg_tuple in arg_list:
-    #     print(arg_tuple)
-
-
-
-
-def read_file2(xml_path):
-    apf_tree = ET.parse(xml_path)
-    root = apf_tree.getroot()
-
-    # argment process
-    argument_start = {}
-    argument_end = {}
-
-    argument_ident={}
-    event_argument=dict()
-
-    for events in root.iter("event"):
-
-        for mention in events.iter("event_mention"):
-
-            mention_arguments = mention.findall("event_mention_argument")
-            for mention_argument in mention_arguments:
-                ev_id = mention_argument.attrib["REFID"]
-                # 时间要素类型
-                arg_type=mention_argument.attrib["ROLE"]
-
-                for extend in mention_argument:
-
-                    for charseq in extend:
-                        start = int(charseq.attrib["START"])
-                        end = int(charseq.attrib["END"]) + 1
-                        text = re.sub(r"\n", r"", charseq.text)
-                        argument_tupple = (arg_type, start, end, text)
-                        if argument_tupple in argument_ident:
-                            #sys.stderr.write("dulicapte event {}\n".format(ev_id))
-                            # argument_map[ev_id] = argument_ident[argument_tupple]
-                            continue
-                        argument_ident[argument_tupple] = ev_id
-                        event_argument[ev_id] = [ev_id, arg_type, start, end, text]
-                        argument_start[start] = ev_id
-                        argument_end[end] = ev_id
-
-
-    print(str(len(event_argument))+"\t"+xml_path)
 
 
 if __name__ == "__main__":
     pre_data()
     form_data()
-
-    # file_list=[acepath+i.replace('\n','') for i in open(doclist_test,'r')]
-    # for file_path in file_list:
-    #     file_path=file_path + ".apf.xml"
-    #     read_file2(file_path)
-
-    # s="1 <dot> 0 million dollars"
-    # s = "aaa <dot> 0 million dollars"
-    # print(number_form2(s))
-
-    # argument_type=[None]
-    # file_path=acepath+"nw/timex2norm/AFP_ENG_20030430.0075"
-    # tok, arg = read_file(file_path + ".apf.xml", file_path + ".sgm", argument_type)
-    # print(tok)
-    #
-    # for i in range(len(arg)):
-    #     if arg[i]!=0:
-    #         print(tok[i])
-
-
-    # data_f = open(data_save_path, 'rb')
-    # X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    # data_f.close()
-    #
-    # arg_list=get_arg_tuple_list(Y_test)
-    # for (i,j,word_num,arg_type) in arg_list:
-    #     a=[]
-    #     if word_num==0:
-    #         a.append(W_test[i][j])
-    #     for m in range(word_num):
-    #         a.append(W_test[i][j+m])
-    #     print(a)
-
