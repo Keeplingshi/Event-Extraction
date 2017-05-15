@@ -14,10 +14,8 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-
-        #lstm process
-        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
-        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
+        fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+        bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -54,11 +52,14 @@ class Model:
     @staticmethod
     def weight_and_bias(in_size, out_size):
         weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
-        bias = tf.constant(0.0, shape=[out_size])
+        bias = tf.constant(0.1, shape=[out_size])
         return tf.Variable(weight), tf.Variable(bias)
 
 
-def f1(prediction, target, length, iter_num):
+argu_type=[None, 'Vehicle', 'Artifact', 'Destination', 'Agent', 'Person', 'Position', 'Entity', 'Attacker', 'Place', 'Time-At-Beginning', 'Target', 'Giver', 'Recipient', 'Plaintiff', 'Money', 'Victim', 'Time-Within', 'Buyer', 'Time-Ending', 'Instrument', 'Seller', 'Origin', 'Time-Holds', 'Org', 'Time-At-End', 'Time-Before', 'Time-Starting', 'Time-After', 'Beneficiary', 'Defendant', 'Adjudicator', 'Sentence', 'Crime', 'Prosecutor', 'Price']
+
+
+def f1(prediction, target, length, iter_num,words):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -87,16 +88,20 @@ def f1(prediction, target, length, iter_num):
             if prediction[i][j]!=0 and target[i][j]!=0:
                 iden_acc+=1
 
+            if prediction[i][j]!=0 and target[i][j]!=0 and target[i][j]!=prediction[i][j]:
+                print(words[i][j]+"\t"+argu_type[target[i][j]]+"\t"+argu_type[prediction[i][j]])
+
+
     try:
         print('-----------------------' + str(iter_num) + '-----------------------------')
-        print('Trigger Identification:')
+        print('Argument Identification:')
         print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
         p = iden_acc / iden_p
         r = iden_acc / iden_r
         if p + r != 0:
             f = 2 * p * r / (p + r)
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-        print('Trigger Classification:')
+        print('Argument Classification:')
         print(str(classify_acc) + '------' + str(classify_p) + '------' + str(classify_r))
         p = classify_acc / classify_p
         r = classify_acc / classify_r
@@ -106,18 +111,15 @@ def f1(prediction, target, length, iter_num):
             print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
         print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
 
 
 def train(args):
-    homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
-    form_data_save_path = homepath + "/trigger_data/1/trigger_train_data_form.data"
-    saver_path = homepath+"/saver/checkpointrnn2_1.data"
+    saver_path="../data/saver/checkpointargu_rnn1.data"
 
-    data_f = open(form_data_save_path, 'rb')
+    data_f = open('../data/argument_data/3/argument_train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
@@ -125,14 +127,14 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: X_test,model.output_data: Y_test})
-        #
-        # maximum=f1(pred, Y_test, length,1)
-        # sys.exit()
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: X_test,model.output_data: Y_test})
+
+        maximum=f1(pred, Y_test, length,"max",W_test)
+        sys.exit()
 
 
         for e in range(args.epoch):
@@ -141,18 +143,15 @@ def train(args):
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
                     ,model.output_data: Y_train[ptr:ptr + args.batch_size]})
 
-
             if e%10==0:
                 pred, length = sess.run([model.prediction, model.length]
-                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
-
-                f1(pred, Y_train[:4000], length, e)
-
+                                        , {model.input_data: X_train, model.output_data: Y_train})
+                f1(pred, Y_train, length, "train",W_train)
 
             pred, length = sess.run([model.prediction, model.length]
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
-            m = f1(pred, Y_test, length,e)
+            m = f1(pred, Y_test, length,e,W_test)
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
@@ -164,9 +163,9 @@ def train(args):
 parser = argparse.ArgumentParser()
 parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
-parser.add_argument('--class_size', type=int, default=34,help='number of classes')
+parser.add_argument('--class_size', type=int, default=36,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=256, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

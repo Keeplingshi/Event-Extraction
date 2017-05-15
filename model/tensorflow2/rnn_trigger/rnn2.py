@@ -113,11 +113,9 @@ def f1(prediction, target, length, iter_num):
 
 
 def train(args):
-    homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
-    form_data_save_path = homepath + "/trigger_data/1/trigger_train_data_form.data"
-    saver_path = homepath+"/saver/checkpointrnn2_1.data"
+    saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open(form_data_save_path, 'rb')
+    data_f = open('./data/trigger_data/1/trigger_train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
@@ -166,9 +164,9 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=256, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=300, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
-parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
+parser.add_argument('--batch_size', type=int, default=150, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 train(parser.parse_args())
