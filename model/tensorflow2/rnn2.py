@@ -14,8 +14,10 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+
+        #lstm process
+        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True,forget_bias=0.0)
+        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True,forget_bias=0.0)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -113,13 +115,9 @@ def f1(prediction, target, length, iter):
 def train(args):
     saver_path="./data/saver/checkpointrnn2_1.data"
 
-    data_f = open('./data/2/train_data_form.data', 'rb')
+    data_f = open('./data/trigger_data/1/trigger_train_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
-    # train_inp=X_train
-    # train_out=Y_train
-    # test_a_inp=X_test
-    # test_a_out=Y_test
 
     model = Model(args)
     maximum = 0
@@ -141,6 +139,14 @@ def train(args):
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
                     ,model.output_data: Y_train[ptr:ptr + args.batch_size]})
 
+
+            if e%10==0:
+                pred, length = sess.run([model.prediction, model.length]
+                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
+
+                f1(pred, Y_train[:4000], length, e)
+
+
             pred, length = sess.run([model.prediction, model.length]
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
@@ -158,9 +164,9 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=300, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
-parser.add_argument('--epoch', type=int, default=30, help='number of epochs')
+parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 train(parser.parse_args())
