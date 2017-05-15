@@ -14,18 +14,18 @@ import random
 homepath='D:/Code/pycharm/Event-Extraction/'
 acepath=homepath+'ace05/data/English/'
 
-doclist_train=homepath+'/ace05/split3.0/new_filelist_ACE_training.txt'
-doclist_test=homepath+'/ace05/split3.0/new_filelist_ACE_test.txt'
-doclist_dev=homepath+'/ace05/split3.0/new_filelist_ACE_dev.txt'
+doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
+doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
+doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
 posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
 
-data_save_path=homepath+"/model/tensorflow2/data/6/train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/6/train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_data_form.data"
 #添加位置信息
-form_addposi_data_save_path=homepath+"/model/tensorflow2/data/6/train_addposi_data_form.data"
+form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_addposi_data_form.data"
 #在位置信息添加完之后，添加词性信息
-form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/6/train_posi_postag_data_form.data"
+form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_posi_postag_data_form.data"
 
 class_size=34
 max_len=60
@@ -187,9 +187,9 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\?", " <dot2> ", string)
     string = re.sub(r"\s{2,}", " ", string)
 
-    # print(string)
-    string=number_form(string)
-    return string.strip() if TREC else string.strip().lower()
+    return_str=string if TREC else string.lower()
+    return_str=number_form(return_str).strip()
+    return return_str
 
 
 def get_word2vec():
@@ -490,9 +490,9 @@ if __name__ == "__main__":
 
     form_data()
 
-    add_posi()
-
-    add_pos_tag()
+    # add_posi()
+    #
+    # add_pos_tag()
 
     # word_list=["word","unknow_word","run","at",",","#"]
     # word_tag_list=nltk.pos_tag(word_list)
