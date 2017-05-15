@@ -22,28 +22,25 @@ def get_dot_word():
     word_dot_list=dict()
     for line in wordlist_f:
         word=line.strip()
-
         if "." in word:
             if "."!=word and "..."!=word:
                 temp=word
                 word_dot_list[temp.replace("."," <dot> ").strip()]=word
-                print(word)
     return word_dot_list
 
-word_dot_list=get_dot_word()
-# for i in word_dot_list:
-#     print(i)
 
-sys.exit()
+word_dot_list=get_dot_word()
+word_dot_list = sorted(word_dot_list.items(), key=lambda x: len(x[1]), reverse=True)
+
 
 def number_form(s):
+
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
-    if s.strip() in word_dot_list.keys():
-        s=word_dot_list.get(s.strip())
-
+    for (i,j) in word_dot_list:
+        s = s.replace(" "+i+" ", " "+j+" ")
     return s
 
 def clean_str(string, TREC=False):
@@ -59,6 +56,7 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\.", " <dot> ", string)
     string = re.sub(r"\,", r" , ", string)
     string = re.sub(r"!", " <dot2> ", string)
+    string = re.sub(r"``", " <dot2> ", string)
     string = re.sub(r"\(", " ( ", string)
     string = re.sub(r"\)", " ) ", string)
     string = re.sub(r"\?", " <dot2> ", string)
@@ -66,6 +64,7 @@ def clean_str(string, TREC=False):
 
     return_str=string.strip() if TREC else string.strip().lower()
     return_str=number_form(return_str).strip()
+
     return return_str
 
 
@@ -138,7 +137,7 @@ def read_file(xml_path, text_path, argument_type):
                         text = re.sub(r"\n", r"", charseq.text)
                         argument_tupple = (arg_type, start, end, text)
                         if argument_tupple in argument_ident:
-                            sys.stderr.write("dulicapte event {}\n".format(ev_id))
+                            # sys.stderr.write("dulicapte event {}\n".format(ev_id))
                             # argument_map[ev_id] = argument_ident[argument_tupple]
                             continue
                         argument_ident[argument_tupple] = ev_id
@@ -165,9 +164,6 @@ def read_file(xml_path, text_path, argument_type):
     for i in range(size):
         if i in argument_start:
             new = clean_str(doc[current:i])
-            print(doc[current:i])
-            print(new)
-            print("======================================")
             regions.append(new)
             tokens += new.split()
             arguments += [0 for _ in range(len(new.split()))]
@@ -324,26 +320,61 @@ def list2vec(tokens, arguments):
     return X,Y,W
 
 
+def pre_data():
+
+    trigger_argument_type=[None, 'Trigger_Movement_Transport', 'Argument_Vehicle', 'Argument_Artifact', 'Argument_Destination', 'Argument_Agent', 'Trigger_Personnel_Elect', 'Argument_Person', 'Argument_Position', 'Trigger_Personnel_Start-Position', 'Argument_Entity', 'Trigger_Personnel_Nominate', 'Trigger_Conflict_Attack', 'Argument_Attacker', 'Argument_Place', 'Trigger_Personnel_End-Position', 'Trigger_Contact_Meet', 'Trigger_Life_Marry', 'Argument_Time-At-Beginning', 'Trigger_Contact_Phone-Write', 'Argument_Target', 'Trigger_Transaction_Transfer-Money', 'Argument_Giver', 'Argument_Recipient', 'Trigger_Justice_Sue', 'Argument_Plaintiff', 'Trigger_Conflict_Demonstrate', 'Argument_Money', 'Trigger_Business_End-Org', 'Trigger_Life_Injure', 'Argument_Victim', 'Argument_Time-Within', 'Trigger_Life_Die', 'Trigger_Justice_Arrest-Jail', 'Trigger_Transaction_Transfer-Ownership', 'Argument_Buyer', 'Argument_Time-Ending', 'Argument_Instrument', 'Argument_Seller', 'Argument_Origin', 'Argument_Time-Holds', 'Argument_Org', 'Argument_Time-At-End', 'Trigger_Business_Start-Org', 'Argument_Time-Before', 'Argument_Time-Starting', 'Argument_Time-After', 'Argument_Beneficiary', 'Trigger_Justice_Execute', 'Trigger_Justice_Trial-Hearing', 'Argument_Defendant', 'Trigger_Justice_Sentence', 'Argument_Adjudicator', 'Argument_Sentence', 'Trigger_Life_Be-Born', 'Trigger_Justice_Charge-Indict', 'Trigger_Justice_Convict', 'Argument_Crime', 'Trigger_Business_Declare-Bankruptcy', 'Trigger_Justice_Release-Parole', 'Argument_Prosecutor', 'Trigger_Justice_Fine', 'Trigger_Justice_Pardon', 'Trigger_Justice_Appeal', 'Trigger_Business_Merge-Org', 'Trigger_Justice_Extradite', 'Trigger_Life_Divorce', 'Trigger_Justice_Acquit', 'Argument_Price']
+
+    # trigger_argument_type = [None]
+    # train_tokens, train_anchors=read_corpus(trigger_argument_type,'train')
+    # test_tokens, test_anchors=read_corpus(trigger_argument_type,'test')
+    # dev_tokens, dev_anchors=read_corpus(trigger_argument_type,'dev')
+
+    # print(trigger_argument_type)
+    # print(len(trigger_argument_type))
+    trigger_type=dict()
+    argument_type=dict()
+    for event_type in trigger_argument_type:
+        if event_type is not None and "Trigger_" in event_type:
+            trigger_type[event_type]=trigger_argument_type.index(event_type)
+        else:
+            argument_type[event_type]=trigger_argument_type.index(event_type)
+
+    print(trigger_type)
+    print(len(trigger_type))
+    print(argument_type)
+    print(len(argument_type))
+
+    # X_train,Y_train,W_train=list2vec(train_tokens,train_anchors,phrase_posi_dict)
+    # X_test,Y_test,W_test=list2vec(test_tokens,test_anchors)
+    # X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors,phrase_posi_dict)
+    #
+    # data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    # f=open(data_save_path,'wb')
+    # pickle.dump(data,f)
+
 
 if __name__ == "__main__":
-    trigger_argument_type=[None]
-    file_name="nw/timex2norm/APW_ENG_20030311.0775"
-    xml_path=acepath+file_name+".apf.xml"
-    text_path=acepath+file_name+".sgm"
-    tokens, arguments=read_file(xml_path, text_path, trigger_argument_type)
-    print(tokens)
-    print(arguments)
-    print(trigger_argument_type)
 
-    for i in range(len(tokens)):
-        if arguments[i]!=0:
-            print(tokens[i]+"\t"+trigger_argument_type[arguments[i]])
+    pre_data()
+
+    # trigger_argument_type=[None]
+    # file_name="nw/timex2norm/APW_ENG_20030311.0775"
+    # xml_path=acepath+file_name+".apf.xml"
+    # text_path=acepath+file_name+".sgm"
+    # tokens, arguments=read_file(xml_path, text_path, trigger_argument_type)
+    # print(tokens)
+    # print(arguments)
+    # print(trigger_argument_type)
+    #
+    # for i in range(len(tokens)):
+    #     if arguments[i]!=0:
+    #         print(tokens[i]+"\t"+trigger_argument_type[arguments[i]])
 
 
-    a="Turkish party leader Recep Tayyip Erdogan named prime minister, may push to allow in U.S. troops"
-    print(clean_str(a))
-    a=" U.S. "
-    print(clean_str(a))
+    # a="Turkish party leader Recep Tayyip Erdogan named prime minister, may push to allow in U.S. troops"
+    # print(clean_str(a))
+    # a="U.S."
+    # print(clean_str(a))
 
 
 

@@ -20,7 +20,7 @@ class Model:
         self.x_back = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
 
         #cnn process
-        filter_sizes = [3]
+        filter_sizes = [5]
         feature_maps = [200]
         self.cnn_output=self.cnn_conv2d_max_pool(self.x_front,filter_sizes,feature_maps,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
@@ -154,7 +154,7 @@ def f1(prediction, target, length, iter_num):
 def train(args):
     saver_path="./data/saver/checkpointrnn6_1.data"
 
-    data_f = open('./data/6/train_addposi_data_form.data', 'rb')
+    data_f = open('./data/2/train_addposi_data_form.data', 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
@@ -162,15 +162,15 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-
-        saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, saver_path)
-
-        pred, length = sess.run([model.prediction, model.length]
-                                , {model.input_data: X_test,model.output_data: Y_test})
-
-        f1(pred, Y_test, length,"max")
-        sys.exit()
+        #
+        # saver = tf.train.Saver(tf.global_variables())
+        # saver.restore(sess, saver_path)
+        #
+        # pred, length = sess.run([model.prediction, model.length]
+        #                         , {model.input_data: X_test,model.output_data: Y_test})
+        #
+        # f1(pred, Y_test, length,"max")
+        # sys.exit()
 
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
@@ -201,7 +201,7 @@ parser.add_argument('--word_dist', type=int,default=5, help='dimension of positi
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=256, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

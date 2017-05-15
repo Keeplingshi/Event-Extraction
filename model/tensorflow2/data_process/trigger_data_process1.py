@@ -32,22 +32,6 @@ max_len=60
 sen_min_len=5
 
 
-def sortbylength(L):
-    n=len(L)
-    for i in range(n):
-        k=i
-        j=i+1
-        while j<n:
-            if len(L[k])>len(L[j]):
-                k=j
-            j+=1
-        if i!=k:
-            temp=L[k]
-            L[k]=L[i]
-            L[i]=temp
-    return L
-
-
 def get_dot_word():
     wordlist_file=homepath+'/ace05/word2vec/wordlist'
 
@@ -508,26 +492,26 @@ def add_pos_tag():
 if __name__ == "__main__":
     # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\bc\timex2norm\CNN_CF_20030303.1900.00.sgm
     # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\nw\timex2norm\APW_ENG_20030304.0555.sgm
-    trigger_argument_type=[None]
-    file_name="nw/timex2norm/APW_ENG_20030311.0775"
-    # file_name="bc/timex2norm/CNN_CF_20030303.1900.00"
-    # file_name="nw/timex2norm/APW_ENG_20030304.0555"
-    xml_path=acepath+file_name+".apf.xml"
-    text_path=acepath+file_name+".sgm"
-    tokens, arguments=read_file(xml_path, text_path, trigger_argument_type)
-    print(tokens)
-    print(arguments)
-    print(trigger_argument_type)
+    # trigger_argument_type=[None]
+    # file_name="nw/timex2norm/APW_ENG_20030311.0775"
+    # # file_name="bc/timex2norm/CNN_CF_20030303.1900.00"
+    # # file_name="nw/timex2norm/APW_ENG_20030304.0555"
+    # xml_path=acepath+file_name+".apf.xml"
+    # text_path=acepath+file_name+".sgm"
+    # tokens, arguments=read_file(xml_path, text_path, trigger_argument_type)
+    # print(tokens)
+    # print(arguments)
+    # print(trigger_argument_type)
 
     # for i in range(len(tokens)):
     #     if arguments[i]!=0:
     #         print(tokens[i]+"\t"+trigger_argument_type[arguments[i]])
 
-    # pre_data()
-    #
-    # form_data()
+    pre_data()
 
-    # add_posi()
+    form_data()
+
+    add_posi()
     #
     # add_pos_tag()
 
