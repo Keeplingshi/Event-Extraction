@@ -42,7 +42,7 @@ def get_dot_word():
         if "." in word:
             if "."!=word and "..."!=word:
                 temp=word
-                word_dot_list[temp.replace("."," <dot> ")]=word
+                word_dot_list[temp.replace("."," <dot> ").strip()]=word
     return word_dot_list
 
 word_dot_list=get_dot_word()
@@ -52,9 +52,31 @@ def number_form(s):
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
-    if s in word_dot_list.keys():
-        s=word_dot_list.get(s)
+    for a in word_dot_list.keys():
+        s = s.replace(a, word_dot_list.get(a))
     return s
+
+def clean_str(string, TREC=False):
+    string = re.sub(r"\n\n", " <dot2> ", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
+    string = re.sub(r"\'m", r" 'm", string)
+    string = re.sub(r"\'s", " \'s", string)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r"\.", " <dot> ", string)
+    string = re.sub(r"\,", r" , ", string)
+    string = re.sub(r"!", " <dot2> ", string)
+    string = re.sub(r"\(", " ( ", string)
+    string = re.sub(r"\)", " ) ", string)
+    string = re.sub(r"\?", " <dot2> ", string)
+    string = re.sub(r"\s{2,}", " ", string)
+
+    return_str=string.strip() if TREC else string.strip().lower()
+    return_str=number_form(return_str).strip()
+    return return_str
 
 
 def read_file(xml_path, text_path, event_type):
@@ -167,29 +189,6 @@ def read_corpus(event_type,flag):
         anchors.append(anc)
     print(event_type)
     return tokens, anchors
-
-
-def clean_str(string, TREC=False):
-    string = re.sub(r"\n\n", "<dot2>", string)
-    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
-    string = re.sub(r"\'m", r" 'm", string)
-    string = re.sub(r"\'s", " \'s", string)
-    string = re.sub(r"\'ve", " \'ve", string)
-    string = re.sub(r"n\'t", " n\'t", string)
-    string = re.sub(r"\'re", " \'re", string)
-    string = re.sub(r"\'d", " \'d", string)
-    string = re.sub(r"\'ll", " \'ll", string)
-    string = re.sub(r"\.", " <dot> ", string)
-    string = re.sub(r"\,", r" , ", string)
-    string = re.sub(r"!", " <dot2> ", string)
-    string = re.sub(r"\(", " ( ", string)
-    string = re.sub(r"\)", " ) ", string)
-    string = re.sub(r"\?", " <dot2> ", string)
-    string = re.sub(r"\s{2,}", " ", string)
-
-    return_str=string if TREC else string.lower()
-    return_str=number_form(return_str).strip()
-    return return_str
 
 
 def get_word2vec():
