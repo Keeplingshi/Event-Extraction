@@ -16,8 +16,8 @@ class Model:
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
 
         #lstm process
-        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True,forget_bias=0.0)
-        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True,forget_bias=0.0)
+        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
+        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -54,11 +54,11 @@ class Model:
     @staticmethod
     def weight_and_bias(in_size, out_size):
         weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
-        bias = tf.constant(0.1, shape=[out_size])
+        bias = tf.constant(0.0, shape=[out_size])
         return tf.Variable(weight), tf.Variable(bias)
 
 
-def f1(prediction, target, length, iter):
+def f1(prediction, target, length, iter_num):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -88,7 +88,7 @@ def f1(prediction, target, length, iter):
                 iden_acc+=1
 
     try:
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('Trigger Identification:')
         print(str(iden_acc) + '------' + str(iden_p) + '------' + str(iden_r))
         p = iden_acc / iden_p
@@ -103,12 +103,12 @@ def f1(prediction, target, length, iter):
         if p + r != 0:
             f = 2 * p * r / (p + r)
             print('P=' + str(p) + "\tR=" + str(r) + "\tF=" + str(f))
-            print('------------------------' + str(iter) + '----------------------------')
+            print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
-        print('-----------------------' + str(iter) + '-----------------------------')
+        print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
 
 
@@ -166,7 +166,7 @@ parser.add_argument('--class_size', type=int, default=34,help='number of classes
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
 parser.add_argument('--hidden_layers', type=int, default=300, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
-parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
+parser.add_argument('--batch_size', type=int, default=150, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 train(parser.parse_args())

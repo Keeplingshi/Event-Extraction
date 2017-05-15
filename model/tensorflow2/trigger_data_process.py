@@ -20,12 +20,12 @@ doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
 posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
 
-data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data_form.data"
 #添加位置信息
-form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_addposi_data_form.data"
+form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_addposi_data_form.data"
 #在位置信息添加完之后，添加词性信息
-form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_1/trigger_train_posi_postag_data_form.data"
+form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_posi_postag_data_form.data"
 
 class_size=34
 max_len=60
@@ -52,12 +52,13 @@ def number_form(s):
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
-    for a in word_dot_list.keys():
-        s = s.replace(a, word_dot_list.get(a))
+    if s in word_dot_list.keys():
+        s=word_dot_list.get(s)
+
     return s
 
 def clean_str(string, TREC=False):
-    string = re.sub(r"\n\n", " <dot2> ", string)
+    string = re.sub(r"\n\n", "<dot2>", string)
     string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
     string = re.sub(r"\'m", r" 'm", string)
     string = re.sub(r"\'s", " \'s", string)
@@ -489,7 +490,7 @@ if __name__ == "__main__":
 
     form_data()
 
-    # add_posi()
+    add_posi()
     #
     # add_pos_tag()
 
