@@ -154,7 +154,7 @@ def f1(prediction, target, length, iter_num):
 def train(args):
     homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
     form_data_save_path = homepath + "/trigger_data/1/trigger_train_data_form.data"
-    saver_path = homepath+"/saver/checkpointrnn2_1.data"
+    saver_path = homepath+"/saver/checkpointrnn_cnn.data"
 
     data_f = open(form_data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -173,11 +173,20 @@ def train(args):
         #
         # f1(pred, Y_test, length,"max")
         # sys.exit()
-
+        #
+        # X_train=X_train[:83]
+        # Y_train=Y_train[:83]
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
                 batch_xs=X_train[ptr:ptr + args.batch_size]
                 batch_ys=Y_train[ptr:ptr + args.batch_size]
+
+                # output=sess.run(model.cnn_output, {model.input_data: batch_xs, model.output_data: batch_ys})
+                # print(np.array(output).shape)
+                #
+                # output=sess.run(model.lstm_output, {model.input_data: batch_xs, model.output_data: batch_ys})
+                # print(np.array(output).shape)
+                # sys.exit()
 
                 sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
