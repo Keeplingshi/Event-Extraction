@@ -12,8 +12,12 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
-data_save_path=homepath+"/model/tensorflow2/data/argument_data/5/argument_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/5/argument_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data_form.data"
+
+max_len=60
+sen_min_len=5
+class_size=36
 
 def get_dot_word():
     wordlist_file=homepath+'/ace05/word2vec/wordlist'
@@ -253,7 +257,7 @@ def list2vec(tokens, arguments):
         for j in range(len(token)):
             #如果是句号，结束符
             if "<dot>" in token[j] or "<dot2>" in token[j]:
-                if len(sen_list)>=5:
+                if len(sen_list)>=sen_min_len:
                     X.append(sen_list)
                     Y.append(label_list)
                     W.append(sen_word_list)
@@ -265,9 +269,7 @@ def list2vec(tokens, arguments):
             if vec_dict.get(token[j]) is not None:
                 sen_list.append(vec_dict.get(token[j]))
                 sen_word_list.append(token[j])
-                a = [0.0 for x in range(0, arg_type_num)]
-                a[anchor[j]] = 1.0
-                label_list.append(a)
+                label_list.append(anchor[j])
             else:
                 arg_tokens=token[j].replace('\n', ' ')
                 if ' ' in arg_tokens:
@@ -275,62 +277,79 @@ def list2vec(tokens, arguments):
 
                     for k in range(len(arg_words)):
                         if vec_dict.get(arg_words[k]) is not None:
-
                             sen_list.append(vec_dict.get(arg_words[k]))
                             sen_word_list.append(arg_words[k])
-                            a = [0.0 for x in range(0, arg_type_num)]
-                            if k == 0:
-                                a[anchor[j]] = 1.0
-                            else:
-                                a[anchor[j]+36] = 1.0
-                            label_list.append(a)
-
-
-                    # if len(arg_words)<=5:
-                    #     for k in range(len(arg_words)):
-                    #         if vec_dict.get(arg_words[k]) is not None:
-                    #             sen_list.append(vec_dict.get(arg_words[k]))
-                    #             sen_word_list.append(arg_words[k])
-                    #             a = [0.0 for x in range(0, arg_type_num)]
-                    #             if arg_words[k] not in stop_word_list:
-                    #                 a[anchor[j]] = 1.0
-                    #             else:
-                    #                 a[0] = 1.0
-                    #             label_list.append(a)
-                    # else:
-                    #     for k in range(len(arg_words)):
-                    #         if vec_dict.get(arg_words[k]) is not None:
-                    #             sen_list.append(vec_dict.get(arg_words[k]))
-                    #             sen_word_list.append(arg_words[k])
-                    #             a = [0.0 for x in range(0, arg_type_num)]
-                    #             a[0] = 1.0
-                    #             label_list.append(a)
+                            label_list.append(anchor[j])
+                        else:
+                            sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+                            sen_word_list.append(arg_words[k])
+                            label_list.append(anchor[j])
 
                 else:
                     sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
                     sen_word_list.append(token[j])
-                    a = [0.0 for x in range(0, arg_type_num)]
-                    a[anchor[j]] = 1.0
-                    # if token[j] not in stop_word_list:
-                    #     a[anchor[j]] = 1.0
-                    # else:
-                    #     a[0] = 1.0
-                    label_list.append(a)
+                    label_list.append(anchor[j])
 
     return X,Y,W
 
 
+def get_event_sen(X,Y,W,trigger_type,argument_type):
+
+    trigger_num_type = [i[1] for i in trigger_type]  # 所有触发词标签
+    argument_num_type = [i[1] for i in argument_type]  # 所有候选要素标签
+
+    X_result=[]
+    Y_result=[]
+    W_result=[]
+
+    for i in range(len(X)):
+        sen_label=Y[i]      #某个句子的所有标签，如果其中含有触发词标签，则是一个事件句
+        flag=False
+        b=[0.0 for x in range(len(trigger_num_type))]
+        for word_label in sen_label:
+            if word_label in trigger_num_type:
+                flag=True
+                b[trigger_num_type.index(word_label)] = 1.0
+
+
+        #如果是事件句
+        if flag:
+            W_result.append(W[i])
+
+            sen_new_vec=[]
+            for j in range(len(X[i])):
+                vec=X[i][j]
+                vec=vec+b
+                sen_new_vec.append(vec)
+
+            X_result.append(sen_new_vec)
+
+            sen_new_label=[]
+            for word_label in sen_label:
+                if word_label in argument_num_type:
+                    a=[0.0 for x in range(len(argument_num_type))]
+                    a[argument_num_type.index(word_label)]=1.0
+                    sen_new_label.append(a)
+                else:
+                    a=[0.0 for x in range(len(argument_num_type))]
+                    sen_new_label.append(a)
+
+            Y_result.append(sen_new_label)
+
+    return X_result,Y_result,W_result
+
+
 def pre_data():
 
-    trigger_argument_type=[None, 'Trigger_Movement_Transport', 'Argument_Vehicle', 'Argument_Artifact', 'Argument_Destination', 'Argument_Agent', 'Trigger_Personnel_Elect', 'Argument_Person', 'Argument_Position', 'Trigger_Personnel_Start-Position', 'Argument_Entity', 'Trigger_Personnel_Nominate', 'Trigger_Conflict_Attack', 'Argument_Attacker', 'Argument_Place', 'Trigger_Personnel_End-Position', 'Trigger_Contact_Meet', 'Trigger_Life_Marry', 'Argument_Time-At-Beginning', 'Trigger_Contact_Phone-Write', 'Argument_Target', 'Trigger_Transaction_Transfer-Money', 'Argument_Giver', 'Argument_Recipient', 'Trigger_Justice_Sue', 'Argument_Plaintiff', 'Trigger_Conflict_Demonstrate', 'Argument_Money', 'Trigger_Business_End-Org', 'Trigger_Life_Injure', 'Argument_Victim', 'Argument_Time-Within', 'Trigger_Life_Die', 'Trigger_Justice_Arrest-Jail', 'Trigger_Transaction_Transfer-Ownership', 'Argument_Buyer', 'Argument_Time-Ending', 'Argument_Instrument', 'Argument_Seller', 'Argument_Origin', 'Argument_Time-Holds', 'Argument_Org', 'Argument_Time-At-End', 'Trigger_Business_Start-Org', 'Argument_Time-Before', 'Argument_Time-Starting', 'Argument_Time-After', 'Argument_Beneficiary', 'Trigger_Justice_Execute', 'Trigger_Justice_Trial-Hearing', 'Argument_Defendant', 'Trigger_Justice_Sentence', 'Argument_Adjudicator', 'Argument_Sentence', 'Trigger_Life_Be-Born', 'Trigger_Justice_Charge-Indict', 'Trigger_Justice_Convict', 'Argument_Crime', 'Trigger_Business_Declare-Bankruptcy', 'Trigger_Justice_Release-Parole', 'Argument_Prosecutor', 'Trigger_Justice_Fine', 'Trigger_Justice_Pardon', 'Trigger_Justice_Appeal', 'Trigger_Business_Merge-Org', 'Trigger_Justice_Extradite', 'Trigger_Life_Divorce', 'Trigger_Justice_Acquit', 'Argument_Price']
+    #trigger_argument_type=[None, 'Trigger_Movement_Transport', 'Argument_Vehicle', 'Argument_Artifact', 'Argument_Destination', 'Argument_Agent', 'Trigger_Personnel_Elect', 'Argument_Person', 'Argument_Position', 'Trigger_Personnel_Start-Position', 'Argument_Entity', 'Trigger_Personnel_Nominate', 'Trigger_Conflict_Attack', 'Argument_Attacker', 'Argument_Place', 'Trigger_Personnel_End-Position', 'Trigger_Contact_Meet', 'Trigger_Life_Marry', 'Argument_Time-At-Beginning', 'Trigger_Contact_Phone-Write', 'Argument_Target', 'Trigger_Transaction_Transfer-Money', 'Argument_Giver', 'Argument_Recipient', 'Trigger_Justice_Sue', 'Argument_Plaintiff', 'Trigger_Conflict_Demonstrate', 'Argument_Money', 'Trigger_Business_End-Org', 'Trigger_Life_Injure', 'Argument_Victim', 'Argument_Time-Within', 'Trigger_Life_Die', 'Trigger_Justice_Arrest-Jail', 'Trigger_Transaction_Transfer-Ownership', 'Argument_Buyer', 'Argument_Time-Ending', 'Argument_Instrument', 'Argument_Seller', 'Argument_Origin', 'Argument_Time-Holds', 'Argument_Org', 'Argument_Time-At-End', 'Trigger_Business_Start-Org', 'Argument_Time-Before', 'Argument_Time-Starting', 'Argument_Time-After', 'Argument_Beneficiary', 'Trigger_Justice_Execute', 'Trigger_Justice_Trial-Hearing', 'Argument_Defendant', 'Trigger_Justice_Sentence', 'Argument_Adjudicator', 'Argument_Sentence', 'Trigger_Life_Be-Born', 'Trigger_Justice_Charge-Indict', 'Trigger_Justice_Convict', 'Argument_Crime', 'Trigger_Business_Declare-Bankruptcy', 'Trigger_Justice_Release-Parole', 'Argument_Prosecutor', 'Trigger_Justice_Fine', 'Trigger_Justice_Pardon', 'Trigger_Justice_Appeal', 'Trigger_Business_Merge-Org', 'Trigger_Justice_Extradite', 'Trigger_Life_Divorce', 'Trigger_Justice_Acquit', 'Argument_Price']
 
-    # trigger_argument_type = [None]
-    # train_tokens, train_anchors=read_corpus(trigger_argument_type,'train')
-    # test_tokens, test_anchors=read_corpus(trigger_argument_type,'test')
-    # dev_tokens, dev_anchors=read_corpus(trigger_argument_type,'dev')
+    trigger_argument_type = [None]
+    train_tokens, train_anchors=read_corpus(trigger_argument_type,'train')
+    test_tokens, test_anchors=read_corpus(trigger_argument_type,'test')
+    dev_tokens, dev_anchors=read_corpus(trigger_argument_type,'dev')
 
-    # print(trigger_argument_type)
-    # print(len(trigger_argument_type))
+    print(trigger_argument_type)
+    print(len(trigger_argument_type))
     trigger_type=dict()
     argument_type=dict()
     for event_type in trigger_argument_type:
@@ -339,23 +358,92 @@ def pre_data():
         else:
             argument_type[event_type]=trigger_argument_type.index(event_type)
 
+    trigger_type = sorted(trigger_type.items(), key=lambda x: x[1])
+    argument_type = sorted(argument_type.items(), key=lambda x: x[1])
+
+    # trigger_num_type = [i[1] for i in trigger_type]
+    # print(trigger_num_type)
+    # sys.exit()
+
     print(trigger_type)
     print(len(trigger_type))
     print(argument_type)
     print(len(argument_type))
 
-    # X_train,Y_train,W_train=list2vec(train_tokens,train_anchors,phrase_posi_dict)
-    # X_test,Y_test,W_test=list2vec(test_tokens,test_anchors)
-    # X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors,phrase_posi_dict)
+    X_train,Y_train,W_train=list2vec(train_tokens,train_anchors)
+    X_test,Y_test,W_test=list2vec(test_tokens,test_anchors)
+    X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors)
+
+    X_train, Y_train, W_train = get_event_sen(X_train,Y_train,W_train, trigger_type, argument_type)
+    X_test, Y_test, W_test=get_event_sen(X_test,Y_test,W_test,trigger_type,argument_type)
+    X_dev, Y_dev, W_dev = get_event_sen(X_dev,Y_dev,W_dev, trigger_type, argument_type)
+
+    # for i in range(len(Y_test)):
+    #     print(Y_test[i])
+    #     print(W_test[i])
+    #     print("===================================================================================================")
+
     #
-    # data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
-    # f=open(data_save_path,'wb')
-    # pickle.dump(data,f)
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(data_save_path,'wb')
+    pickle.dump(data,f)
+
+
+# 规范句子长度
+def padding_mask(x, y,w,max_len):
+    X_train=[]
+    Y_train=[]
+    W_train=[]
+    x_zero_list=[0.0 for i in range(333)]
+    y_zero_list=[0.0 for i in range(class_size)]
+    y_zero_list[0]=1.0
+    unknown='#'
+    for i, (x, y,w) in enumerate(zip(x, y,w)):
+        if max_len>len(x):
+            for j in range(max_len-len(x)):
+                x.append(x_zero_list)
+                y.append(y_zero_list)
+                w.append(unknown)
+        else:
+            x=x[:max_len]
+            y=y[:max_len]
+            w=w[:max_len]
+        X_train.append(x)
+        Y_train.append(y)
+        W_train.append(w)
+    return X_train,Y_train,W_train
+
+
+def form_data():
+
+    data_f = open(data_save_path, 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    X_train,Y_train,W_train=padding_mask(X_train,Y_train,W_train,max_len)
+    X_test,Y_test,W_test=padding_mask(X_test,Y_test,W_test,max_len)
+    X_dev,Y_dev,W_dev=padding_mask(X_dev,Y_dev,W_dev,max_len)
+
+    data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
+    f=open(form_data_save_path,'wb')
+    pickle.dump(data,f)
+
+    print(np.array(X_train).shape)
+    print(np.array(Y_train).shape)
+    print(np.array(W_train).shape)
+    print(np.array(X_test).shape)
+    print(np.array(Y_test).shape)
+    print(np.array(W_test).shape)
+    print(np.array(X_dev).shape)
+    print(np.array(Y_dev).shape)
+    print(np.array(W_dev).shape)
 
 
 if __name__ == "__main__":
 
     pre_data()
+
+    form_data()
 
     # trigger_argument_type=[None]
     # file_name="nw/timex2norm/APW_ENG_20030311.0775"

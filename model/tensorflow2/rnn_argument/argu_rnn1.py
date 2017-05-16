@@ -14,8 +14,10 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+
+        #lstm process
+        fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=False)
+        bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=False)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -88,8 +90,8 @@ def f1(prediction, target, length, iter_num,words):
             if prediction[i][j]!=0 and target[i][j]!=0:
                 iden_acc+=1
 
-            if prediction[i][j]!=0 and target[i][j]!=0 and target[i][j]!=prediction[i][j]:
-                print(words[i][j]+"\t"+argu_type[target[i][j]]+"\t"+argu_type[prediction[i][j]])
+            # if prediction[i][j]!=0 and target[i][j]!=0 and target[i][j]!=prediction[i][j]:
+            #     print(words[i][j]+"\t"+argu_type[target[i][j]]+"\t"+argu_type[prediction[i][j]])
 
 
     try:
@@ -117,9 +119,11 @@ def f1(prediction, target, length, iter_num,words):
 
 
 def train(args):
-    saver_path="../data/saver/checkpointargu_rnn1.data"
+    homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
+    form_data_save_path = homepath + "/argument_data/1/argument_train_data_form.data"
+    saver_path = homepath+"/saver/checkpoint_argument_1.data"
 
-    data_f = open('../data/argument_data/3/argument_train_data_form.data', 'rb')
+    data_f = open(form_data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
@@ -127,14 +131,14 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, saver_path)
-
-        pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: X_test,model.output_data: Y_test})
-
-        maximum=f1(pred, Y_test, length,"max",W_test)
-        sys.exit()
+        # saver = tf.train.Saver(tf.global_variables())
+        # saver.restore(sess, saver_path)
+        #
+        # pred, length = sess.run([model.prediction, model.length]
+        #                             , {model.input_data: X_test,model.output_data: Y_test})
+        #
+        # maximum=f1(pred, Y_test, length,"max",W_test)
+        # sys.exit()
 
 
         for e in range(args.epoch):
@@ -161,7 +165,7 @@ def train(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
+parser.add_argument('--word_dim', type=int,default=333, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=36,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
