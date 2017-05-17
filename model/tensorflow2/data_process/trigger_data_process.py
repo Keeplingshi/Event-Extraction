@@ -42,50 +42,19 @@ def get_dot_word():
         if "." in word:
             if "."!=word and "..."!=word:
                 temp=word
-                word_dot_list[temp.replace("."," <dot> ").strip()]=word
+                word_dot_list[temp.replace("."," <dot> ")]=word
     return word_dot_list
 
-
 word_dot_list=get_dot_word()
-word_dot_sort_list = sorted(word_dot_list.items(), key=lambda x: len(x[1]), reverse=True)
-
 
 def number_form(s):
-
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
     if s in word_dot_list.keys():
         s=word_dot_list.get(s)
-
-    for (i,j) in word_dot_sort_list:
-        s = s.replace(" "+i+" ", " "+j+" ")
     return s
-
-def clean_str(string, TREC=False):
-    string = re.sub(r"\n\n", " <dot2> ", string)
-    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
-    string = re.sub(r"\'m", r" 'm", string)
-    string = re.sub(r"\'s", " \'s", string)
-    string = re.sub(r"\'ve", " \'ve", string)
-    string = re.sub(r"n\'t", " n\'t", string)
-    string = re.sub(r"\'re", " \'re", string)
-    string = re.sub(r"\'d", " \'d", string)
-    string = re.sub(r"\'ll", " \'ll", string)
-    string = re.sub(r"\.", " <dot> ", string)
-    string = re.sub(r"\,", r" , ", string)
-    string = re.sub(r"!", " <dot2> ", string)
-    string = re.sub(r"``", " ", string)
-    string = re.sub(r"\(", " ( ", string)
-    string = re.sub(r"\)", " ) ", string)
-    string = re.sub(r"\?", " <dot2> ", string)
-    string = re.sub(r"\s{2,}", " ", string)
-
-    return_str=string.strip() if TREC else string.strip().lower()
-    return_str=number_form(return_str).strip()
-
-    return return_str
 
 
 def read_file(xml_path, text_path, event_type):
@@ -198,6 +167,29 @@ def read_corpus(event_type,flag):
         anchors.append(anc)
     print(event_type)
     return tokens, anchors
+
+
+def clean_str(string, TREC=False):
+    string = re.sub(r"\n\n", "<dot2>", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
+    string = re.sub(r"\'m", r" 'm", string)
+    string = re.sub(r"\'s", " \'s", string)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r"\.", " <dot> ", string)
+    string = re.sub(r"\,", r" , ", string)
+    string = re.sub(r"!", " <dot2> ", string)
+    string = re.sub(r"\(", " ( ", string)
+    string = re.sub(r"\)", " ) ", string)
+    string = re.sub(r"\?", " <dot2> ", string)
+    string = re.sub(r"\s{2,}", " ", string)
+
+    # print(string)
+    string=number_form(string)
+    return string.strip() if TREC else string.strip().lower()
 
 
 def get_word2vec():
@@ -493,33 +485,16 @@ def add_pos_tag():
 
 
 if __name__ == "__main__":
-    # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\bc\timex2norm\CNN_CF_20030303.1900.00.sgm
-    # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\nw\timex2norm\APW_ENG_20030304.0555.sgm
-    # trigger_argument_type=[None]
-    # file_name="nw/timex2norm/APW_ENG_20030311.0775"
-    # # file_name="bc/timex2norm/CNN_CF_20030303.1900.00"
-    # # file_name="nw/timex2norm/APW_ENG_20030304.0555"
-    # xml_path=acepath+file_name+".apf.xml"
-    # text_path=acepath+file_name+".sgm"
-    # tokens, arguments=read_file(xml_path, text_path, trigger_argument_type)
-    # print(tokens)
-    # print(arguments)
-    # print(trigger_argument_type)
-
-    # for i in range(len(tokens)):
-    #     if arguments[i]!=0:
-    #         print(tokens[i]+"\t"+trigger_argument_type[arguments[i]])
 
     pre_data()
 
     form_data()
 
-    # add_posi()
-    #
+    add_posi()
+
     # add_pos_tag()
-
-    # word_list=["word","unknow_word","run","at",",","#"]
-    # word_tag_list=nltk.pos_tag(word_list)
-    # print(word_tag_list)
-
+    #
+    # # word_list=["word","unknow_word","run","at",",","#"]
+    # # word_tag_list=nltk.pos_tag(word_list)
+    # # print(word_tag_list)
 
