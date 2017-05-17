@@ -14,8 +14,8 @@ doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
 stop_words_path=homepath+'/ace05/word2vec/stop_words'
 
-data_save_path=homepath+"/model/tensorflow2/data/argument_data/4/argument_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/4/argument_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data_form.data"
 
 arg_type_num=72
 

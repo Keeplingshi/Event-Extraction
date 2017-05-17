@@ -21,7 +21,7 @@ class Model:
 
         #cnn process
         filter_sizes = [3,5]
-        feature_maps = [200,200]
+        feature_maps = [150,150]
         self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
@@ -51,7 +51,7 @@ class Model:
         self.loss = self.cost()
         optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 2.0)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
@@ -66,7 +66,7 @@ class Model:
     @staticmethod
     def weight_and_bias(in_size, out_size):
         weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
-        bias = tf.constant(0.1, shape=[out_size])
+        bias = tf.constant(0.0, shape=[out_size])
         return tf.Variable(weight), tf.Variable(bias)
 
 
@@ -153,7 +153,7 @@ def f1(prediction, target, length, iter_num):
 
 def train(args):
     homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
-    form_data_save_path = homepath + "/trigger_data/1/trigger_train_data_form.data"
+    form_data_save_path = homepath + "/trigger_data/1/trigger_train_addposi_data_form.data"
     saver_path = homepath+"/saver/checkpointrnn_cnn.data"
 
     data_f = open(form_data_save_path, 'rb')
@@ -207,12 +207,12 @@ def train(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
-parser.add_argument('--word_dist', type=int,default=5, help='dimension of position and pos tag')
+parser.add_argument('--word_dim', type=int,default=305, help='dimension of word vector')
+# parser.add_argument('--word_dist', type=int,default=5, help='dimension of position and pos tag')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=256, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=240, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')
