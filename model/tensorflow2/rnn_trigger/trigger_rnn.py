@@ -7,7 +7,7 @@ import tensorflow as tf
 import numpy as np
 import argparse,pickle
 import sys
-
+import time
 
 class Model:
     def __init__(self, args):
@@ -121,11 +121,10 @@ def train(args):
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
     data_f.close()
 
+
     model = Model(args)
     maximum = 0
-    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
-    #sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True))
-    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+    with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         # saver = tf.train.Saver(tf.global_variables())
         # saver.restore(sess, saver_path)
@@ -136,7 +135,7 @@ def train(args):
         # maximum=f1(pred, Y_test, length,1)
         # sys.exit()
 
-
+        print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
 
@@ -155,10 +154,13 @@ def train(args):
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
             m = f1(pred, Y_test, length,e)
+            print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
                 maximum=m
+
+        print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
 
 
 
@@ -168,7 +170,7 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=256, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=150, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

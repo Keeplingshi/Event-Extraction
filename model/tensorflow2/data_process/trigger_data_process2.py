@@ -20,12 +20,10 @@ doclist_dev=homepath+'/ace05/split2.0/new_filelist_ACE_dev.txt'
 
 posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
 
-data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_data_form.data"
 #添加位置信息
-form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_addposi_data_form.data"
-#在位置信息添加完之后，添加词性信息
-form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_posi_postag_data_form.data"
+form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_addposi_data_form.data"
 
 class_size=34
 max_len=60
@@ -47,7 +45,7 @@ def get_dot_word():
 
 
 word_dot_list=get_dot_word()
-word_dot_list = sorted(word_dot_list.items(), key=lambda x: len(x[1]), reverse=True)
+# word_dot_list = sorted(word_dot_list.items(), key=lambda x: len(x[1]), reverse=True)
 
 
 def number_form(s):
@@ -56,9 +54,14 @@ def number_form(s):
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
-    for (i,j) in word_dot_list:
-        s = s.replace(" "+i+" ", " "+j+" ")
+
+    if s in word_dot_list.keys():
+        s=word_dot_list.get(s)
+
+    # for (i,j) in word_dot_list:
+    #     s = s.replace(" "+i+" ", " "+j+" ")
     return s
+
 
 def clean_str(string, TREC=False):
     string = re.sub(r"\n\n", " <dot2> ", string)
@@ -83,6 +86,18 @@ def clean_str(string, TREC=False):
     return_str=number_form(return_str).strip()
 
     return return_str
+
+
+"""
+获取短语取哪个词作为触发词
+"""
+def get_phrase_posi(ss):
+    strlist=ss.split(' ')
+    k=len(strlist)
+    s=strlist[0]
+    for i in range(1,k-1):
+        s=s+' '+strlist[i]
+    return s,strlist[k-1]
 
 
 def read_file(xml_path, text_path, event_type):
@@ -217,7 +232,7 @@ def get_word2vec():
     return wordvec
 
 
-def list2vec(tokens,anchors):
+def list2vec(tokens,anchors,phrase_posi_dict):
     vec_dict=get_word2vec()
 
     X=[]
@@ -256,17 +271,33 @@ def list2vec(tokens,anchors):
                 trigger_tmp3=token[j].replace('\n', ' ')
                 if ' ' in token[j]:
                     phrase_trigger=trigger_tmp3.split(" ")
-                    for pti in range(len(phrase_trigger)):
-                        new_trigger=phrase_trigger[pti]
-                        if vec_dict.get(new_trigger) is not None:
-                            sen_list.append(vec_dict.get(new_trigger))
-                        else:
-                            sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+                    if trigger_tmp3 in phrase_posi_dict.keys():
+                        for pti in range(len(phrase_trigger)):
+                            new_trigger=phrase_trigger[pti]
+                            if vec_dict.get(new_trigger) is not None:
+                                sen_list.append(vec_dict.get(new_trigger))
+                            else:
+                                sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
 
-                        sen_word_list.append(new_trigger)
-                        a = [0.0 for x in range(0, class_size)]
-                        a[anchor[j]] = 1.0
-                        label_list.append(a)
+                            sen_word_list.append(new_trigger)
+                            a = [0.0 for x in range(0, class_size)]
+                            if pti==int(phrase_posi_dict[trigger_tmp3])-1:
+                                a[anchor[j]] = 1.0
+                            else:
+                                a[0]=1.0
+                            label_list.append(a)
+                    else:
+                        for pti in range(len(phrase_trigger)):
+                            new_trigger=phrase_trigger[pti]
+                            if vec_dict.get(new_trigger) is not None:
+                                sen_list.append(vec_dict.get(new_trigger))
+                            else:
+                                sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
+
+                            sen_word_list.append(new_trigger)
+                            a = [0.0 for x in range(0, class_size)]
+                            a[0]=1.0
+                            label_list.append(a)
 
                 else:
                     sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
@@ -278,18 +309,22 @@ def list2vec(tokens,anchors):
     return X,Y,W
 
 
-
-
 def pre_data():
+
+    phrase_posi_file=homepath+'/ace05/word2vec/phrase_posi.txt'
+    phrase_posi_dict={}
+    for i in open(phrase_posi_file, 'r'):
+        a,b=get_phrase_posi(i.replace('\n', ''))
+        phrase_posi_dict[a]=b
 
     event_type = [None]
     train_tokens, train_anchors=read_corpus(event_type,'train')
     test_tokens, test_anchors=read_corpus(event_type,'test')
     dev_tokens, dev_anchors=read_corpus(event_type,'dev')
 
-    X_train,Y_train,W_train=list2vec(train_tokens,train_anchors)
-    X_test,Y_test,W_test=list2vec(test_tokens,test_anchors)
-    X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors)
+    X_train,Y_train,W_train=list2vec(train_tokens,train_anchors,phrase_posi_dict)
+    X_test,Y_test,W_test=list2vec(test_tokens,test_anchors,phrase_posi_dict)
+    X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors,phrase_posi_dict)
 
     data=X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev
     f=open(data_save_path,'wb')
@@ -416,67 +451,6 @@ def add_posi():
     print(np.array(Y_dev).shape)
     print(np.array(W_dev).shape)
 
-
-"""
-添加词性标注
-"""
-def get_pos_tag(word_list,vec_list):
-    tag_list=['CC', 'CD', 'DT', 'EX', 'FW', 'IN', 'JJ', 'JJR', 'JJS', 'LS', 'MD', 'NN', 'NNS', 'NNP', 'NNPS', 'PDT', 'POS', 'PRP', 'PRP$', 'RB', 'RBR', 'RBS', 'RP', 'TO', 'UH', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'WDT', 'WP', 'WP$', 'WRB','unknown']
-
-    word_tag_list=nltk.pos_tag(word_list)
-
-    new_vec_list=[]
-    for i in range(len(word_list)):
-        word_tag=word_tag_list[i]
-        tag_array=[0.0 for x in range(len(tag_list))]
-        try:
-            tag_index=tag_list.index(word_tag[1])
-        except:
-            tag_index=35
-
-        tag_array[tag_index]=1.0
-        word_vec=vec_list[i]
-        word_vec.extend(tag_array)
-        new_vec_list.append(word_vec)
-
-    return new_vec_list
-
-
-
-def add_pos_tag():
-    data_f = open(form_addposi_data_save_path, 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    new_X_train=[]
-    new_X_test=[]
-    new_X_dev=[]
-    for word_list,vec_list in zip(W_train,X_train):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_train.append(new_vec_list)
-
-    for word_list,vec_list in zip(W_test,X_test):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_test.append(new_vec_list)
-
-    for word_list,vec_list in zip(W_dev,X_dev):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_dev.append(new_vec_list)
-
-
-    data=new_X_train,Y_train,W_train,new_X_test,Y_test,W_test,new_X_dev,Y_dev,W_dev
-    f=open(form_posi_postag_data_save_path,'wb')
-    pickle.dump(data,f)
-
-    print(np.array(new_X_train).shape)
-    print(np.array(Y_train).shape)
-    print(np.array(W_train).shape)
-    print(np.array(new_X_test).shape)
-    print(np.array(Y_test).shape)
-    print(np.array(W_test).shape)
-    print(np.array(new_X_dev).shape)
-    print(np.array(Y_dev).shape)
-    print(np.array(W_dev).shape)
 
 
 if __name__ == "__main__":
