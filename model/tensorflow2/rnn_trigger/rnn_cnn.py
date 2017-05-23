@@ -7,6 +7,7 @@ import tensorflow as tf
 import numpy as np
 import argparse,pickle
 import sys
+import time
 
 
 class Model:
@@ -14,15 +15,12 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        # self.input_length=tf.placeholder(tf.int64, [None])
-
-        # self.x_front = tf.slice(self.input_data, [0, 0, 0], [-1, -1, args.word_dim])
-        # self.x_back = tf.slice(self.input_data, [0, 0, args.word_dim], [-1, -1, args.word_dist])
+        self.keep_prob=tf.placeholder("float",name="keep_prob")
 
         #cnn process
         filter_sizes = [5]
         feature_maps = [200]
-        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args)
+        self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args,self.keep_prob)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
 
         with tf.variable_scope("lstm"):
@@ -30,12 +28,9 @@ class Model:
             fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
             bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
 
-        # fw_cell = tf.contrib.rnn.DropoutWrapper(fw_cell, output_keep_prob=0.5)
-        # bw_cell = tf.contrib.rnn.DropoutWrapper(bw_cell, output_keep_prob=0.5)
+        fw_cell = tf.contrib.rnn.DropoutWrapper(fw_cell, output_keep_prob=self.keep_prob)
+        bw_cell = tf.contrib.rnn.DropoutWrapper(bw_cell, output_keep_prob=self.keep_prob)
 
-        # with tf.variable_scope("lstmmuti"):
-        #     fw_cell = tf.contrib.rnn.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
-        #     bw_cell = tf.contrib.rnn.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
@@ -44,8 +39,6 @@ class Model:
                                                                dtype=tf.float32, sequence_length=self.length)
 
         self.lstm_output=output
-
-        # self.x_back=tf.transpose(self.x_back,[1,0,2])
 
         #cnn lstm contact
         self.lstm_cnn_output=tf.concat([self.lstm_output,self.cnn_output],2)
@@ -59,7 +52,7 @@ class Model:
         self.loss = self.cost()
         optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 2.0)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
@@ -79,9 +72,10 @@ class Model:
 
 
     @staticmethod
-    def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,args):
+    def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,args,keep_prob):
 
         input_data=tf.expand_dims(input_data,-1)
+        input_data=tf.nn.dropout(input_data,keep_prob=keep_prob)
 
         conv_outputs = []
         for idx, filter_size in enumerate(filter_sizes):
@@ -94,7 +88,6 @@ class Model:
                 conv1=tf.squeeze(conv1)
                 conv_outputs.append(conv1)
 
-
         if len(filter_sizes) > 1:
             cnn_output = tf.concat(conv_outputs,2)
         else:
@@ -103,7 +96,7 @@ class Model:
         return cnn_output
 
 
-def f1(prediction, target, length, iter_num,words):
+def f1(prediction, target, length, iter_num):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -163,7 +156,7 @@ def f1(prediction, target, length, iter_num,words):
 
 def train(args):
     homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
-    form_data_save_path = homepath + "/trigger_data/2/trigger_train_data_form.data"
+    form_data_save_path = homepath + "/trigger_data/4/trigger_train_data_form.data"
     saver_path = homepath+"/saver/checkpoint_trigger_rnn_cnn.data"
 
     data_f = open(form_data_save_path, 'rb')
@@ -184,36 +177,31 @@ def train(args):
         # f1(pred, Y_test, length,"max",W_test)
         # sys.exit()
         #
-        # X_train=X_train[:83]
-        # Y_train=Y_train[:83]
+        print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
-                batch_xs=X_train[ptr:ptr + args.batch_size]
-                batch_ys=Y_train[ptr:ptr + args.batch_size]
 
-                # output=sess.run(model.cnn_output, {model.input_data: batch_xs, model.output_data: batch_ys})
-                # print(np.array(output).shape)
-                #
-                # output=sess.run(model.lstm_output, {model.input_data: batch_xs, model.output_data: batch_ys})
-                # print(np.array(output).shape)
-                # sys.exit()
+                sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
+                    ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:0.5})
 
-                sess.run(model.train_op, {model.input_data: batch_xs,model.output_data: batch_ys})
 
-            if e%10==0:
+            if e%5==0:
                 pred, length = sess.run([model.prediction, model.length]
-                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
+                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000],model.keep_prob:1.0})
+                f1(pred, Y_train[:4000], length, "train")
 
-                f1(pred, Y_train[:4000], length, e,W_train[:4000])
 
             pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: X_test,model.output_data: Y_test})
+                                    , {model.input_data: X_test,model.output_data: Y_test,model.keep_prob:1.0})
 
-            m = f1(pred, Y_test, length,e,W_test)
+            m = f1(pred, Y_test, length,e)
+            print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
                 saver.save(sess,saver_path)
                 maximum=m
+
+        print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
 
 
 parser = argparse.ArgumentParser()
@@ -222,7 +210,7 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=150, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=41, help='number of epochs')
