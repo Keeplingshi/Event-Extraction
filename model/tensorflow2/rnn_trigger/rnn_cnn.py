@@ -18,7 +18,7 @@ class Model:
         self.keep_prob=tf.placeholder("float",name="keep_prob")
 
         #cnn process
-        filter_sizes = [5]
+        filter_sizes = [3]
         feature_maps = [200]
         self.cnn_output=self.cnn_conv2d_max_pool(self.input_data,filter_sizes,feature_maps,args,self.keep_prob)
         self.cnn_output=tf.transpose(self.cnn_output,[1,0,2])
@@ -75,7 +75,7 @@ class Model:
     def cnn_conv2d_max_pool(input_data,filter_sizes,feature_maps,args,keep_prob):
 
         input_data=tf.expand_dims(input_data,-1)
-        input_data=tf.nn.dropout(input_data,keep_prob=keep_prob)
+        # input_data=tf.nn.dropout(input_data,keep_prob=keep_prob)
 
         conv_outputs = []
         for idx, filter_size in enumerate(filter_sizes):
@@ -92,6 +92,8 @@ class Model:
             cnn_output = tf.concat(conv_outputs,2)
         else:
             cnn_output = conv_outputs[0]
+
+        # cnn_output=tf.nn.dropout(cnn_output,keep_prob=keep_prob)
 
         return cnn_output
 
@@ -148,7 +150,6 @@ def f1(prediction, target, length, iter_num):
             print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
         print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
@@ -156,7 +157,7 @@ def f1(prediction, target, length, iter_num):
 
 def train(args):
     homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
-    form_data_save_path = homepath + "/trigger_data/4/trigger_train_data_form.data"
+    form_data_save_path = homepath + "/trigger_data/2/trigger_train_data_form.data"
     saver_path = homepath+"/saver/checkpoint_trigger_rnn_cnn.data"
 
     data_f = open(form_data_save_path, 'rb')
@@ -172,9 +173,9 @@ def train(args):
         # saver.restore(sess, saver_path)
         #
         # pred, length = sess.run([model.prediction, model.length]
-        #                         , {model.input_data: X_test,model.output_data: Y_test})
+        #                         , {model.input_data: X_test,model.output_data: Y_test,model.keep_prob:1.0})
         #
-        # f1(pred, Y_test, length,"max",W_test)
+        # f1(pred, Y_test, length,"max")
         # sys.exit()
         #
         print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
@@ -182,7 +183,7 @@ def train(args):
             for ptr in range(0, len(X_train), args.batch_size):
 
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
-                    ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:0.5})
+                    ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:1.0})
 
 
             if e%5==0:
@@ -210,10 +211,10 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
-parser.add_argument('--epoch', type=int, default=41, help='number of epochs')
+parser.add_argument('--epoch', type=int, default=61, help='number of epochs')
 parser.add_argument('--restore', type=str, default=None, help="path of saved model")
 # parser.add_argument('--feature_maps', type=int, default=200, help='feature maps')
 # parser.add_argument('--filter_size', type=int, default=1, help='conv filter size')

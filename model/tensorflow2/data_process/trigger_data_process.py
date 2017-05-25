@@ -20,10 +20,10 @@ doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
 posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
 
-data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_data_form.data"
 #添加位置信息
-form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_addposi_data_form.data"
+form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/3/trigger_train_addposi_data_form.data"
 #在位置信息添加完之后，添加词性信息
 form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_posi_postag_data_form.data"
 
@@ -486,11 +486,30 @@ def add_pos_tag():
 
 if __name__ == "__main__":
 
-    pre_data()
+    # pre_data()
+    #
+    # form_data()
 
-    form_data()
 
-    add_posi()
+    data_f = open(form_data_save_path, 'rb')
+    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
+    data_f.close()
+
+    target = np.argmax(Y_test, 2)
+
+    classify_r = 0  # 测试集中存在个个体总数
+
+    for i in range(len(target)):
+        for j in range(max_len):
+            if target[i][j]!=0:
+                classify_r+=1
+
+    print(classify_r)
+
+
+
+
+    # add_posi()
 
     # add_pos_tag()
     #
