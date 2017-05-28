@@ -14,13 +14,14 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
+        self.keep_prob=tf.placeholder("float",name="keep_prob")
 
         #lstm process
         fw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
         bw_cell = tf.contrib.rnn.LSTMCell(args.hidden_layers,use_peepholes=True)
 
-        # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
-        # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
+        fw_cell = tf.contrib.rnn.DropoutWrapper(fw_cell, output_keep_prob=self.keep_prob)
+        bw_cell = tf.contrib.rnn.DropoutWrapper(bw_cell, output_keep_prob=self.keep_prob)
 
         # fw_cell = tf.nn.rnn_cell.MultiRNNCell([fw_cell] * args.num_layers, state_is_tuple=True)
         # bw_cell = tf.nn.rnn_cell.MultiRNNCell([bw_cell] * args.num_layers, state_is_tuple=True)
@@ -58,7 +59,7 @@ class Model:
         return tf.Variable(weight), tf.Variable(bias)
 
 
-def f1(prediction, target, length, iter_num):
+def f1(prediction, target, length, iter_num,words):
 
     prediction = np.argmax(prediction, 2)
     target = np.argmax(target, 2)
@@ -70,6 +71,8 @@ def f1(prediction, target, length, iter_num):
     classify_p = 0  # 识别的个体总数
     classify_r = 0  # 测试集中存在个个体总数
     classify_acc = 0  # 正确识别的个数
+
+    # notpred=dict()
 
     for i in range(len(target)):
         for j in range(length[i]):
@@ -86,6 +89,19 @@ def f1(prediction, target, length, iter_num):
 
             if prediction[i][j]!=0 and target[i][j]!=0:
                 iden_acc+=1
+
+            # if prediction[i][j]==0 and target[i][j]!=0:
+            #     if words[i][j] in notpred:
+            #         notpred[words[i][j]]=notpred.get(words[i][j])+1
+            #     else:
+            #         notpred[words[i][j]]=1
+            #     print(words[i][j])
+
+            # if target[i][j]==0 and prediction[i][j]!=0:
+            #     print(words[i][j])
+
+    # notpred = sorted(notpred.items(), key=lambda x: x[1], reverse=True)
+    # print(notpred)
 
     try:
         print('-----------------------' + str(iter_num) + '-----------------------------')
@@ -106,7 +122,6 @@ def f1(prediction, target, length, iter_num):
             print('------------------------' + str(iter_num) + '----------------------------')
             return f
     except ZeroDivisionError:
-        print('-----------------------' + str(iter_num) + '-----------------------------')
         print('all zero')
         print('-----------------------' + str(iter_num) + '-----------------------------')
         return 0
@@ -115,7 +130,7 @@ def f1(prediction, target, length, iter_num):
 def train(args):
     homepath = "D:/Code/pycharm/Event-Extraction//model/tensorflow2/data/"
     form_data_save_path = homepath + "/trigger_data/2/trigger_train_data_form.data"
-    saver_path = homepath+"/saver/checkpoint_trigger_1.data"
+    saver_path = homepath+"/saver/checkpoint_trigger_rnn.data"
 
     data_f = open(form_data_save_path, 'rb')
     X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
@@ -126,34 +141,34 @@ def train(args):
     maximum = 0
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        # saver = tf.train.Saver(tf.global_variables())
-        # saver.restore(sess, saver_path)
-        #
-        # pred, length = sess.run([model.prediction, model.length]
-        #                             , {model.input_data: X_test,model.output_data: Y_test})
-        #
-        # maximum=f1(pred, Y_test, length,1)
-        # sys.exit()
+        saver = tf.train.Saver(tf.global_variables())
+        saver.restore(sess, saver_path)
+
+        pred, length = sess.run([model.prediction, model.length]
+                                    , {model.input_data: X_test,model.output_data: Y_test,model.keep_prob:1.0})
+
+        maximum=f1(pred, Y_test, length,1,W_test)
+        sys.exit()
 
         print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
 
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
-                    ,model.output_data: Y_train[ptr:ptr + args.batch_size]})
+                    ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:0.5})
 
 
             if e%5==0:
                 pred, length = sess.run([model.prediction, model.length]
-                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000]})
+                                        , {model.input_data: X_train[:4000], model.output_data: Y_train[:4000],model.keep_prob:1.0})
 
-                f1(pred, Y_train[:4000], length, e)
+                f1(pred, Y_train[:4000], length, "train",W_train[:4000])
 
 
             pred, length = sess.run([model.prediction, model.length]
-                                    , {model.input_data: X_test,model.output_data: Y_test})
+                                    , {model.input_data: X_test,model.output_data: Y_test,model.keep_prob:1.0})
 
-            m = f1(pred, Y_test, length,e)
+            m = f1(pred, Y_test, length,e,W_test)
             print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
             if m>maximum:
                 saver = tf.train.Saver(tf.global_variables())
@@ -170,7 +185,7 @@ parser.add_argument('--word_dim', type=int,default=300, help='dimension of word 
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=150, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

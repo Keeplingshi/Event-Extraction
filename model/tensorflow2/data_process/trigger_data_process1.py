@@ -20,16 +20,15 @@ doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
 posi_embed_path=homepath+"/model/tensorflow2/data/posi_embed.bin"
 
-data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/2/trigger_train_data_form.data"
 #添加位置信息
 form_addposi_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_addposi_data_form.data"
-#在位置信息添加完之后，添加词性信息
-form_posi_postag_data_save_path=homepath+"/model/tensorflow2/data/trigger_data/1/trigger_train_posi_postag_data_form.data"
 
 class_size=34
 max_len=60
 sen_min_len=5
+word2vec_len=300
 
 
 def get_dot_word():
@@ -39,6 +38,9 @@ def get_dot_word():
     word_dot_list=dict()
     for line in wordlist_f:
         word=line.strip()
+        if "-" in word:
+            temp=word
+            word_dot_list[temp.replace("-"," <dot3> ").strip()]=word
         if "." in word:
             if "."!=word and "..."!=word:
                 temp=word
@@ -52,20 +54,19 @@ word_dot_sort_list = sorted(word_dot_list.items(), key=lambda x: len(x[1]), reve
 
 def number_form(s):
 
+    for (i,j) in word_dot_sort_list:
+        s = s.replace(" "+i+" ", " "+j+" ")
+
     num_list = re.findall("\d+\s,\s\d+", s)
     for re_num in num_list:
         s = s.replace(re_num, re_num.replace(" ", ""))
 
-    if s in word_dot_list.keys():
-        s=word_dot_list.get(s)
-
-    for (i,j) in word_dot_sort_list:
-        s = s.replace(" "+i+" ", " "+j+" ")
     return s
+
 
 def clean_str(string, TREC=False):
     string = re.sub(r"\n\n", " <dot2> ", string)
-    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>]", " ", string)
+    string = re.sub(r"[^A-Za-z0-9(),.!?\'\`<>-]", " ", string)
     string = re.sub(r"\'m", r" 'm", string)
     string = re.sub(r"\'s", " \'s", string)
     string = re.sub(r"\'ve", " \'ve", string)
@@ -77,13 +78,18 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\,", r" , ", string)
     string = re.sub(r"!", " <dot2> ", string)
     string = re.sub(r"``", " ", string)
-    string = re.sub(r"\(", " ( ", string)
-    string = re.sub(r"\)", " ) ", string)
+    string = re.sub(r"''", " ", string)
+    string = re.sub(r"-", " <dot3> ", string)
+    string = re.sub(r"\(", " ", string)
+    string = re.sub(r"\)", " ", string)
     string = re.sub(r"\?", " <dot2> ", string)
     string = re.sub(r"\s{2,}", " ", string)
 
     return_str=string.strip() if TREC else string.strip().lower()
     return_str=number_form(return_str).strip()
+
+    # if "anti" in return_str:
+    #     print(return_str)
 
     return return_str
 
@@ -196,7 +202,7 @@ def read_corpus(event_type,flag):
         count += 1
         tokens.append(tok)
         anchors.append(anc)
-    print(event_type)
+
     return tokens, anchors
 
 
@@ -259,6 +265,7 @@ def list2vec(tokens,anchors,phrase_posi_dict):
                 trigger_tmp3=token[j].replace('\n', ' ')
                 if ' ' in token[j]:
                     if trigger_tmp3 in phrase_posi_dict.keys():
+
                         new_trigger=trigger_tmp3.split(' ')[int(phrase_posi_dict[trigger_tmp3])-1]
                         sen_list.append(vec_dict.get(new_trigger))
                         sen_word_list.append(new_trigger)
@@ -266,11 +273,17 @@ def list2vec(tokens,anchors,phrase_posi_dict):
                         a[anchor[j]] = 1.0
                         label_list.append(a)
                 else:
-                    sen_list.append(np.random.uniform(-0.25, 0.25, 300).tolist())
-                    sen_word_list.append(token[j])
-                    a = [0.0 for x in range(0, class_size)]
-                    a[anchor[j]] = 1.0
-                    label_list.append(a)
+
+                    ab=["eng","apw","amp","xin","cf","misc","marketview","markbacker","baconsrebellion","aggressivevoicedaily"]
+
+                    if token[j] not in ab and re.search(r'\d', token[j]) is None:
+                        word=re.sub('[^a-zA-Z]','',token[j])
+                        if vec_dict.get(word) is not None:
+                            sen_list.append(vec_dict.get(word))
+                            sen_word_list.append(token[j])
+                            a = [0.0 for x in range(0, class_size)]
+                            a[anchor[j]] = 1.0
+                            label_list.append(a)
 
     return X,Y,W
 
@@ -300,6 +313,8 @@ def pre_data():
     test_tokens, test_anchors=read_corpus(event_type,'test')
     dev_tokens, dev_anchors=read_corpus(event_type,'dev')
 
+    print(event_type)
+
     X_train,Y_train,W_train=list2vec(train_tokens,train_anchors,phrase_posi_dict)
     X_test,Y_test,W_test=list2vec(test_tokens,test_anchors,phrase_posi_dict)
     X_dev,Y_dev,W_dev=list2vec(dev_tokens,dev_anchors,phrase_posi_dict)
@@ -314,7 +329,7 @@ def padding_mask(x, y,w,max_len):
     X_train=[]
     Y_train=[]
     W_train=[]
-    x_zero_list=[0.0 for i in range(300)]
+    x_zero_list=[0.0 for i in range(word2vec_len)]
     y_zero_list=[0.0 for i in range(class_size)]
     y_zero_list[0]=1.0
     unknown='#'
@@ -430,68 +445,6 @@ def add_posi():
     print(np.array(W_dev).shape)
 
 
-"""
-添加词性标注
-"""
-def get_pos_tag(word_list,vec_list):
-    tag_list=['CC', 'CD', 'DT', 'EX', 'FW', 'IN', 'JJ', 'JJR', 'JJS', 'LS', 'MD', 'NN', 'NNS', 'NNP', 'NNPS', 'PDT', 'POS', 'PRP', 'PRP$', 'RB', 'RBR', 'RBS', 'RP', 'TO', 'UH', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'WDT', 'WP', 'WP$', 'WRB','unknown']
-
-    word_tag_list=nltk.pos_tag(word_list)
-
-    new_vec_list=[]
-    for i in range(len(word_list)):
-        word_tag=word_tag_list[i]
-        tag_array=[0.0 for x in range(len(tag_list))]
-        try:
-            tag_index=tag_list.index(word_tag[1])
-        except:
-            tag_index=35
-
-        tag_array[tag_index]=1.0
-        word_vec=vec_list[i]
-        word_vec.extend(tag_array)
-        new_vec_list.append(word_vec)
-
-    return new_vec_list
-
-
-
-def add_pos_tag():
-    data_f = open(form_addposi_data_save_path, 'rb')
-    X_train,Y_train,W_train,X_test,Y_test,W_test,X_dev,Y_dev,W_dev = pickle.load(data_f)
-    data_f.close()
-
-    new_X_train=[]
-    new_X_test=[]
-    new_X_dev=[]
-    for word_list,vec_list in zip(W_train,X_train):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_train.append(new_vec_list)
-
-    for word_list,vec_list in zip(W_test,X_test):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_test.append(new_vec_list)
-
-    for word_list,vec_list in zip(W_dev,X_dev):
-        new_vec_list=get_pos_tag(word_list,vec_list)
-        new_X_dev.append(new_vec_list)
-
-
-    data=new_X_train,Y_train,W_train,new_X_test,Y_test,W_test,new_X_dev,Y_dev,W_dev
-    f=open(form_posi_postag_data_save_path,'wb')
-    pickle.dump(data,f)
-
-    print(np.array(new_X_train).shape)
-    print(np.array(Y_train).shape)
-    print(np.array(W_train).shape)
-    print(np.array(new_X_test).shape)
-    print(np.array(Y_test).shape)
-    print(np.array(W_test).shape)
-    print(np.array(new_X_dev).shape)
-    print(np.array(Y_dev).shape)
-    print(np.array(W_dev).shape)
-
-
 if __name__ == "__main__":
     # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\bc\timex2norm\CNN_CF_20030303.1900.00.sgm
     # # D:\Code\pycharm\Event - Extraction\ace_en_experiment\nw\timex2norm\APW_ENG_20030304.0555.sgm
@@ -521,5 +474,17 @@ if __name__ == "__main__":
     # word_list=["word","unknow_word","run","at",",","#"]
     # word_tag_list=nltk.pos_tag(word_list)
     # print(word_tag_list)
+
+    # s="delight in presenting guests who are anti-war,"
+    # s=clean_str(s)
+    # print(s)
+
+    # s="daf"
+    # if re.search(r'\d', s) is None:
+    #     print("1")
+    # else:
+    #     print("2")
+
+
 
 
