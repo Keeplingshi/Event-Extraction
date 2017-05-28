@@ -12,8 +12,8 @@ doclist_train=homepath+'/ace05/split1.0/new_filelist_ACE_training.txt'
 doclist_test=homepath+'/ace05/split1.0/new_filelist_ACE_test.txt'
 doclist_dev=homepath+'/ace05/split1.0/new_filelist_ACE_dev.txt'
 
-data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data.data"
-form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/1/argument_train_data_form.data"
+data_save_path=homepath+"/model/tensorflow2/data/argument_data/2/argument_train_data.data"
+form_data_save_path=homepath+"/model/tensorflow2/data/argument_data/2/argument_train_data_form.data"
 
 max_len=60
 sen_min_len=5

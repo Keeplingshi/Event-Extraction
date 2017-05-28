@@ -14,8 +14,10 @@ class Model:
         self.args = args
         self.input_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.word_dim])
         self.output_data = tf.placeholder(tf.float32, [None, args.sentence_length, args.class_size])
-        fw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
-        bw_cell = tf.nn.rnn_cell.BasicLSTMCell(args.hidden_layers, state_is_tuple=True)
+
+        #lstm process
+        fw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers)
+        bw_cell = tf.contrib.rnn.BasicLSTMCell(args.hidden_layers)
 
         # fw_cell = tf.nn.rnn_cell.DropoutWrapper(fw_cell, output_keep_prob=0.5)
         # bw_cell = tf.nn.rnn_cell.DropoutWrapper(bw_cell, output_keep_prob=0.5)
@@ -25,19 +27,20 @@ class Model:
 
         used = tf.sign(tf.reduce_max(tf.abs(self.input_data), reduction_indices=2))
         self.length = tf.cast(tf.reduce_sum(used, reduction_indices=1), tf.int32)
-        output, _,_ = tf.nn.bidirectional_rnn(fw_cell, bw_cell,
-                                               tf.unpack(tf.transpose(self.input_data, perm=[1, 0, 2])),
-                                               dtype=tf.float32, sequence_length=self.length)
+        output, _,_ =tf.contrib.rnn.static_bidirectional_rnn(fw_cell, bw_cell,
+                                                               tf.unstack(tf.transpose(self.input_data, perm=[1, 0, 2])),
+                                                               dtype=tf.float32, sequence_length=self.length)
+
         self.output=output
         weight, bias = self.weight_and_bias(2 * args.hidden_layers, args.class_size)
-        output = tf.reshape(tf.transpose(tf.pack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
+        output = tf.reshape(tf.transpose(tf.stack(output), perm=[1, 0, 2]), [-1, 2 * args.hidden_layers])
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
         self.loss = self.cost()
         optimizer = tf.train.AdamOptimizer(args.learning_rate)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 10)
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars), 1.0)
         self.train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     def cost(self):
@@ -52,9 +55,12 @@ class Model:
     @staticmethod
     def weight_and_bias(in_size, out_size):
         weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
-        bias = tf.constant(0.1, shape=[out_size])
+        bias = tf.constant(0.0, shape=[out_size])
         return tf.Variable(weight), tf.Variable(bias)
 
+
+
+EVENT_MAP={'Personnel.Nominate': 1, 'Contact.Phone-Write': 27, 'Business.Declare-Bankruptcy': 3, 'Justice.Release-Parole': 4, 'Justice.Extradite': 5, 'Personnel.Start-Position': 22, 'Justice.Fine': 7, 'Transaction.Transfer-Money': 8, 'Personnel.End-Position': 9, 'Justice.Acquit': 10, 'Life.Injure': 11, 'Conflict.Attack': 12, 'Justice.Arrest-Jail': 13, 'Justice.Pardon': 14, 'Justice.Charge-Indict': 15, 'Conflict.Demonstrate': 16, 'Contact.Meet': 17, 'Business.End-Org': 18, 'Life.Be-Born': 19, 'Personnel.Elect': 20, 'Justice.Trial-Hearing': 21, 'Life.Divorce': 6, 'Justice.Sue': 23, 'Justice.Appeal': 24, 'Business.Merge-Org': 32, 'Life.Die': 26, 'Business.Start-Org': 2, 'Justice.Convict': 28, 'Movement.Transport': 29, 'Life.Marry': 30, 'UNKOWN': 0, 'Justice.Sentence': 31, 'Justice.Execute': 25, 'Transaction.Transfer-Ownership': 33}
 
 def f1(prediction, target, length, iter_num):
 
@@ -85,6 +91,7 @@ def f1(prediction, target, length, iter_num):
             if prediction[i][j]!=0 and target[i][j]!=0:
                 iden_acc+=1
 
+
     try:
         print('-----------------------' + str(iter_num) + '-----------------------------')
         print('Trigger Identification:')
@@ -111,16 +118,16 @@ def f1(prediction, target, length, iter_num):
 
 
 def train(args):
-    saver_path="./saver/checkpointrnn2_1.data"
+    saver_path="./saver/checkpoint_trigger_bilstm.data"
 
-    data_f = open('./chACEdata/class_train_form_data.data', 'rb')
+    data_f = open('./chACEdata/trigger_train_form_data.data', 'rb')
     X_train,Y_train,X_test,Y_test = pickle.load(data_f)
     data_f.close()
 
     model = Model(args)
     maximum = 0
     with tf.Session() as sess:
-        #sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(tf.global_variables())
         saver.restore(sess, saver_path)
 
@@ -149,19 +156,23 @@ def train(args):
                                     , {model.input_data: X_test,model.output_data: Y_test})
 
             m = f1(pred, Y_test, length,e)
-            if m>maximum:
-                saver = tf.train.Saver(tf.global_variables())
-                saver.save(sess,saver_path)
+            try:
+                if m>maximum:
+                    saver = tf.train.Saver(tf.global_variables())
+                    saver.save(sess,saver_path)
+                    maximum=m
+            except:
+                print("error")
 
 
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--word_dim', type=int,default=200, help='dimension of word vector')
+parser.add_argument('--word_dim', type=int,default=300, help='dimension of word vector')
 parser.add_argument('--sentence_length', type=int,default=60, help='max sentence length')
 parser.add_argument('--class_size', type=int, default=34,help='number of classes')
 parser.add_argument('--learning_rate', type=float, default=0.003,help='learning_rate')
-parser.add_argument('--hidden_layers', type=int, default=100, help='hidden dimension of rnn')
+parser.add_argument('--hidden_layers', type=int, default=128, help='hidden dimension of rnn')
 parser.add_argument('--num_layers', type=int, default=2, help='number of layers in rnn')
 parser.add_argument('--batch_size', type=int, default=100, help='batch size of training')
 parser.add_argument('--epoch', type=int, default=100, help='number of epochs')

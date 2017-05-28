@@ -1,31 +1,31 @@
-'''
+"""
 Created on 2017年3月20日
-
-@author: chenbin
-'''
-import os
-from lxml import etree  # @UnresolvedImport
-import jieba
+读取语料，并处理成词向量
+"""
+from lxml import etree
 import pickle
-import re
-import sys
-from xml_parse import xml_parse_base
+from model.chinese.xml_parse import xml_parse_base
 from xml.dom import minidom
 from sklearn import cross_validation
 from gensim.models import word2vec
-import random
 import numpy as np
-from model.keras.test2.type_index import EVENT_MAP
+from model.chinese.type_index import EVENT_MAP
+from model.chinese.nlpir import NLPIR_ParagraphProcess
 
 homepath='D:/Code/pydev/EventExtract/'
+punctuation_list=["！","，","、","；","（","）","《","》","\"",",","”","“","　","：","."]
 
 def content2wordvec(text_content,start_end_type_list):
-    jieba.load_userdict(homepath+'/ace_ch_experiment/trigger.dict')
+    # jieba.load_userdict(homepath+'/ace_ch_experiment/trigger.dict')
     s_e_sorted=sorted(start_end_type_list,key=lambda x:x[0])
     label=[]
     tmp_i=0
 
-    word_list=[t for t in jieba.cut(text_content)]
+    # word_list=[t for t in jieba.cut(text_content)]
+    # print(word_list)
+    word_list = NLPIR_ParagraphProcess(text_content, 0).split(' ')
+    # print(word_list)
+    # print("=====================================")
     for t in word_list:
         tmp_j=tmp_i+len(t)-1
         flag=0
@@ -40,9 +40,7 @@ def content2wordvec(text_content,start_end_type_list):
 
         tmp_i=tmp_j+1
 
-
     assert len(word_list)==len(label),'word_list与label长度不相等'
-
     return (word_list,label)
 
 
@@ -140,11 +138,10 @@ def read_answer(filename_prefix):
         print(filename_prefix,'droped')
         return []
 
+
 def prepare_data():
     train_data=[]
-#     f=lambda x:x[:x.rfind('.')]
-#     f_list=[f(i) for i in os.listdir('./text2')]
-    doclist=homepath+'/ace_ch_experiment/doclist/ACE_Chinese_all';
+    doclist=homepath+'/ace_ch_experiment/doclist/ACE_Chinese_all'
     f_list=[i.replace('\n','') for i in open(doclist,'r')]
 
     for i in f_list:
@@ -166,19 +163,29 @@ def prepare_data():
         label=item[1]
         tmp_i=0
         for index,i in enumerate(sentence):
-            if i==u'。':
+            if i==u'。' or i==u'！'or i==u'？':
                 new_train_data.append((sentence[tmp_i:index],label[tmp_i:index]))
                 tmp_i=index+1
 
+
     rs_f=open('./chACEdata/class_pre_data2_2.txt','w', encoding='utf8')
     for item in new_train_data:
-        word=item[0]
+        item_words=[]
+        item_labels=[]
+        for i,(item_word,item_label) in enumerate(zip(item[0], item[1])):
+            if item_word not in punctuation_list:
+                item_words.append(item_word)
+                item_labels.append(item_label)
+
+        assert len(item_words)==len(item_labels),"item  error"
+        word=item_words
         rs_f.write(' '.join([i for i in word]))
         rs_f.write('\n')
-        rs_f.write(str(item[1]))
+        rs_f.write(str(item_labels))
         rs_f.write('\n')
     rs_f=open('./chACEdata/class_pre_data2.data','wb')
     pickle.dump(new_train_data,rs_f)
+
 
 def pre_word2vec_data():
     '''不用切词，值'''
@@ -190,21 +197,31 @@ def pre_word2vec_data():
 
     x=[]
     y=[]
+    w=[]
     for item in train_data:
         sen_vec=[]
-        for word in item[0]:
-            try:
-                word_vector = model[word]
-            except KeyError:
-                word_vector = np.array([random.uniform(-0.25,0.25) for i in range(200)])
+        item_words=[]
+        item_labels=[]
+        for i, (item_word, item_label) in enumerate(zip(item[0], item[1])):
+            if item_word not in punctuation_list:
+                try:
+                    word_vector = model[item_word]
+                    flag=True
+                except KeyError:
+                    flag=False
 
-            #如果存在词向量
-            sen_vec.append(word_vector)
+                if flag:
+                    sen_vec.append(word_vector)
+                    item_words.append(item_word)
+                    item_labels.append(item_label)
+                    if item_label!=0:
+                        print(item_word+"\t"+str(item_label))
 
         x.append(sen_vec)
-        #x.append([word_to_index[word] if word in word_to_index else word_to_index[unknown_token] for word in item[0]])
-        y.append(item[1])
-    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.2, random_state=0)
+        y.append(item_labels)
+        w.append(item_words)
+
+    X_train, X_test,Y_train, Y_test = cross_validation.train_test_split(x,y,test_size=0.1, random_state=0)
 
     data=X_train,X_test,Y_train,Y_test
     f=open('./chACEdata/class_train_data.data','wb')
@@ -265,48 +282,8 @@ def form_data():
 if __name__ == '__main__':
     print('--------------------------main start-----------------------------')
 
-
-    # data_f = open('./chACEdata/class_train_form_data.data', 'rb')
-    # X_train,Y_train,X_test,Y_test = pickle.load(data_f)
-    # data_f.close()
-    #
-    # print(X_train[0][0])
-    # for i in Y_train:
-    #     print(i)
-
-    #read_answer('/bn/adj/CTV20001228.1330.1196')
     prepare_data()
-
     pre_word2vec_data()
-
     form_data()
-
-    # f=open('./chACEdata/class_train_data.data','rb')
-    # X_train,X_test,Y_train,Y_test=pickle.load(f)
-    #
-    #
-    # print(np.array(X_train).shape)
-    # print(len(X_test[0]))
-    # print(len(X_train[1]))
-    # print(len(X_train[0][0]))
-    # print(len(X_train[1][1]))
-    # print(Y_test)
-    #
-    # l=[34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34]
-    # print(len(l))
-
-#
-
-
-#     m=read_answer('/wl/adj/CTV20001030.1330.0326.0844')
-#     for i in range(len(m[1])):
-#         if m[1][i]==1:
-#             print(m[0][i])
-# 
-#     print(m[0])
-#     print(m[1])
-#     path=homepath+'/ace_ch_experiment/corpus/'+'/wl/adj/LIUYIFENG_20050126.0844.sgm'
-#     text=get_text_from_sgm(path)
-#     print(text)
 
     print('--------------------------main end-----------------------------')
