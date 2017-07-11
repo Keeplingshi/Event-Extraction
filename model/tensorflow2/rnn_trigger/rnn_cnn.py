@@ -46,6 +46,7 @@ class Model:
         weight_width=2 * args.hidden_layers+sum(feature_maps)
         weight, bias = self.weight_and_bias(weight_width, args.class_size)
         output = tf.reshape(tf.transpose(tf.stack(self.lstm_cnn_output), perm=[1, 0, 2]), [-1, weight_width])
+        self.output=output
 
         prediction = tf.nn.softmax(tf.matmul(output, weight) + bias)
         self.prediction = tf.reshape(prediction, [-1, args.sentence_length, args.class_size])
@@ -181,6 +182,11 @@ def train(args):
         print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
         for e in range(args.epoch):
             for ptr in range(0, len(X_train), args.batch_size):
+
+                output=sess.run(model.output, {model.input_data: X_train[ptr:ptr + args.batch_size]
+                    ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:1.0})
+                print(np.array(output).shape)
+                sys.exit()
 
                 sess.run(model.train_op, {model.input_data: X_train[ptr:ptr + args.batch_size]
                     ,model.output_data: Y_train[ptr:ptr + args.batch_size],model.keep_prob:1.0})
